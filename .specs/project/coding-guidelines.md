@@ -27,6 +27,8 @@
 
 ## Testing
 
+* Always write unit tests for new features, domain models, and business logic.
+* Colocate test files next to the source files they test (e.g., `MyClass.test.ts` next to `MyClass.ts`).
 * Test business-critical behavior.
 * Add tests for bug fixes.
 * Keep tests readable and maintainable.
