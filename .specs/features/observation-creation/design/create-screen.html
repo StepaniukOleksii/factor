@@ -1,0 +1,333 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>New Observation - Factor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "primary-container": "#b6f09c",
+                "outline": "#8c9385",
+                "on-primary-fixed-variant": "#205110",
+                "surface-tint": "#9dd584",
+                "tertiary-fixed": "#e4e2e1",
+                "surface": "#131313",
+                "error": "#ffb4ab",
+                "surface-container-lowest": "#0e0e0e",
+                "on-secondary": "#313030",
+                "outline-variant": "#42493d",
+                "surface-container-high": "#2a2a2a",
+                "tertiary-container": "#e2e0df",
+                "on-surface-variant": "#c2c9b9",
+                "on-surface": "#e5e2e1",
+                "on-primary-fixed": "#042100",
+                "primary-fixed": "#b8f29e",
+                "surface-bright": "#3a3939",
+                "on-error-container": "#ffdad6",
+                "on-tertiary-fixed": "#1b1c1c",
+                "on-primary-container": "#3c6f2a",
+                "secondary-fixed": "#e5e2e1",
+                "surface-dim": "#131313",
+                "primary": "#f9fff0",
+                "secondary": "#c8c6c5",
+                "inverse-on-surface": "#313030",
+                "on-tertiary": "#303030",
+                "surface-variant": "#353534",
+                "secondary-fixed-dim": "#c8c6c5",
+                "on-secondary-container": "#b7b5b4",
+                "on-tertiary-fixed-variant": "#474746",
+                "on-primary": "#0b3900",
+                "surface-container-highest": "#353534",
+                "on-error": "#690005",
+                "inverse-surface": "#e5e2e1",
+                "on-tertiary-container": "#646363",
+                "on-background": "#e5e2e1",
+                "primary-fixed-dim": "#9dd584",
+                "on-secondary-fixed-variant": "#474746",
+                "tertiary-fixed-dim": "#c8c6c5",
+                "surface-container": "#201f1f",
+                "secondary-container": "#474746",
+                "inverse-primary": "#386a26",
+                "error-container": "#93000a",
+                "background": "#131313",
+                "tertiary": "#f9feff",
+                "on-secondary-fixed": "#1c1b1b",
+                "surface-container-low": "#1c1b1b"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "gutter-md": "24px",
+                "container-max": "1200px",
+                "margin-desktop": "40px",
+                "margin-mobile": "16px",
+                "gutter-sm": "16px",
+                "unit": "4px",
+                "xs": "4px",
+                "sm": "8px",
+                "md": "16px",
+                "lg": "24px",
+                "xl": "32px",
+                "2xl": "48px"
+        },
+        "fontFamily": {
+                "headline-lg-mobile": [
+                        "Hanken Grotesk"
+                ],
+                "label-md": [
+                        "Hanken Grotesk"
+                ],
+                "headline-md": [
+                        "Hanken Grotesk"
+                ],
+                "label-sm": [
+                        "Hanken Grotesk"
+                ],
+                "body-md": [
+                        "Hanken Grotesk"
+                ],
+                "headline-lg": [
+                        "Hanken Grotesk"
+                ],
+                "body-lg": [
+                        "Hanken Grotesk"
+                ]
+        },
+        "fontSize": {
+                "headline-lg-mobile": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "label-md": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "letterSpacing": "0.02em",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "500"
+                        }
+                ],
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "56px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface border-b border-outline-variant z-40 transition-colors">
+<div class="flex items-center justify-between px-margin-mobile h-16 w-full max-w-screen-xl mx-auto">
+<button aria-label="Go back" class="flex items-center justify-center p-2 rounded-full text-on-surface hover:bg-surface-container-low active:scale-95 duration-150 ease-in-out transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-on-surface tracking-tight">New Observation</h1>
+<button aria-label="More options" class="flex items-center justify-center p-2 rounded-full text-on-surface hover:bg-surface-container-low active:scale-95 duration-150 ease-in-out transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<!-- Task-Focused Screen: Navigation Shell Suppressed -->
+<main class="flex-grow w-full max-w-2xl mx-auto px-margin-mobile py-lg pb-2xl mb-2xl">
+<!-- Form Section -->
+<section class="flex flex-col gap-lg">
+<!-- Observation Name -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest" for="observation-name">Observation Name</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface placeholder:text-outline focus:border-primary focus:ring-0 transition-colors shadow-sm outline-none" id="observation-name" placeholder="e.g., Sleep Quality, Mood" type="text">
+</div>
+<hr class="border-t border-outline-variant w-full my-md">
+<!-- Metrics Section -->
+<div class="flex flex-col gap-md" id="metrics-container">
+<div class="flex items-center justify-between">
+<h2 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Metrics</h2>
+
+</div>
+<!-- Metrics List -->
+<div class="flex flex-col gap-sm" id="metrics-list">
+<!-- Metric Row 1 -->
+<div class="metric-row flex items-start gap-sm bg-surface-container-low border border-outline-variant rounded-lg p-md transition-all">
+<div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-sm">
+<div class="flex flex-col gap-xs">
+<label class="font-label-sm text-label-sm text-outline uppercase">Metric Name</label>
+<input class="w-full bg-surface-container-lowest border border-transparent rounded px-3 py-2 font-body-md text-on-surface focus:border-outline-variant outline-none transition-colors" placeholder="e.g., Duration" type="text">
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-sm text-label-sm text-outline uppercase">Type</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-lowest border border-transparent rounded px-3 py-2 font-body-md text-on-surface focus:border-outline-variant outline-none transition-colors pr-8">
+<option value="number">Number</option>
+<option value="scale">Scale (1-10)</option>
+<option value="text">Text Notes</option>
+<option value="duration">Duration (mins)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<button aria-label="Delete metric" class="delete-metric-btn hidden mt-6 text-outline hover:text-error transition-colors p-1">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Add Metric Action -->
+<button class="flex items-center justify-center gap-2 py-3 px-4 border border-dashed border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" id="add-metric-btn">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span class="font-label-md text-label-md">Add Metric</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Signal Action Footer -->
+<div class="fixed bottom-0 left-0 w-full bg-surface/80 backdrop-blur-md border-t border-outline-variant p-margin-mobile z-50">
+<div class="max-w-2xl mx-auto flex justify-end">
+<button class="w-full md:w-auto px-8 py-3 bg-primary-container text-on-primary-fixed-variant font-label-md rounded-full hover:brightness-95 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-2">
+<span class="">Create Observation</span>
+<span class="material-symbols-outlined text-[20px]">check</span>
+</button>
+</div>
+</div>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const metricsList = document.getElementById('metrics-list');
+            const addMetricBtn = document.getElementById('add-metric-btn');
+
+            // Template for a new metric row
+            const metricTemplate = `
+                <div class="metric-row flex items-start gap-sm bg-surface-container-low border border-outline-variant rounded-lg p-md transition-all animate-fade-in">
+                    <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-sm">
+                        <div class="flex flex-col gap-xs">
+                            <label class="font-label-sm text-label-sm text-outline uppercase">Metric Name</label>
+                            <input type="text" placeholder="e.g., Intensity" class="w-full bg-surface-container-lowest border border-transparent rounded px-3 py-2 font-body-md text-on-surface focus:border-outline-variant outline-none transition-colors">
+                        </div>
+                        <div class="flex flex-col gap-xs">
+                            <label class="font-label-sm text-label-sm text-outline uppercase">Type</label>
+                            <div class="relative">
+                                <select class="w-full appearance-none bg-surface-container-lowest border border-transparent rounded px-3 py-2 font-body-md text-on-surface focus:border-outline-variant outline-none transition-colors pr-8">
+                                    <option value="number">Number</option>
+                                    <option value="scale">Scale (1-10)</option>
+                                    <option value="text">Text Notes</option>
+                                    <option value="duration">Duration (mins)</option>
+                                </select>
+                                <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="delete-metric-btn mt-6 text-outline hover:text-error transition-colors p-1" aria-label="Delete metric">
+                        <span class="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                </div>
+            `;
+
+            // Function to update delete button visibility
+            const updateDeleteButtons = () => {
+                const rows = metricsList.querySelectorAll('.metric-row');
+                const deleteBtns = metricsList.querySelectorAll('.delete-metric-btn');
+
+                if (rows.length > 1) {
+                    deleteBtns.forEach(btn => btn.classList.remove('hidden'));
+                } else {
+                    deleteBtns.forEach(btn => btn.classList.add('hidden'));
+                }
+            };
+
+            // Add new metric
+            addMetricBtn.addEventListener('click', () => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = metricTemplate.trim();
+                const newRow = tempDiv.firstChild;
+
+                // Add delete listener to new button
+                newRow.querySelector('.delete-metric-btn').addEventListener('click', (e) => {
+                    newRow.remove();
+                    updateDeleteButtons();
+                });
+
+                metricsList.appendChild(newRow);
+                updateDeleteButtons();
+            });
+
+            // Initial setup for the first row's delete button (if any somehow exist)
+            metricsList.querySelectorAll('.delete-metric-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.target.closest('.metric-row').remove();
+                    updateDeleteButtons();
+                });
+            });
+
+            // Run once on load
+            updateDeleteButtons();
+        });
+    </script>
+<style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+    </style>
+
+
+</body></html>

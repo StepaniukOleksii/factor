@@ -1,6 +1,6 @@
 import {Entity} from './Entity';
 
-export type MetricValueType = 'Numeric' | 'Boolean' | 'Enum';
+export type MetricValueType = 'Numeric' | 'Boolean' | 'Enum' | 'Text';
 
 export interface NumericConstraint {
   min?: number;
@@ -52,6 +52,9 @@ export class Metric extends Entity<string> {
         const enumConstraint = this.constraint as EnumConstraint | null;
         if (!enumConstraint || !enumConstraint.allowedValues) return false;
         return typeof value === 'string' && enumConstraint.allowedValues.includes(value);
+
+      case 'Text':
+        return typeof value === 'string';
 
       default:
         return false;
