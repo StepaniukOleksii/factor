@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html class="dark" lang="en" style="">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Factor - Observation List</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;display=swap"
+          rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+          rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+          rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#f9feff",
+                        "on-background": "#e5e2e1",
+                        "on-tertiary": "#303030",
+                        "primary-container": "#b6f09c",
+                        "on-error": "#690005",
+                        "tertiary-fixed": "#e4e2e1",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "outline": "#8c9385",
+                        "on-tertiary-fixed-variant": "#474746",
+                        "on-secondary": "#313030",
+                        "on-primary-fixed-variant": "#205110",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "inverse-on-surface": "#313030",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-tertiary-fixed": "#1b1c1c",
+                        "surface": "#131313",
+                        "on-primary-container": "#3c6f2a",
+                        "surface-bright": "#3a3939",
+                        "tertiary-container": "#e2e0df",
+                        "inverse-primary": "#386a26",
+                        "surface-container-high": "#2a2a2a",
+                        "secondary": "#c8c6c5",
+                        "primary-fixed-dim": "#9dd584",
+                        "surface-container-highest": "#353534",
+                        "surface-dim": "#131313",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "background": "#131313",
+                        "surface-variant": "#353534",
+                        "inverse-surface": "#e5e2e1",
+                        "secondary-container": "#474746",
+                        "on-error-container": "#ffdad6",
+                        "on-surface-variant": "#c2c9b9",
+                        "on-primary": "#0b3900",
+                        "surface-container": "#201f1f",
+                        "surface-tint": "#9dd584",
+                        "surface-container-low": "#1c1b1b",
+                        "on-secondary-fixed-variant": "#474746",
+                        "error-container": "#93000a",
+                        "outline-variant": "#42493d",
+                        "on-secondary-container": "#b7b5b4",
+                        "on-primary-fixed": "#042100",
+                        "on-tertiary-container": "#646363",
+                        "surface-container-lowest": "#0e0e0e",
+                        "error": "#ffb4ab",
+                        "primary-fixed": "#b8f29e",
+                        "on-surface": "#e5e2e1",
+                        "primary": "#f9fff0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "margin-desktop": "40px",
+                        "container-max": "1200px",
+                        "gutter-sm": "16px",
+                        "margin-mobile": "16px",
+                        "gutter-md": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "label-sm": ["Hanken Grotesk"],
+                        "label-md": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {
+                            "lineHeight": "32px",
+                            "letterSpacing": "-0.01em",
+                            "fontWeight": "500"
+                        }],
+                        "headline-lg-mobile": ["32px", {
+                            "lineHeight": "40px",
+                            "letterSpacing": "-0.02em",
+                            "fontWeight": "600"
+                        }],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["48px", {
+                            "lineHeight": "56px",
+                            "letterSpacing": "-0.02em",
+                            "fontWeight": "600"
+                        }],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-40 bg-background dark:bg-background border-b border-outline-variant dark:border-outline-variant flex items-center justify-between px-margin-mobile md:px-margin-desktop h-16">
+    <div class="flex items-center gap-3 text-primary dark:text-primary">
+
+
+    </div>
+    <div class="font-headline-md text-headline-md tracking-tight text-primary dark:text-primary">
+        Observations
+    </div>
+    <div class="w-8"></div> <!-- Spacer for center alignment balance -->
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-margin-mobile md:px-margin-desktop pt-6 pb-40 max-w-container-max mx-auto w-full">
+    <div class="flex flex-col gap-3">
+        <!-- Sleep Quality Card -->
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex justify-between items-start">
+                <div class="flex flex-col gap-1"><h3 class="text-primary font-semibold">Sleep Quality</h3>
+                    <div class="flex flex-wrap gap-1 mt-1"><span
+                            class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant rounded-full text-label-sm">Duration</span><span
+                            class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant rounded-full text-label-sm">Quality</span>
+                    </div>
+                    <p class="text-label-sm text-on-surface-variant opacity-70 mt-1">Last record: 8 hours ago</p></div>
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary hover:text-on-primary transition-colors border border-primary-container text-primary-container">
+                    <span class="material-symbols-outlined text-headline-md">add</span></button>
+            </div>
+        </div>
+
+        <!-- Mood Card -->
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex justify-between items-start">
+                <div class="flex flex-col gap-1"><h3 class="text-primary font-semibold">Mood</h3>
+                    <div class="flex flex-wrap gap-1 mt-1"><span
+                            class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant rounded-full text-label-sm">Intensity</span><span
+                            class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant rounded-full text-label-sm">Notes</span><span
+                            class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant rounded-full text-label-sm">Energy</span><span
+                            class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant rounded-full text-label-sm opacity-70">+3</span>
+                    </div>
+                    <p class="text-label-sm text-on-surface-variant opacity-70 mt-1">Last record: 2 hours ago</p></div>
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary hover:text-on-primary transition-colors border border-primary-container text-primary-container">
+                    <span class="material-symbols-outlined text-headline-md">add</span></button>
+            </div>
+        </div>
+
+        <!-- Caffeine Intake Card -->
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex justify-between items-start">
+                <div class="flex flex-col gap-1"><h3 class="text-primary font-semibold">Caffeine Intake</h3>
+                    <div class="flex flex-wrap gap-1 mt-1"><span
+                            class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant rounded-full text-label-sm">Amount</span><span
+                            class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant rounded-full text-label-sm">Time</span>
+                    </div>
+                    <p class="text-label-sm text-on-surface-variant opacity-70 mt-1">Last record: Yesterday, 10:00
+                        PM</p></div>
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary hover:text-on-primary transition-colors border border-primary-container text-primary-container">
+                    <span class="material-symbols-outlined text-headline-md">add</span></button>
+            </div>
+        </div>
+    </div>
+</main>
+<!-- Floating Action Button (FAB) -->
+<button class="fixed bottom-24 right-margin-mobile md:right-margin-desktop w-14 h-14 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shadow-none hover:bg-primary transition-colors active:scale-95 z-40">
+    <span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1, &quot;wght&quot; 600;">add</span>
+</button>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 border-t border-outline-variant dark:border-outline-variant bg-surface dark:bg-surface flex justify-around items-center py-2">
+    <a class="flex items-center justify-center text-on-surface-variant opacity-70 hover:text-primary transition-all active:scale-95"
+       href="#"><span class="material-symbols-outlined">home</span></a><a
+        class="flex items-center justify-center text-primary-container font-semibold hover:text-primary transition-all active:scale-95"
+        href="#"><span class="material-symbols-outlined"
+                       style="font-variation-settings: 'FILL' 1;">list_alt</span></a><a
+        class="flex items-center justify-center text-on-surface-variant opacity-70 hover:text-primary transition-all active:scale-95"
+        href="#"><span class="material-symbols-outlined">analytics</span></a><a
+        class="flex items-center justify-center text-on-surface-variant opacity-70 hover:text-primary transition-all active:scale-95"
+        href="#"><span class="material-symbols-outlined">settings</span></a></nav>
+
+
+</body>
+</html>
