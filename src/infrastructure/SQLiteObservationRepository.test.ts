@@ -4,19 +4,21 @@ import {Observation} from '../domain/Observation';
 import {Metric} from '../domain/Metric';
 
 // Use vi.hoisted for variables used inside vi.mock
-const { mockRunAsync, mockWithTransactionAsync } = vi.hoisted(() => {
+const { mockRunAsync, mockWithTransactionAsync, mockGetAllAsync } = vi.hoisted(() => {
   return {
     mockRunAsync: vi.fn().mockResolvedValue(undefined),
     mockWithTransactionAsync: vi.fn().mockImplementation(async (callback) => {
       await callback();
-    })
+    }),
+    mockGetAllAsync: vi.fn().mockResolvedValue([])
   };
 });
 
 vi.mock('./Database', () => ({
   getDatabase: vi.fn().mockResolvedValue({
     withTransactionAsync: mockWithTransactionAsync,
-    runAsync: mockRunAsync
+    runAsync: mockRunAsync,
+    getAllAsync: mockGetAllAsync
   })
 }));
 
@@ -56,5 +58,81 @@ describe('SQLiteObservationRepository', () => {
       'INSERT INTO metrics (id, observationId, name, type, constraintJson) VALUES (?, ?, ?, ?, ?)',
       ['metric-2', 'obs-1', 'Condition', 'Text', null]
     );
+  });
+
+  describe('findAll', () => {
+    it('should return an empty array when no observations exist', async () => {
+      mockGetAllAsync.mockResolvedValue([]);
+
+      const result = await repository.findAll();
+
+      expect(result).toEqual([]);
+      expect(mockGetAllAsync).toHaveBeenCalledWith(
+        'SELECT id, name, createdAt FROM observations ORDER BY createdAt DESC'
+      );
+    });
+
+    it('should return observations with their associated metrics', async () => {
+      mockGetAllAsync
+        .mockResolvedValueOnce([
+          { id: 'obs-1', name: 'Sleep Quality', createdAt: 1000 },
+          { id: 'obs-2', name: 'Mood', createdAt: 900 }
+        ])
+        .mockResolvedValueOnce([
+          { id: 'm-1', observationId: 'obs-1', name: 'Duration', type: 'Numeric', constraintJson: null },
+          { id: 'm-2', observationId: 'obs-1', name: 'Quality', type: 'Numeric', constraintJson: null },
+          { id: 'm-3', observationId: 'obs-2', name: 'Intensity', type: 'Numeric', constraintJson: null }
+        ]);
+
+      const result = await repository.findAll();
+
+      expect(result).toHaveLength(2);
+
+      expect(result[0].id).toBe('obs-1');
+      expect(result[0].name).toBe('Sleep Quality');
+      expect(result[0].metrics).toHaveLength(2);
+      expect(result[0].metrics[0].name).toBe('Duration');
+      expect(result[0].metrics[1].name).toBe('Quality');
+
+      expect(result[1].id).toBe('obs-2');
+      expect(result[1].name).toBe('Mood');
+      expect(result[1].metrics).toHaveLength(1);
+      expect(result[1].metrics[0].name).toBe('Intensity');
+    });
+
+    it('should handle observations with no metrics', async () => {
+      mockGetAllAsync
+        .mockResolvedValueOnce([
+          { id: 'obs-1', name: 'Weather', createdAt: 1000 }
+        ])
+        .mockResolvedValueOnce([]);
+
+      const result = await repository.findAll();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('obs-1');
+      expect(result[0].name).toBe('Weather');
+      expect(result[0].metrics).toHaveLength(0);
+    });
+
+    it('should reconstruct metric constraints from JSON', async () => {
+      mockGetAllAsync
+        .mockResolvedValueOnce([
+          { id: 'obs-1', name: 'Temperature', createdAt: 1000 }
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'm-1',
+            observationId: 'obs-1',
+            name: 'Degrees',
+            type: 'Numeric',
+            constraintJson: JSON.stringify({ min: -40, max: 60 })
+          }
+        ]);
+
+      const result = await repository.findAll();
+
+      expect(result[0].metrics[0].constraint).toEqual({ min: -40, max: 60 });
+    });
   });
 });

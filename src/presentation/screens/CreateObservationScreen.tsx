@@ -1,18 +1,18 @@
 import React, {useState} from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar as RNStatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar as RNStatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from 'react-native';
 import {CreateObservationUseCase} from '../../application/CreateObservationUseCase';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
@@ -37,7 +37,12 @@ const COLORS = {
   error: '#ffb4ab',
 };
 
-export function CreateObservationScreen() {
+export interface CreateObservationScreenProps {
+  onCreated?: () => void;
+  onBack?: () => void;
+}
+
+export function CreateObservationScreen({ onCreated, onBack }: CreateObservationScreenProps) {
   const [observationName, setObservationName] = useState('');
   const [metrics, setMetrics] = useState([{ name: '', type: 'Numeric' }]);
   
@@ -65,10 +70,14 @@ export function CreateObservationScreen() {
         name: observationName,
         metrics: metrics.map(m => ({ name: m.name, type: m.type as string }))
       });
-      Alert.alert('Success', 'Observation created successfully!');
       // Reset form
       setObservationName('');
       setMetrics([{ name: '', type: 'Numeric' }]);
+      if (onCreated) {
+        onCreated();
+      } else {
+        Alert.alert('Success', 'Observation created successfully!');
+      }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'An error occurred while saving.');
     }
@@ -91,7 +100,7 @@ export function CreateObservationScreen() {
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* TopAppBar */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity style={styles.iconButton} onPress={onBack}>
             <MaterialIcons name="arrow-back" size={24} color={COLORS.onSurface} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>New Observation</Text>

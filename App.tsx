@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {StatusBar} from 'expo-status-bar';
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 import {initDatabase} from './src/infrastructure/Database';
-import {CreateObservationScreen} from './src/presentation/screens/CreateObservationScreen';
+import {AppNavigator} from './src/presentation/navigation/AppNavigator';
 
 export default function App() {
   const [isDbReady, setIsDbReady] = useState(false);
@@ -39,7 +39,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <CreateObservationScreen />
+      <AppNavigator />
       <StatusBar style="light" />
     </View>
   );
