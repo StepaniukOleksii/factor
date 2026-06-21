@@ -1,14 +1,14 @@
 import React, {useEffect, useState} from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Platform,
-    SafeAreaView,
-    StatusBar as RNStatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  SafeAreaView,
+  StatusBar as RNStatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
 import {GetObservationsUseCase} from '../../application/GetObservationsUseCase';
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   cardAddButton: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: COLORS.primaryContainer,
     justifyContent: 'center',
@@ -237,18 +237,13 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 96,
     right: 16,
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 12,
     backgroundColor: COLORS.primaryContainer,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
 });
