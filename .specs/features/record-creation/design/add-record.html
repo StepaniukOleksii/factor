@@ -1,0 +1,233 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Add Record - Sleep Quality</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#131313",
+                        "surface-container-high": "#2a2a2a",
+                        "on-secondary-container": "#b7b5b4",
+                        "on-primary-fixed": "#042100",
+                        "tertiary-container": "#e2e0df",
+                        "surface": "#131313",
+                        "primary-fixed-dim": "#9dd584",
+                        "error": "#ffb4ab",
+                        "inverse-primary": "#386a26",
+                        "surface-container-highest": "#353534",
+                        "on-tertiary-fixed-variant": "#474746",
+                        "tertiary-fixed": "#e4e2e1",
+                        "inverse-on-surface": "#313030",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "tertiary": "#f9feff",
+                        "surface-variant": "#353534",
+                        "secondary": "#c8c6c5",
+                        "on-primary": "#0b3900",
+                        "on-primary-container": "#3c6f2a",
+                        "on-background": "#e5e2e1",
+                        "on-primary-fixed-variant": "#205110",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary": "#f9fff0",
+                        "secondary-fixed": "#e5e2e1",
+                        "outline-variant": "#42493d",
+                        "on-secondary-fixed-variant": "#474746",
+                        "error-container": "#93000a",
+                        "secondary-container": "#474746",
+                        "surface-bright": "#3a3939",
+                        "surface-container": "#201f1f",
+                        "inverse-surface": "#e5e2e1",
+                        "primary-container": "#b6f09c",
+                        "outline": "#8c9385",
+                        "on-tertiary": "#303030",
+                        "background": "#131313",
+                        "on-surface-variant": "#c2c9b9",
+                        "on-surface": "#e5e2e1",
+                        "on-tertiary-container": "#646363",
+                        "on-secondary": "#313030",
+                        "surface-tint": "#9dd584",
+                        "primary-fixed": "#b8f29e",
+                        "on-error": "#690005",
+                        "surface-container-low": "#1c1b1b",
+                        "on-tertiary-fixed": "#1b1c1c",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "on-error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter-sm": "16px",
+                        "container-max": "1200px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "40px",
+                        "unit": "4px",
+                        "gutter-md": "24px"
+                    },
+                    "fontFamily": {
+                        "label-sm": [
+                            "Hanken Grotesk"
+                        ],
+                        "headline-md": [
+                            "Hanken Grotesk"
+                        ],
+                        "label-md": [
+                            "Hanken Grotesk"
+                        ],
+                        "body-lg": [
+                            "Hanken Grotesk"
+                        ],
+                        "body-md": [
+                            "Hanken Grotesk"
+                        ],
+                        "headline-lg": [
+                            "Hanken Grotesk"
+                        ],
+                        "headline-lg-mobile": [
+                            "Hanken Grotesk"
+                        ]
+                    },
+                    "fontSize": {
+                        "label-sm": [
+                            "12px",
+                            {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                            }
+                        ],
+                        "headline-md": [
+                            "24px",
+                            {
+                                "lineHeight": "32px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "500"
+                            }
+                        ],
+                        "label-md": [
+                            "14px",
+                            {
+                                "lineHeight": "20px",
+                                "letterSpacing": "0.02em",
+                                "fontWeight": "500"
+                            }
+                        ],
+                        "body-lg": [
+                            "18px",
+                            {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                            }
+                        ],
+                        "body-md": [
+                            "16px",
+                            {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                            }
+                        ],
+                        "headline-lg": [
+                            "48px",
+                            {
+                                "lineHeight": "56px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "600"
+                            }
+                        ],
+                        "headline-lg-mobile": [
+                            "32px",
+                            {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "600"
+                            }
+                        ]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-surface'); }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: theme('colors.surface-container-lowest'); }
+        ::-webkit-scrollbar-thumb { background: theme('colors.surface-variant'); border-radius: theme('borderRadius.full'); }
+        ::-webkit-scrollbar-thumb:hover { background: theme('colors.outline'); }
+
+        .glow-input:focus-within {
+            box-shadow: 0 -1px 0 0 theme('colors.primary-container/20') inset;
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar Component -->
+<header class="w-full top-0 sticky bg-surface dark:bg-surface border-b flex items-center justify-between px-margin-mobile h-16 max-w-container-max mx-auto z-40 border-outline-variant"><div class="flex items-center gap-3 text-primary dark:text-primary"><button class="flex items-center justify-center"><span class="material-symbols-outlined">arrow_back</span></button></div><div class="font-headline-md text-headline-md tracking-tight text-primary dark:text-primary">Sleep Quality</div><div class="w-8"></div></header>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-2xl mx-auto px-margin-mobile pb-32 flex flex-col gap-gutter-md md:gap-8 pt-4">
+    <!-- Header Section -->
+    <section class="flex flex-col gap-unit">
+    </section>
+    <!-- Form Section -->
+    <form class="flex flex-col gap-gutter-md md:gap-8">
+        <!-- Metrics Container -->
+        <div class="flex flex-col gap-3">
+            <!-- Duration Tile -->
+            <div class="bg-surface-container-low rounded-xl border border-outline-variant p-4 flex flex-col gap-2 glow-input group">
+                <label class="text-primary font-semibold" for="duration">Duration (hrs)</label>
+                <div class="relative flex items-center">
+                    <input class="w-full bg-surface-container-lowest border-outline-variant/40 border text-on-surface font-body-lg text-body-lg rounded-lg px-4 py-3 focus:border-primary focus:ring-0 transition-all placeholder:text-outline" id="duration" placeholder="7.5" step="0.1" type="number">
+                </div>
+            </div>
+            <!-- Quality Tile -->
+            <div class="bg-surface-container-low rounded-xl border border-outline-variant p-4 flex flex-col gap-2 glow-input group">
+                <label class="text-primary font-semibold" for="quality">Quality (%)</label>
+                <div class="relative flex items-center">
+                    <input class="w-full bg-surface-container-lowest border-outline-variant/40 border text-on-surface font-body-lg text-body-lg rounded-lg px-4 py-3 focus:border-primary focus:ring-0 transition-all placeholder:text-outline" id="quality" placeholder="85" type="number">
+                </div>
+            </div>
+            <!-- Start Time Tile -->
+            <div class="bg-surface-container-low rounded-xl border border-outline-variant p-4 flex flex-col gap-2 glow-input group">
+                <label class="text-primary font-semibold" for="start_time">Start Time</label>
+                <div class="relative flex items-center">
+                    <input class="w-full bg-surface-container-lowest border-outline-variant/40 border text-on-surface font-body-lg text-body-lg rounded-lg px-4 py-3 focus:border-primary focus:ring-0 transition-all placeholder:text-outline" id="start_time" type="time">
+                </div>
+            </div>
+        </div>
+        <!-- Context Tags Section -->
+        <!-- Notes Section -->
+        <div class="flex flex-col gap-unit glow-input group gap-3">
+        </div>
+    </form>
+</main>
+<!-- Signal Action Footer -->
+<div class="fixed bottom-0 left-0 w-full bg-surface/80 backdrop-blur-md border-t border-outline-variant/20 p-margin-mobile z-50">
+    <div class="max-w-2xl mx-auto flex justify-end">
+        <button class="w-full md:w-auto px-8 py-3 bg-primary-container text-on-primary-fixed-variant font-label-md rounded-full hover:brightness-95 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-2">
+            <span class="">Add Record</span>
+            <span class="material-symbols-outlined text-[20px]">check</span>
+        </button>
+    </div>
+</div>
+<!-- Background Atmospheric Effect -->
+<div class="fixed inset-0 pointer-events-none z-[-1] opacity-[0.03]" style="background-image: radial-gradient(circle at 50% 0%, theme('colors.primary-container') 0%, transparent 50%);"></div>
+
+
+
+
+</body></html>
