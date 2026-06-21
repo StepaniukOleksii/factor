@@ -21,6 +21,22 @@ export async function initDatabase(): Promise<void> {
       constraintJson TEXT,
       FOREIGN KEY (observationId) REFERENCES observations (id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS records (
+      id TEXT PRIMARY KEY NOT NULL,
+      observationId TEXT NOT NULL,
+      timestamp INTEGER NOT NULL,
+      FOREIGN KEY (observationId) REFERENCES observations (id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS record_values (
+      recordId TEXT NOT NULL,
+      metricId TEXT NOT NULL,
+      valueJson TEXT,
+      PRIMARY KEY (recordId, metricId),
+      FOREIGN KEY (recordId) REFERENCES records (id) ON DELETE CASCADE,
+      FOREIGN KEY (metricId) REFERENCES metrics (id) ON DELETE CASCADE
+    );
   `);
 }
 

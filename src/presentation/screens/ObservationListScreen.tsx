@@ -11,12 +11,13 @@ import {
   View
 } from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
-import {GetObservationsUseCase} from '../../application/GetObservationsUseCase';
+import {GetObservationsUseCase, ObservationListItem} from '../../application/GetObservationsUseCase';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
-import {Observation} from '../../domain/Observation';
+import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
 
 const repository = new SQLiteObservationRepository();
-const useCase = new GetObservationsUseCase(repository);
+const recordRepository = new SQLiteRecordRepository();
+const useCase = new GetObservationsUseCase(repository, recordRepository);
 
 const COLORS = {
   background: '#131313',
@@ -38,10 +39,11 @@ const COLORS = {
 
 export interface ObservationListScreenProps {
   onCreateNew: () => void;
+  onCreateRecord: (observationId: string) => void;
 }
 
-export function ObservationListScreen({ onCreateNew }: ObservationListScreenProps) {
-  const [observations, setObservations] = useState<Observation[]>([]);
+export function ObservationListScreen({ onCreateNew, onCreateRecord }: ObservationListScreenProps) {
+  const [observations, setObservations] = useState<ObservationListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,15 +62,19 @@ export function ObservationListScreen({ onCreateNew }: ObservationListScreenProp
     }
   };
 
-  const renderItem = ({ item }: { item: Observation }) => {
-    const visibleMetrics = item.metrics.slice(0, 3);
-    const hiddenMetricsCount = item.metrics.length - 3;
+  const renderItem = ({ item }: { item: ObservationListItem }) => {
+    const visibleMetrics = item.observation.metrics.slice(0, 3);
+    const hiddenMetricsCount = item.observation.metrics.length - 3;
+    
+    const timeText = item.lastRecordAt 
+      ? `Last record: ${item.lastRecordAt.toLocaleString()}`
+      : 'No records yet';
 
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.cardContent}>
-            <Text style={styles.cardTitle}>{item.name}</Text>
+            <Text style={styles.cardTitle}>{item.observation.name}</Text>
             <View style={styles.metricsRow}>
               {visibleMetrics.map(metric => (
                 <View key={metric.id} style={styles.metricChip}>
@@ -83,11 +89,11 @@ export function ObservationListScreen({ onCreateNew }: ObservationListScreenProp
                 </View>
               )}
             </View>
-            <Text style={styles.lastRecordText}>No records yet</Text>
+            <Text style={styles.lastRecordText}>{timeText}</Text>
           </View>
           <TouchableOpacity 
             style={styles.cardAddButton}
-            onPress={() => {}}
+            onPress={() => onCreateRecord(item.observation.id)}
           >
             <MaterialIcons name="add" size={24} color={COLORS.primaryContainer} />
           </TouchableOpacity>
@@ -120,7 +126,7 @@ export function ObservationListScreen({ onCreateNew }: ObservationListScreenProp
       ) : (
         <FlatList
           data={observations}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.observation.id}
           renderItem={renderItem}
           ListEmptyComponent={renderEmptyComponent}
           contentContainerStyle={styles.listContent}
