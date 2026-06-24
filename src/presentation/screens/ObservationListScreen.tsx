@@ -40,9 +40,10 @@ const COLORS = {
 export interface ObservationListScreenProps {
   onCreateNew: () => void;
   onCreateRecord: (observationId: string) => void;
+  onObservationSelected: (observationId: string) => void;
 }
 
-export function ObservationListScreen({ onCreateNew, onCreateRecord }: ObservationListScreenProps) {
+export function ObservationListScreen({ onCreateNew, onCreateRecord, onObservationSelected }: ObservationListScreenProps) {
   const [observations, setObservations] = useState<ObservationListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +72,11 @@ export function ObservationListScreen({ onCreateNew, onCreateRecord }: Observati
       : 'No records yet';
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity 
+        style={styles.card}
+        onPress={() => onObservationSelected(item.observation.id)}
+        activeOpacity={0.8}
+      >
         <View style={styles.cardHeader}>
           <View style={styles.cardContent}>
             <Text style={styles.cardTitle}>{item.observation.name}</Text>
@@ -98,7 +103,7 @@ export function ObservationListScreen({ onCreateNew, onCreateRecord }: Observati
             <MaterialIcons name="add" size={24} color={COLORS.primaryContainer} />
           </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 

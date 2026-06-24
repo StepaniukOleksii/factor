@@ -24,19 +24,19 @@ export class SQLiteObservationRepository implements ObservationRepository {
     await db.withTransactionAsync(async () => {
       await db.runAsync(
         'INSERT INTO observations (id, name, createdAt) VALUES (?, ?, ?)',
-        [observation.id, observation.name, Date.now()]
+        observation.id,
+        observation.name,
+        Date.now()
       );
 
       for (const metric of observation.metrics) {
         await db.runAsync(
           'INSERT INTO metrics (id, observationId, name, type, constraintJson) VALUES (?, ?, ?, ?, ?)',
-          [
-            metric.id,
-            observation.id,
-            metric.name,
-            metric.type,
-            metric.constraint ? JSON.stringify(metric.constraint) : null
-          ]
+          metric.id,
+          observation.id,
+          metric.name,
+          metric.type,
+          metric.constraint ? JSON.stringify(metric.constraint) : null
         );
       }
     });

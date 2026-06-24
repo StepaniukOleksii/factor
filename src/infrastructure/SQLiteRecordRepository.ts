@@ -30,7 +30,7 @@ export class SQLiteRecordRepository implements RecordRepository {
     const placeholders = observationIds.map(() => '?').join(',');
     const rows = await db.getAllAsync<{observationId: string, maxTimestamp: number}>(
       `SELECT observationId, MAX(timestamp) as maxTimestamp FROM records WHERE observationId IN (${placeholders}) GROUP BY observationId`,
-      observationIds
+      ...observationIds
     );
 
     for (const row of rows) {
@@ -38,5 +38,36 @@ export class SQLiteRecordRepository implements RecordRepository {
     }
 
     return map;
+  }
+  async getRecentRecords(observationId: string, limit: number): Promise<Record[]> {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<{ id: string, timestamp: number }>(
+      'SELECT id, timestamp FROM records WHERE observationId = ? ORDER BY timestamp DESC LIMIT ?',
+      observationId,
+      limit
+    );
+
+    const records: Record[] = [];
+    for (const row of rows) {
+      const record = new Record(
+        row.id,
+        observationId,
+        new Date(row.timestamp),
+        new Map()
+      );
+
+      const valueRows = await db.getAllAsync<{ metricId: string, valueJson: string }>(
+        'SELECT metricId, valueJson FROM record_values WHERE recordId = ?',
+        [row.id]
+      );
+
+      for (const valueRow of valueRows) {
+        record.values.set(valueRow.metricId, JSON.parse(valueRow.valueJson));
+      }
+
+      records.push(record);
+    }
+
+    return records;
   }
 }

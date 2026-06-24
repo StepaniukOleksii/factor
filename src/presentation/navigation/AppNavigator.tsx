@@ -2,11 +2,13 @@ import React, {useState} from 'react';
 import {ObservationListScreen} from '../screens/ObservationListScreen';
 import {CreateObservationScreen} from '../screens/CreateObservationScreen';
 import {CreateRecordScreen} from '../screens/CreateRecordScreen';
+import {ObservationDetailsScreen} from '../screens/ObservationDetailsScreen';
 
 type ScreenState = 
   | { name: 'ObservationList' }
   | { name: 'CreateObservation' }
-  | { name: 'CreateRecord'; observationId: string };
+  | { name: 'CreateRecord'; observationId: string }
+  | { name: 'ObservationDetails'; observationId: string };
 
 export function AppNavigator() {
   const [currentScreen, setCurrentScreen] = useState<ScreenState>({ name: 'ObservationList' });
@@ -14,6 +16,7 @@ export function AppNavigator() {
   const navigateToList = () => setCurrentScreen({ name: 'ObservationList' });
   const navigateToCreateObservation = () => setCurrentScreen({ name: 'CreateObservation' });
   const navigateToCreateRecord = (observationId: string) => setCurrentScreen({ name: 'CreateRecord', observationId });
+  const navigateToObservationDetails = (observationId: string) => setCurrentScreen({ name: 'ObservationDetails', observationId });
 
   if (currentScreen.name === 'CreateObservation') {
     return (
@@ -34,10 +37,21 @@ export function AppNavigator() {
     );
   }
 
+  if (currentScreen.name === 'ObservationDetails') {
+    return (
+      <ObservationDetailsScreen
+        observationId={currentScreen.observationId}
+        onBack={navigateToList}
+        onCreateRecord={() => navigateToCreateRecord(currentScreen.observationId)}
+      />
+    );
+  }
+
   return (
     <ObservationListScreen 
       onCreateNew={navigateToCreateObservation} 
-      onCreateRecord={navigateToCreateRecord} 
+      onCreateRecord={navigateToCreateRecord}
+      onObservationSelected={navigateToObservationDetails}
     />
   );
 }
