@@ -129,7 +129,7 @@ export function ObservationDetailsScreen({ observationId, onBack, onCreateRecord
           <MaterialIcons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{observation.name}</Text>
-        <View style={styles.backButton} /> {/* Placeholder for balance */}
+        <View style={styles.backButton} />{/* Placeholder for balance */}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
