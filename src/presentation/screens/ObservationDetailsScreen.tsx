@@ -29,6 +29,7 @@ const COLORS = {
   onSurface: '#e5e2e1',
   onSurfaceVariant: '#c2c9b9',
   surfaceContainerLowest: '#0e0e0e',
+  surfaceContainerHighest: '#262626',
   surfaceContainerLow: '#1c1b1b',
   outlineVariant: '#42493d',
   outline: '#8c9385',
