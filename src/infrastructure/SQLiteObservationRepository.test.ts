@@ -44,19 +44,29 @@ describe('SQLiteObservationRepository', () => {
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       1,
       'INSERT INTO observations (id, name, createdAt) VALUES (?, ?, ?)',
-      expect.arrayContaining(['obs-1', 'Weather', expect.any(Number)])
+      'obs-1',
+      'Weather',
+      expect.any(Number)
     );
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       2,
       'INSERT INTO metrics (id, observationId, name, type, constraintJson) VALUES (?, ?, ?, ?, ?)',
-      ['metric-1', 'obs-1', 'Temperature', 'Numeric', null]
+      'metric-1',
+      'obs-1',
+      'Temperature',
+      'Numeric',
+      null
     );
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       3,
       'INSERT INTO metrics (id, observationId, name, type, constraintJson) VALUES (?, ?, ?, ?, ?)',
-      ['metric-2', 'obs-1', 'Condition', 'Text', null]
+      'metric-2',
+      'obs-1',
+      'Condition',
+      'Text',
+      null
     );
   });
 
@@ -133,6 +143,18 @@ describe('SQLiteObservationRepository', () => {
       const result = await repository.findAll();
 
       expect(result[0].metrics[0].constraint).toEqual({ min: -40, max: 60 });
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete an observation by ID', async () => {
+      await repository.delete('obs-1');
+
+      expect(mockWithTransactionAsync).toHaveBeenCalledTimes(1);
+      expect(mockRunAsync).toHaveBeenCalledWith(
+        'DELETE FROM observations WHERE id = ?',
+        'obs-1'
+      );
     });
   });
 });

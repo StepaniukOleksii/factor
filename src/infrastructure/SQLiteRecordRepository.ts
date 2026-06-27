@@ -49,25 +49,34 @@ export class SQLiteRecordRepository implements RecordRepository {
 
     const records: Record[] = [];
     for (const row of rows) {
-      const record = new Record(
-        row.id,
-        observationId,
-        new Date(row.timestamp),
-        new Map()
-      );
-
       const valueRows = await db.getAllAsync<{ metricId: string, valueJson: string }>(
         'SELECT metricId, valueJson FROM record_values WHERE recordId = ?',
         [row.id]
       );
 
+      const valuesMap = new Map();
       for (const valueRow of valueRows) {
-        record.values.set(valueRow.metricId, JSON.parse(valueRow.valueJson));
+        valuesMap.set(valueRow.metricId, JSON.parse(valueRow.valueJson));
       }
+
+      const record = new Record(
+        row.id,
+        observationId,
+        new Date(row.timestamp),
+        valuesMap
+      );
 
       records.push(record);
     }
 
     return records;
+  }
+
+  async deleteByObservationId(observationId: string): Promise<void> {
+    const db = await getDatabase();
+    await db.runAsync(
+      'DELETE FROM records WHERE observationId = ?',
+      observationId
+    );
   }
 }

@@ -56,4 +56,15 @@ describe('SQLiteRecordRepository', () => {
       ['record-1', 'metric-2', '"Good"']
     );
   });
+
+  it('should delete all records for a given observation ID', async () => {
+    await repository.deleteByObservationId('obs-1');
+
+    expect(mockRunAsync).toHaveBeenCalledTimes(1);
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      'DELETE FROM records WHERE observationId = ?',
+      'obs-1'
+    );
+  });
 });
+

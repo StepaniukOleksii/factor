@@ -1,7 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Platform,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StatusBar as RNStatusBar,
@@ -15,6 +17,7 @@ import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservatio
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
 import {GetObservationByIdUseCase} from '../../application/GetObservationByIdUseCase';
 import {GetRecentRecordsUseCase} from '../../application/GetRecentRecordsUseCase';
+import {DeleteObservationUseCase} from '../../application/DeleteObservationUseCase';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
 
@@ -22,6 +25,7 @@ const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
 const getObservationByIdUseCase = new GetObservationByIdUseCase(observationRepository);
 const getRecentRecordsUseCase = new GetRecentRecordsUseCase(recordRepository);
+const deleteObservationUseCase = new DeleteObservationUseCase(observationRepository, recordRepository);
 
 const COLORS = {
   background: '#131313',
@@ -30,6 +34,7 @@ const COLORS = {
   onSurfaceVariant: '#c2c9b9',
   surfaceContainerLowest: '#0e0e0e',
   surfaceContainerHighest: '#262626',
+  surfaceContainerHigh: '#2a2a2a',
   surfaceContainerLow: '#1c1b1b',
   outlineVariant: '#42493d',
   outline: '#8c9385',
@@ -38,12 +43,14 @@ const COLORS = {
   primary: '#f9fff0',
   onPrimary: '#0b3900',
   error: '#ffb4ab',
+  onError: '#690005',
 };
 
 export interface ObservationDetailsScreenProps {
   observationId: string;
   onBack: () => void;
   onCreateRecord: () => void;
+  onDeleted: () => void;
 }
 
 function formatRelativeTime(date: Date): string {
@@ -63,7 +70,7 @@ function formatRelativeTime(date: Date): string {
   return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`;
 }
 
-export function ObservationDetailsScreen({ observationId, onBack, onCreateRecord }: ObservationDetailsScreenProps) {
+export function ObservationDetailsScreen({ observationId, onBack, onCreateRecord, onDeleted }: ObservationDetailsScreenProps) {
   const [observation, setObservation] = useState<Observation | null>(null);
   const [records, setRecords] = useState<DomainRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +78,9 @@ export function ObservationDetailsScreen({ observationId, onBack, onCreateRecord
   const [scrollPositions, setScrollPositions] = useState<Record<string, number>>({});
   const [contentWidths, setContentWidths] = useState<Record<string, number>>({});
   const [scrollViewWidths, setScrollViewWidths] = useState<Record<string, number>>({});
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -94,6 +104,31 @@ export function ObservationDetailsScreen({ observationId, onBack, onCreateRecord
 
   const toggleExpand = (recordId: string) => {
     setExpandedRecordId(prev => prev === recordId ? null : recordId);
+  };
+
+  const handleMenuPress = () => {
+    setMenuVisible(prev => !prev);
+  };
+
+  const handleDeleteMenuItemPress = () => {
+    setMenuVisible(false);
+    setDeleteModalVisible(true);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalVisible(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setDeleting(true);
+      await deleteObservationUseCase.execute(observationId);
+      setDeleteModalVisible(false);
+      onDeleted();
+    } catch (error) {
+      console.error('Failed to delete observation', error);
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -133,7 +168,34 @@ export function ObservationDetailsScreen({ observationId, onBack, onCreateRecord
           <MaterialIcons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{observation.name}</Text>
-        <View style={styles.backButton} />{/* Placeholder for balance */}
+
+        {/* Kebab Menu */}
+        <View style={styles.menuContainer}>
+          <TouchableOpacity
+            onPress={handleMenuPress}
+            style={styles.menuButton}
+            accessibilityLabel="More options"
+          >
+            <MaterialIcons name="more-vert" size={24} color={COLORS.onSurface} />
+          </TouchableOpacity>
+
+          {menuVisible && (
+            <>
+              {/* Backdrop to close the menu on outside tap */}
+              <Pressable style={styles.menuBackdrop} onPress={() => setMenuVisible(false)} />
+              <View style={styles.menuDropdown}>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={handleDeleteMenuItemPress}
+                  accessibilityLabel="Delete observation"
+                >
+                  <MaterialIcons name="delete" size={20} color={COLORS.error} />
+                  <Text style={styles.menuItemTextDestructive}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -256,6 +318,47 @@ export function ObservationDetailsScreen({ observationId, onBack, onCreateRecord
           <MaterialIcons name="check" size={20} color={COLORS.onPrimaryFixedVariant} />
         </TouchableOpacity>
       </View>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        navigationBarTranslucent
+        onRequestClose={handleCancelDelete}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalTextGroup}>
+              <Text style={styles.modalTitle}>Delete Observation?</Text>
+              <Text style={styles.modalBody}>
+                Are you sure you want to delete this observation and all its records? This action cannot be undone.
+              </Text>
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={handleCancelDelete}
+                disabled={deleting}
+                accessibilityLabel="Cancel deletion"
+              >
+                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalDeleteButton, deleting && styles.modalDeleteButtonDisabled]}
+                onPress={handleConfirmDelete}
+                disabled={deleting}
+                accessibilityLabel="Confirm deletion"
+              >
+                <Text style={styles.modalDeleteButtonText}>
+                  {deleting ? 'Deleting…' : 'Delete'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -287,6 +390,59 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: COLORS.primary,
+    flex: 1,
+    textAlign: 'center',
+  },
+  menuContainer: {
+    width: 48,
+    alignItems: 'flex-end',
+    position: 'relative',
+    zIndex: 50,
+  },
+  menuButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  menuBackdrop: {
+    position: 'absolute',
+    top: -1000,
+    left: -1000,
+    right: -1000,
+    bottom: -1000,
+    zIndex: 49,
+  },
+  menuDropdown: {
+    position: 'absolute',
+    top: 44,
+    right: 0,
+    width: 192,
+    backgroundColor: COLORS.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    overflow: 'hidden',
+    zIndex: 50,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  menuItemTextDestructive: {
+    color: COLORS.error,
+    fontSize: 14,
+    fontWeight: '500',
   },
   loadingContainer: {
     flex: 1,
@@ -454,6 +610,72 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#0b3900',
     fontSize: 16,
+    fontWeight: '500',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalContent: {
+    backgroundColor: COLORS.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    borderRadius: 12,
+    maxWidth: 384,
+    width: '100%',
+    padding: 24,
+    gap: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  modalTextGroup: {
+    gap: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.onSurface,
+    lineHeight: 28,
+  },
+  modalBody: {
+    fontSize: 16,
+    color: COLORS.onSurfaceVariant,
+    lineHeight: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  modalCancelButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 24,
+  },
+  modalCancelButtonText: {
+    color: COLORS.onSurface,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  modalDeleteButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: COLORS.error,
+  },
+  modalDeleteButtonDisabled: {
+    opacity: 0.6,
+  },
+  modalDeleteButtonText: {
+    color: COLORS.onError,
+    fontSize: 14,
     fontWeight: '500',
   },
 });

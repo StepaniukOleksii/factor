@@ -43,6 +43,7 @@ export function AppNavigator() {
         observationId={currentScreen.observationId}
         onBack={navigateToList}
         onCreateRecord={() => navigateToCreateRecord(currentScreen.observationId)}
+        onDeleted={navigateToList}
       />
     );
   }

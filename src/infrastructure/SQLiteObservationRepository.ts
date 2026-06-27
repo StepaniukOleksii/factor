@@ -74,5 +74,15 @@ export class SQLiteObservationRepository implements ObservationRepository {
       return new Observation(row.id, row.name, metrics);
     });
   }
-}
 
+  async delete(id: string): Promise<void> {
+    const db = await getDatabase();
+
+    await db.withTransactionAsync(async () => {
+      await db.runAsync(
+        'DELETE FROM observations WHERE id = ?',
+        id
+      );
+    });
+  }
+}

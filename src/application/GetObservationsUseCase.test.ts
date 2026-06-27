@@ -9,10 +9,13 @@ describe('GetObservationsUseCase', () => {
     const mockRepo: ObservationRepository = {
       findAll: vi.fn().mockResolvedValue([]),
       save: vi.fn(),
+      delete: vi.fn(),
     };
     const mockRecordRepo: RecordRepository = {
       save: vi.fn(),
-      getLastRecordTimestamps: vi.fn().mockResolvedValue(new Map())
+      getLastRecordTimestamps: vi.fn().mockResolvedValue(new Map()),
+      getRecentRecords: vi.fn(),
+      deleteByObservationId: vi.fn(),
     }
 
     const useCase = new GetObservationsUseCase(mockRepo, mockRecordRepo);
@@ -30,6 +33,7 @@ describe('GetObservationsUseCase', () => {
     const mockRepo: ObservationRepository = {
       findAll: vi.fn().mockResolvedValue([obs1, obs2]),
       save: vi.fn(),
+      delete: vi.fn(),
     };
 
     const d = new Date();
@@ -38,7 +42,9 @@ describe('GetObservationsUseCase', () => {
 
     const mockRecordRepo: RecordRepository = {
       save: vi.fn(),
-      getLastRecordTimestamps: vi.fn().mockResolvedValue(timestamps)
+      getLastRecordTimestamps: vi.fn().mockResolvedValue(timestamps),
+      getRecentRecords: vi.fn(),
+      deleteByObservationId: vi.fn(),
     }
 
     const useCase = new GetObservationsUseCase(mockRepo, mockRecordRepo);

@@ -14,7 +14,9 @@ describe('CreateObservationUseCase', () => {
 
   beforeEach(() => {
     mockRepository = {
-      save: vi.fn().mockResolvedValue(undefined)
+      save: vi.fn().mockResolvedValue(undefined),
+      findAll: vi.fn(),
+      delete: vi.fn(),
     };
     useCase = new CreateObservationUseCase(mockRepository);
   });

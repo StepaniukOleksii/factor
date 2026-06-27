@@ -6,14 +6,15 @@ import {Record} from '../domain/Record';
 describe('GetRecentRecordsUseCase', () => {
   it('should fetch the specified number of recent records', async () => {
     const mockRecords: Record[] = [
-      new Record({id: '1', observationId: 'obs1', timestamp: new Date(), values: new Map()}),
-      new Record({id: '2', observationId: 'obs1', timestamp: new Date(Date.now() - 1000), values: new Map()}),
+      new Record('1', 'obs1', new Date(), new Map()),
+      new Record('2', 'obs1', new Date(Date.now() - 1000), new Map()),
     ];
 
     const mockRecordRepository: RecordRepository = {
       save: vi.fn(),
       getLastRecordTimestamps: vi.fn(),
       getRecentRecords: vi.fn().mockResolvedValue(mockRecords),
+      deleteByObservationId: vi.fn(),
     };
 
     const useCase = new GetRecentRecordsUseCase(mockRecordRepository);

@@ -18,10 +18,14 @@ describe('CreateRecordUseCase', () => {
     const mockObservationRepo: ObservationRepository = {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([observation]),
+      delete: vi.fn(),
     };
 
     const mockRecordRepo: RecordRepository = {
       save: vi.fn().mockResolvedValue(undefined),
+      getLastRecordTimestamps: vi.fn(),
+      getRecentRecords: vi.fn(),
+      deleteByObservationId: vi.fn(),
     };
 
     const useCase = new CreateRecordUseCase(mockRecordRepo, mockObservationRepo);
@@ -43,10 +47,14 @@ describe('CreateRecordUseCase', () => {
     const mockObservationRepo: ObservationRepository = {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([]),
+      delete: vi.fn(),
     };
 
     const mockRecordRepo: RecordRepository = {
       save: vi.fn(),
+      getLastRecordTimestamps: vi.fn(),
+      getRecentRecords: vi.fn(),
+      deleteByObservationId: vi.fn(),
     };
 
     const useCase = new CreateRecordUseCase(mockRecordRepo, mockObservationRepo);
@@ -66,10 +74,14 @@ describe('CreateRecordUseCase', () => {
     const mockObservationRepo: ObservationRepository = {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([observation]),
+      delete: vi.fn(),
     };
 
     const mockRecordRepo: RecordRepository = {
       save: vi.fn(),
+      getLastRecordTimestamps: vi.fn(),
+      getRecentRecords: vi.fn(),
+      deleteByObservationId: vi.fn(),
     };
 
     const useCase = new CreateRecordUseCase(mockRecordRepo, mockObservationRepo);
