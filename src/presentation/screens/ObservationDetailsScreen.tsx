@@ -68,6 +68,9 @@ export function ObservationDetailsScreen({ observationId, onBack, onCreateRecord
   const [records, setRecords] = useState<DomainRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
+  const [scrollPositions, setScrollPositions] = useState<Record<string, number>>({});
+  const [contentWidths, setContentWidths] = useState<Record<string, number>>({});
+  const [scrollViewWidths, setScrollViewWidths] = useState<Record<string, number>>({});
 
   useEffect(() => {
     loadData();
@@ -177,7 +180,23 @@ export function ObservationDetailsScreen({ observationId, onBack, onCreateRecord
 
                     {isExpanded && (
                       <View style={styles.recordDetailsContainer}>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                        <ScrollView 
+                          horizontal 
+                          showsHorizontalScrollIndicator={false} 
+                          style={styles.horizontalScroll}
+                          scrollEventThrottle={16}
+                          onLayout={(e) => {
+                            const width = e.nativeEvent.layout.width;
+                            setScrollViewWidths(prev => ({...prev, [record.id]: width}));
+                          }}
+                          onContentSizeChange={(w) => {
+                            setContentWidths(prev => ({...prev, [record.id]: w}));
+                          }}
+                          onScroll={(e) => {
+                            const offsetX = e.nativeEvent.contentOffset.x;
+                            setScrollPositions(prev => ({...prev, [record.id]: offsetX}));
+                          }}
+                        >
                           {observation.metrics.map((metric, index) => {
                             const val = record.values.get(metric.id);
                             const displayVal = val !== undefined && val !== null ? String(val) : '-';
@@ -189,6 +208,33 @@ export function ObservationDetailsScreen({ observationId, onBack, onCreateRecord
                             );
                           })}
                         </ScrollView>
+
+                        {/* Custom Scrollbar */}
+                        <View style={styles.scrollbarContainer}>
+                          <MaterialIcons name="arrow-left" size={16} color={COLORS.outlineVariant} />
+                          <View style={styles.scrollbarTrack}>
+                            {(() => {
+                              const sw = scrollViewWidths[record.id] || 1;
+                              const cw = contentWidths[record.id] || 1;
+                              const sp = scrollPositions[record.id] || 0;
+                              
+                              if (cw <= sw) return null; // No need for thumb if content fits
+
+                              const ratio = sw / cw;
+                              const thumbWidth = Math.max(ratio * 100, 20) + '%';
+                              
+                              const maxScroll = cw - sw;
+                              const scrollProgress = maxScroll > 0 ? sp / maxScroll : 0;
+                              const maxThumbOffset = 100 - parseFloat(thumbWidth);
+                              const thumbOffset = (scrollProgress * maxThumbOffset) + '%';
+
+                              return (
+                                <View style={[styles.scrollbarThumb, { width: thumbWidth, left: thumbOffset }]} />
+                              );
+                            })()}
+                          </View>
+                          <MaterialIcons name="arrow-right" size={16} color={COLORS.outlineVariant} />
+                        </View>
                       </View>
                     )}
                   </View>
@@ -358,6 +404,28 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 16,
     fontWeight: '600',
+  },
+  scrollbarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingHorizontal: 4,
+  },
+  scrollbarTrack: {
+    flex: 1,
+    height: 4,
+    backgroundColor: COLORS.surfaceContainerHighest,
+    borderRadius: 2,
+    marginHorizontal: 8,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  scrollbarThumb: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    backgroundColor: COLORS.outline,
+    borderRadius: 2,
   },
   footer: {
     position: 'absolute',
