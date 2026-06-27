@@ -221,12 +221,12 @@ export function ObservationDetailsScreen({ observationId, onBack, onCreateRecord
                               if (cw <= sw) return null; // No need for thumb if content fits
 
                               const ratio = sw / cw;
-                              const thumbWidth = Math.max(ratio * 100, 20) + '%';
+                              const thumbWidth = (Math.max(ratio * 100, 20) + '%') as `${number}%`;
                               
                               const maxScroll = cw - sw;
                               const scrollProgress = maxScroll > 0 ? sp / maxScroll : 0;
                               const maxThumbOffset = 100 - parseFloat(thumbWidth);
-                              const thumbOffset = (scrollProgress * maxThumbOffset) + '%';
+                              const thumbOffset = ((scrollProgress * maxThumbOffset) + '%') as `${number}%`;
 
                               return (
                                 <View style={[styles.scrollbarThumb, { width: thumbWidth, left: thumbOffset }]} />
