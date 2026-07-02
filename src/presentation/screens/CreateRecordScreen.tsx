@@ -1,17 +1,17 @@
 import React, {useEffect, useState} from 'react';
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar as RNStatusBar,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar as RNStatusBar,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
@@ -20,6 +20,7 @@ import {GetObservationByIdUseCase} from '../../application/GetObservationByIdUse
 import {CreateRecordUseCase} from '../../application/CreateRecordUseCase';
 import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
+import {PrimaryActionButton} from "@presentation/components/PrimaryActinButton";
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
@@ -125,7 +126,7 @@ export function CreateRecordScreen({ observationId, onBack, onCreated }: CreateR
 
   const renderMetricInput = (metric: Metric) => {
     const error = errors[metric.id];
-    
+
     let inputControl = null;
     switch (metric.type) {
       case 'Numeric':
@@ -220,8 +221,8 @@ export function CreateRecordScreen({ observationId, onBack, onCreated }: CreateR
         <View style={{ width: 48 }} />
       </View>
 
-      <KeyboardAvoidingView 
-        style={styles.container} 
+      <KeyboardAvoidingView
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -230,22 +231,12 @@ export function CreateRecordScreen({ observationId, onBack, onCreated }: CreateR
           </View>
         </ScrollView>
 
-        <View style={styles.footer}>
-          <TouchableOpacity 
-            style={[styles.saveButton, saving && styles.saveButtonDisabled]} 
-            onPress={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color={COLORS.onPrimaryFixedVariant} />
-            ) : (
-              <>
-                <Text style={styles.saveButtonText}>Add Record</Text>
-                <MaterialIcons name="check" size={20} color={COLORS.onPrimaryFixedVariant} />
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
+          <View style={styles.footer}>
+              <PrimaryActionButton
+                  label={"Add Record"}
+                  onPress={handleSave}
+                  loading={saving}/>
+          </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -342,24 +333,5 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: Platform.OS === 'android' ? 40 : 16,
     zIndex: 50,
-  },
-  saveButton: {
-    backgroundColor: '#b6f09c', // Primary container light green
-    borderRadius: 8,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    width: '100%',
-  },
-  saveButtonDisabled: {
-    opacity: 0.7,
-  },
-  saveButtonText: {
-    color: '#0b3900', // On primary
-    fontSize: 16,
-    fontWeight: '500',
   },
 });

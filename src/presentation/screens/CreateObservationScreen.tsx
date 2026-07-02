@@ -1,23 +1,24 @@
 import React, {useState} from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar as RNStatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar as RNStatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
 } from 'react-native';
 import {CreateObservationUseCase} from '../../application/CreateObservationUseCase';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {MetricValueType} from '../../domain/Metric';
 import {MaterialIcons} from '@expo/vector-icons';
+import {PrimaryActionButton} from "@presentation/components/PrimaryActinButton";
 
 // Create instances here for simplicity, typically would use DI.
 const repository = new SQLiteObservationRepository();
@@ -173,10 +174,7 @@ export function CreateObservationScreen({ onCreated, onBack }: CreateObservation
 
         {/* Fixed Footer */}
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.createButton} onPress={handleSave}>
-            <Text style={styles.createButtonText}>Create</Text>
-            <MaterialIcons name="check" size={20} color={COLORS.onPrimaryFixedVariant} />
-          </TouchableOpacity>
+          <PrimaryActionButton label="Create Observation" onPress={handleSave} />
         </View>
 
         {/* Dropdown Modal */}
@@ -355,23 +353,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: Platform.OS === 'android' ? 40 : 16,
-    alignItems: 'flex-end',
-  },
-  createButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.primaryContainer,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 24,
-    gap: 8,
-    width: '100%',
-  },
-  createButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.onPrimaryFixedVariant,
   },
   modalOverlay: {
     flex: 1,
