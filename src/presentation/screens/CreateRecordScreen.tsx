@@ -1,17 +1,17 @@
 import React, {useEffect, useState} from 'react';
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar as RNStatusBar,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar as RNStatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
@@ -20,7 +20,7 @@ import {GetObservationByIdUseCase} from '../../application/GetObservationByIdUse
 import {CreateRecordUseCase} from '../../application/CreateRecordUseCase';
 import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
-import {PrimaryActionButton} from "@presentation/components/PrimaryActinButton";
+import {PrimaryActionButton} from "@presentation/components";
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();

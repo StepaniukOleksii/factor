@@ -18,7 +18,7 @@ import {CreateObservationUseCase} from '../../application/CreateObservationUseCa
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {MetricValueType} from '../../domain/Metric';
 import {MaterialIcons} from '@expo/vector-icons';
-import {PrimaryActionButton} from "@presentation/components/PrimaryActinButton";
+import {PrimaryActionButton} from "@presentation/components";
 
 // Create instances here for simplicity, typically would use DI.
 const repository = new SQLiteObservationRepository();
@@ -46,7 +46,7 @@ export interface CreateObservationScreenProps {
 export function CreateObservationScreen({ onCreated, onBack }: CreateObservationScreenProps) {
   const [observationName, setObservationName] = useState('');
   const [metrics, setMetrics] = useState([{ name: '', type: 'Numeric' }]);
-  
+
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [activeMetricIndex, setActiveMetricIndex] = useState<number | null>(null);
 
@@ -129,7 +129,7 @@ export function CreateObservationScreen({ onCreated, onBack }: CreateObservation
           {/* Metrics Section */}
           <View style={styles.metricsContainer}>
             <Text style={styles.label}>METRICS</Text>
-            
+
             {metrics.map((metric, index) => (
               <View key={index} style={styles.metricCard}>
                 <View style={styles.metricGrid}>
@@ -150,10 +150,10 @@ export function CreateObservationScreen({ onCreated, onBack }: CreateObservation
                       placeholderTextColor={COLORS.outline}
                     />
                   </View>
-                  
+
                   <View style={styles.metricField}>
                     <Text style={styles.metricLabel}>TYPE</Text>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.typeSelector}
                       onPress={() => openDropdown(index)}
                     >
@@ -184,8 +184,8 @@ export function CreateObservationScreen({ onCreated, onBack }: CreateObservation
               <TouchableWithoutFeedback>
                 <View style={styles.modalContent}>
                   {['Numeric', 'Text', 'Boolean'].map(type => (
-                    <TouchableOpacity 
-                      key={type} 
+                    <TouchableOpacity
+                      key={type}
                       style={styles.modalOption}
                       onPress={() => selectType(type as MetricValueType)}
                     >

@@ -3,9 +3,17 @@
 ## General
 
 * Prefer simple solutions.
+* Prioritize code reuse
 * Follow existing patterns.
 * Refactor instead of duplicating.
 * Remove dead code.
+
+---
+
+## UI Components
+
+* Always check `src/presentation/components/index.ts` for existing components before creating new ones.
+* Document new shared components by adding exports to `index.ts`.
 
 ---
 
