@@ -6,5 +6,7 @@
  *
  */
 
+/** Primary call-to-action button with loading state and icon support - used for main screen actions **/
 export {PrimaryActionButton} from './PrimaryActinButton';
+/** Ports interface for PrimaryActionButton component **/
 export {PrimaryActinButtonProps} from './PrimaryActinButton';
