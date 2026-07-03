@@ -10,3 +10,8 @@
 export {PrimaryActionButton} from './PrimaryActinButton';
 /** Ports interface for PrimaryActionButton component **/
 export {PrimaryActinButtonProps} from './PrimaryActinButton';
+
+/** Screen header with title, and optional back button on the left and action button on the right - used for screens **/
+export {ScreenHeader} from './ScreenHeader';
+/** Props interface for ScreenHeader component **/
+export {ScreenHeaderProps} from './ScreenHeader';

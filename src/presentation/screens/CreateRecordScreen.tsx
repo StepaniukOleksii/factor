@@ -1,26 +1,24 @@
 import React, {useEffect, useState} from 'react';
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar as RNStatusBar,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar as RNStatusBar,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
-import {MaterialIcons} from '@expo/vector-icons';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
 import {GetObservationByIdUseCase} from '../../application/GetObservationByIdUseCase';
 import {CreateRecordUseCase} from '../../application/CreateRecordUseCase';
 import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
-import {PrimaryActionButton} from "@presentation/components";
+import {PrimaryActionButton, ScreenHeader} from "@presentation/components";
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
@@ -184,11 +182,7 @@ export function CreateRecordScreen({observationId, onBack, onCreated}: CreateRec
     if (loading) {
         return (
             <SafeAreaView style={styles.safeArea}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <MaterialIcons name="arrow-back" size={24} color={COLORS.primary}/>
-                    </TouchableOpacity>
-                </View>
+                <ScreenHeader title="Loading..." onBack={onBack}/>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={COLORS.primaryContainer}/>
                 </View>
@@ -199,11 +193,7 @@ export function CreateRecordScreen({observationId, onBack, onCreated}: CreateRec
     if (!observation) {
         return (
             <SafeAreaView style={styles.safeArea}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <MaterialIcons name="arrow-back" size={24} color={COLORS.primary}/>
-                    </TouchableOpacity>
-                </View>
+                <ScreenHeader title="Not found" onBack={onBack}/>
                 <View style={styles.loadingContainer}>
                     <Text style={{color: COLORS.onSurface}}>Observation not found.</Text>
                 </View>
@@ -213,13 +203,7 @@ export function CreateRecordScreen({observationId, onBack, onCreated}: CreateRec
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                    <MaterialIcons name="arrow-back" size={24} color={COLORS.primary}/>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{observation.name}</Text>
-                <View style={{width: 48}}/>
-            </View>
+            <ScreenHeader title={observation.name} onBack={onBack}/>
 
             <KeyboardAvoidingView
                 style={styles.container}
@@ -250,28 +234,6 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-    },
-    header: {
-        height: 64,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.outlineVariant,
-        backgroundColor: COLORS.surface,
-        zIndex: 40,
-    },
-    backButton: {
-        padding: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 48,
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: '500',
-        color: COLORS.primary,
     },
     loadingContainer: {
         flex: 1,

@@ -1,24 +1,24 @@
 import React, {useState} from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar as RNStatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar as RNStatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from 'react-native';
 import {CreateObservationUseCase} from '../../application/CreateObservationUseCase';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {MetricValueType} from '../../domain/Metric';
 import {MaterialIcons} from '@expo/vector-icons';
-import {PrimaryActionButton} from "@presentation/components";
+import {PrimaryActionButton, ScreenHeader} from "@presentation/components";
 
 // Create instances here for simplicity, typically would use DI.
 const repository = new SQLiteObservationRepository();
@@ -99,17 +99,16 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
     return (
         <SafeAreaView style={styles.safeArea}>
             <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                {/* TopAppBar */}
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.iconButton} onPress={onBack}>
-                        <MaterialIcons name="arrow-back" size={24} color={COLORS.onSurface}/>
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>New Observation</Text>
-                    <TouchableOpacity style={styles.iconButton}>
-                        <MaterialIcons name="more-vert" size={24} color={COLORS.onSurface}/>
-                    </TouchableOpacity>
-                </View>
 
+                <ScreenHeader
+                    title="New Observation"
+                    onBack={onBack}
+                    rightAction={
+                        <TouchableOpacity style={styles.iconButton}>
+                            <MaterialIcons name="more-vert" size={24} color={COLORS.onSurface}/>
+                        </TouchableOpacity>
+                    }
+                />
                 {/* Sticky Top Section (Observation Name) */}
                 <View style={styles.stickySection}>
                     <View style={styles.section}>
@@ -212,21 +211,6 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        height: 64,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.outlineVariant,
-        backgroundColor: COLORS.surface,
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: '500',
-        color: COLORS.onSurface,
     },
     iconButton: {
         padding: 8,

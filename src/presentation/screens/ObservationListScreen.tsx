@@ -14,6 +14,7 @@ import {MaterialIcons} from '@expo/vector-icons';
 import {GetObservationsUseCase, ObservationListItem} from '../../application/GetObservationsUseCase';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
+import {ScreenHeader} from "@presentation/components";
 
 const repository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
@@ -123,10 +124,7 @@ export function ObservationListScreen({
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            {/* TopAppBar */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Observations</Text>
-            </View>
+            <ScreenHeader title="Observations"/>
 
             {loading ? (
                 <View style={styles.loadingContainer}>
@@ -155,19 +153,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: COLORS.background,
         paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
-    },
-    header: {
-        height: 64,
-        justifyContent: 'center',
-        paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.outlineVariant,
-        backgroundColor: COLORS.background,
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: '500',
-        color: COLORS.primary,
     },
     listContent: {
         padding: 16,

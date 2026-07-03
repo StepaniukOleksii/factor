@@ -20,6 +20,7 @@ import {GetRecentRecordsUseCase} from '../../application/GetRecentRecordsUseCase
 import {DeleteObservationUseCase} from '../../application/DeleteObservationUseCase';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
+import {ScreenHeader} from "@presentation/components";
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
@@ -139,11 +140,7 @@ export function ObservationDetailsScreen({
     if (loading) {
         return (
             <SafeAreaView style={styles.safeArea}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <MaterialIcons name="arrow-back" size={24} color={COLORS.primary}/>
-                    </TouchableOpacity>
-                </View>
+                <ScreenHeader title="Loading..." onBack={onBack}/>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={COLORS.primaryContainer}/>
                 </View>
@@ -154,11 +151,7 @@ export function ObservationDetailsScreen({
     if (!observation) {
         return (
             <SafeAreaView style={styles.safeArea}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <MaterialIcons name="arrow-back" size={24} color={COLORS.primary}/>
-                    </TouchableOpacity>
-                </View>
+                <ScreenHeader title="Not found" onBack={onBack}/>
                 <View style={styles.loadingContainer}>
                     <Text style={{color: COLORS.onSurface}}>Observation not found.</Text>
                 </View>
@@ -168,40 +161,46 @@ export function ObservationDetailsScreen({
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                    <MaterialIcons name="arrow-back" size={24} color={COLORS.primary}/>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{observation.name}</Text>
+            <ScreenHeader
+                title={observation.name}
+                onBack={onBack}
+                rightAction={
+                    <View style={styles.header}>
+                        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                            <MaterialIcons name="arrow-back" size={24} color={COLORS.primary}/>
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>{observation.name}</Text>
 
-                {/* Kebab Menu */}
-                <View style={styles.menuContainer}>
-                    <TouchableOpacity
-                        onPress={handleMenuPress}
-                        style={styles.menuButton}
-                        accessibilityLabel="More options"
-                    >
-                        <MaterialIcons name="more-vert" size={24} color={COLORS.onSurface}/>
-                    </TouchableOpacity>
+                        {/* Kebab Menu */}
+                        <View style={styles.menuContainer}>
+                            <TouchableOpacity
+                                onPress={handleMenuPress}
+                                style={styles.menuButton}
+                                accessibilityLabel="More options"
+                            >
+                                <MaterialIcons name="more-vert" size={24} color={COLORS.onSurface}/>
+                            </TouchableOpacity>
 
-                    {menuVisible && (
-                        <>
-                            {/* Backdrop to close the menu on outside tap */}
-                            <Pressable style={styles.menuBackdrop} onPress={() => setMenuVisible(false)}/>
-                            <View style={styles.menuDropdown}>
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={handleDeleteMenuItemPress}
-                                    accessibilityLabel="Delete observation"
-                                >
-                                    <MaterialIcons name="delete" size={20} color={COLORS.error}/>
-                                    <Text style={styles.menuItemTextDestructive}>Delete</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </>
-                    )}
-                </View>
-            </View>
+                            {menuVisible && (
+                                <>
+                                    {/* Backdrop to close the menu on outside tap */}
+                                    <Pressable style={styles.menuBackdrop} onPress={() => setMenuVisible(false)}/>
+                                    <View style={styles.menuDropdown}>
+                                        <TouchableOpacity
+                                            style={styles.menuItem}
+                                            onPress={handleDeleteMenuItemPress}
+                                            accessibilityLabel="Delete observation"
+                                        >
+                                            <MaterialIcons name="delete" size={20} color={COLORS.error}/>
+                                            <Text style={styles.menuItemTextDestructive}>Delete</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </>
+                            )}
+                        </View>
+                    </View>
+                }/>
+
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
 
@@ -384,30 +383,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: COLORS.background,
         paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
-    },
-    header: {
-        height: 64,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.outlineVariant,
-        backgroundColor: COLORS.surface,
-        zIndex: 40,
-    },
-    backButton: {
-        padding: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 48,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: COLORS.primary,
-        flex: 1,
-        textAlign: 'center',
     },
     menuContainer: {
         width: 48,
