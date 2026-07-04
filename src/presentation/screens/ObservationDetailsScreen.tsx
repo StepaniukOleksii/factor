@@ -165,12 +165,7 @@ export function ObservationDetailsScreen({
                 title={observation.name}
                 onBack={onBack}
                 rightAction={
-                    <View style={styles.header}>
-                        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                            <MaterialIcons name="arrow-back" size={24} color={COLORS.primary}/>
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>{observation.name}</Text>
-
+                    <View>
                         {/* Kebab Menu */}
                         <View style={styles.menuContainer}>
                             <TouchableOpacity
