@@ -87,6 +87,8 @@ export function ObservationDetailsScreen({
     const [menuVisible, setMenuVisible] = useState(false);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [selectedRecordForMenu, setSelectedRecordForMenu] = useState<DomainRecord | null>(null);
+    const [recordDeleteModalVisible, setRecordDeleteModalVisible] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -135,6 +137,31 @@ export function ObservationDetailsScreen({
             console.error('Failed to delete observation', error);
             setDeleting(false);
         }
+    };
+
+    const handleRecordLongPress = (record: DomainRecord) => {
+        setSelectedRecordForMenu(record);
+    };
+
+    const handleCloseRecordMenu = () => {
+        setSelectedRecordForMenu(null);
+    };
+
+    const handleEditRecord = () => {
+        setSelectedRecordForMenu(null);
+    };
+
+    const handleDeleteRecordMenuClick = () => {
+        setSelectedRecordForMenu(null);
+        setRecordDeleteModalVisible(true);
+    };
+
+    const handleCancelDeleteRecord = () => {
+        setRecordDeleteModalVisible(false);
+    };
+
+    const handleConfirmDeleteRecord = () => {
+        setRecordDeleteModalVisible(false);
     };
 
     if (loading) {
@@ -227,6 +254,7 @@ export function ObservationDetailsScreen({
                                         <TouchableOpacity
                                             style={styles.recordHeader}
                                             onPress={() => toggleExpand(record.id)}
+                                            onLongPress={() => handleRecordLongPress(record)}
                                             activeOpacity={0.7}
                                         >
                                             <View style={styles.recordHeaderLeft}>
@@ -327,6 +355,90 @@ export function ObservationDetailsScreen({
                     <MaterialIcons name="check" size={20} color={COLORS.onPrimaryFixedVariant}/>
                 </TouchableOpacity>
             </View>
+
+            {/* Record Contextual Menu Modal */}
+            <Modal
+                visible={selectedRecordForMenu !== null}
+                transparent
+                animationType="fade"
+                statusBarTranslucent
+                navigationBarTranslucent
+                onRequestClose={handleCloseRecordMenu}
+            >
+                <Pressable style={styles.recordMenuOverlay} onPress={handleCloseRecordMenu}>
+                    <Pressable style={styles.recordMenuContent} onPress={(e) => e.stopPropagation()}>
+                        <View style={styles.recordMenuHeader}>
+                            <Text style={styles.recordMenuTitle}>Record actions</Text>
+                            {selectedRecordForMenu && (
+                                <Text style={styles.recordMenuSubtitle}>
+                                    {formatRelativeTime(selectedRecordForMenu.timestamp)}
+                                </Text>
+                            )}
+                        </View>
+                        <View style={styles.recordMenuActions}>
+                            <TouchableOpacity
+                                style={styles.recordMenuAction}
+                                onPress={handleEditRecord}
+                            >
+                                <MaterialIcons name="edit" size={20} color={COLORS.onSurface}/>
+                                <Text style={styles.recordMenuActionText}>Edit Record</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.recordMenuAction}
+                                onPress={handleDeleteRecordMenuClick}
+                            >
+                                <MaterialIcons name="delete" size={20} color={COLORS.error}/>
+                                <Text style={styles.recordMenuActionTextDestructive}>Delete Record</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.recordMenuFooter}>
+                            <TouchableOpacity
+                                style={styles.recordMenuCancelButton}
+                                onPress={handleCloseRecordMenu}
+                            >
+                                <Text style={styles.recordMenuCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Pressable>
+                </Pressable>
+            </Modal>
+
+            {/* Record Delete Confirmation Modal */}
+            <Modal
+                visible={recordDeleteModalVisible}
+                transparent
+                animationType="fade"
+                statusBarTranslucent
+                navigationBarTranslucent
+                onRequestClose={handleCancelDeleteRecord}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContentSmall}>
+                        <View style={styles.modalTextGroup}>
+                            <Text style={styles.modalTitle}>Delete this record?</Text>
+                            <Text style={styles.modalBody}>
+                                This specific entry will be permanently removed.
+                            </Text>
+                        </View>
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={styles.modalCancelButton}
+                                onPress={handleCancelDeleteRecord}
+                                accessibilityLabel="Cancel record deletion"
+                            >
+                                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.modalDeleteButton}
+                                onPress={handleConfirmDeleteRecord}
+                                accessibilityLabel="Confirm record deletion"
+                            >
+                                <Text style={styles.modalDeleteButtonText}>Delete</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             {/* Delete Confirmation Modal */}
             <Modal
@@ -660,8 +772,94 @@ const styles = StyleSheet.create({
         opacity: 0.6,
     },
     modalDeleteButtonText: {
-        color: COLORS.onError,
-        fontSize: 14,
         fontWeight: '500',
+    },
+    // Record Contextual Menu Styles (centered dialog per design)
+    recordMenuOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 16,
+    },
+    recordMenuContent: {
+        backgroundColor: COLORS.surfaceContainerLow,
+        borderWidth: 1,
+        borderColor: COLORS.outlineVariant,
+        borderRadius: 16,
+        maxWidth: 320,
+        width: '100%',
+        padding: 24,
+        gap: 24,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 8},
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+        elevation: 16,
+    },
+    recordMenuHeader: {
+        gap: 4,
+    },
+    recordMenuTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: COLORS.onSurface,
+        lineHeight: 28,
+    },
+    recordMenuSubtitle: {
+        fontSize: 14,
+        color: COLORS.onSurfaceVariant,
+        fontWeight: '500',
+        lineHeight: 20,
+    },
+    recordMenuActions: {
+        gap: 8,
+    },
+    recordMenuAction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        backgroundColor: 'transparent',
+    },
+    recordMenuActionText: {
+        fontSize: 14,
+        color: COLORS.onSurface,
+        fontWeight: '500',
+    },
+    recordMenuActionTextDestructive: {
+        fontSize: 14,
+        color: COLORS.error,
+        fontWeight: '500',
+    },
+    recordMenuFooter: {
+        alignItems: 'flex-end',
+    },
+    recordMenuCancelButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 24,
+    },
+    recordMenuCancelText: {
+        fontSize: 14,
+        color: COLORS.onSurfaceVariant,
+        fontWeight: '500',
+    },
+    modalContentSmall: {
+        backgroundColor: COLORS.surfaceContainerLow,
+        borderWidth: 1,
+        borderColor: COLORS.outlineVariant,
+        borderRadius: 16,
+        maxWidth: 320,
+        width: '100%',
+        padding: 24,
+        gap: 20,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 8},
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+        elevation: 16,
     },
 });
