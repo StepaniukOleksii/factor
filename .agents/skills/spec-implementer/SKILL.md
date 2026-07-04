@@ -17,7 +17,7 @@ When the user asks you to implement a specification, follow these steps:
 
 * Read the contents of the `spec.md` file to understand the feature requirements.
 * Read design files from `.specs/features/[feature-name]/design/` folder to ensure the screen design corresponds to the
-  requirements. If design is represented by HTML file, make sure to use only the mobile version.
+  requirements. If design is represented by HTML file, make sure to **use only the mobile version**.
 
 ## 3. Read Project Guidelines
 
