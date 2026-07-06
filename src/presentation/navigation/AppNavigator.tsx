@@ -35,7 +35,7 @@ export function AppNavigator() {
             <CreateRecordScreen
                 observationId={currentScreen.observationId}
                 onBack={navigateToList}
-                onCreated={navigateToList}
+                onCreated={() => navigateToObservationDetails(currentScreen.observationId)}
             />
         );
     }
