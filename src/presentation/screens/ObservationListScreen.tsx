@@ -77,13 +77,13 @@ export function ObservationListScreen({
             : 'No records yet';
 
         return (
-            <TouchableOpacity
-                style={styles.card}
-                onPress={() => onObservationSelected(item.observation.id)}
-                activeOpacity={0.8}
-            >
+            <View style={styles.card}>
                 <View style={styles.cardHeader}>
-                    <View style={styles.cardContent}>
+                    <TouchableOpacity
+                        style={styles.cardContent}
+                        onPress={() => onObservationSelected(item.observation.id)}
+                        activeOpacity={0.8}
+                    >
                         <Text style={styles.cardTitle}>{item.observation.name}</Text>
                         <View style={styles.metricsRow}>
                             {visibleMetrics.map(metric => (
@@ -100,7 +100,7 @@ export function ObservationListScreen({
                             )}
                         </View>
                         <Text style={styles.lastRecordText}>{timeText}</Text>
-                    </View>
+                    </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.cardAddButton}
                         onPress={() => onCreateRecord(item.observation.id)}
@@ -108,7 +108,7 @@ export function ObservationListScreen({
                         <MaterialIcons name="add" size={24} color={COLORS.primaryContainer}/>
                     </TouchableOpacity>
                 </View>
-            </TouchableOpacity>
+            </View>
         );
     };
 
