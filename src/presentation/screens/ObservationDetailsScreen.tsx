@@ -18,6 +18,7 @@ import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepositor
 import {GetObservationByIdUseCase} from '../../application/GetObservationByIdUseCase';
 import {GetRecentRecordsUseCase} from '../../application/GetRecentRecordsUseCase';
 import {DeleteObservationUseCase} from '../../application/DeleteObservationUseCase';
+import {DeleteRecordUseCase} from '../../application/DeleteRecordUseCase';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
 import {ScreenHeader} from "@presentation/components";
@@ -27,6 +28,7 @@ const recordRepository = new SQLiteRecordRepository();
 const getObservationByIdUseCase = new GetObservationByIdUseCase(observationRepository);
 const getRecentRecordsUseCase = new GetRecentRecordsUseCase(recordRepository);
 const deleteObservationUseCase = new DeleteObservationUseCase(observationRepository, recordRepository);
+const deleteRecordUseCase = new DeleteRecordUseCase(recordRepository);
 
 const COLORS = {
     background: '#131313',
@@ -89,10 +91,17 @@ export function ObservationDetailsScreen({
     const [deleting, setDeleting] = useState(false);
     const [selectedRecordForMenu, setSelectedRecordForMenu] = useState<DomainRecord | null>(null);
     const [recordDeleteModalVisible, setRecordDeleteModalVisible] = useState(false);
+    const [recordToDelete, setRecordToDelete] = useState<DomainRecord | null>(null);
+    const [deletingRecord, setDeletingRecord] = useState(false);
 
     useEffect(() => {
         loadData();
     }, [observationId]);
+
+    const loadRecentRecords = async () => {
+        const recentRecords = await getRecentRecordsUseCase.execute(observationId, 3);
+        setRecords(recentRecords);
+    };
 
     const loadData = async () => {
         try {
@@ -100,8 +109,7 @@ export function ObservationDetailsScreen({
             const obs = await getObservationByIdUseCase.execute(observationId);
             setObservation(obs);
             if (obs) {
-                const recentRecords = await getRecentRecordsUseCase.execute(observationId, 3);
-                setRecords(recentRecords);
+                await loadRecentRecords();
             }
         } catch (error) {
             console.error('Failed to load observation details', error);
@@ -152,16 +160,31 @@ export function ObservationDetailsScreen({
     };
 
     const handleDeleteRecordMenuClick = () => {
+        setRecordToDelete(selectedRecordForMenu);
         setSelectedRecordForMenu(null);
         setRecordDeleteModalVisible(true);
     };
 
     const handleCancelDeleteRecord = () => {
         setRecordDeleteModalVisible(false);
+        setRecordToDelete(null);
     };
 
-    const handleConfirmDeleteRecord = () => {
-        setRecordDeleteModalVisible(false);
+    const handleConfirmDeleteRecord = async () => {
+        if (!recordToDelete) return;
+
+        try {
+            setDeletingRecord(true);
+            await deleteRecordUseCase.execute(recordToDelete.id);
+            setRecordDeleteModalVisible(false);
+            setRecordToDelete(null);
+            await loadRecentRecords();
+        } catch (error) {
+            console.error('Failed to delete record', error);
+            alert('Failed to delete record. Please try again.');
+        } finally {
+            setDeletingRecord(false);
+        }
     };
 
     if (loading) {
@@ -424,16 +447,20 @@ export function ObservationDetailsScreen({
                             <TouchableOpacity
                                 style={styles.modalCancelButton}
                                 onPress={handleCancelDeleteRecord}
+                                disabled={deletingRecord}
                                 accessibilityLabel="Cancel record deletion"
                             >
                                 <Text style={styles.modalCancelButtonText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={styles.modalDeleteButton}
+                                style={[styles.modalDeleteButton, deletingRecord && styles.modalDeleteButtonDisabled]}
                                 onPress={handleConfirmDeleteRecord}
+                                disabled={deletingRecord}
                                 accessibilityLabel="Confirm record deletion"
                             >
-                                <Text style={styles.modalDeleteButtonText}>Delete</Text>
+                                <Text style={styles.modalDeleteButtonText}>
+                                    {deletingRecord ? 'Deleting…' : 'Delete'}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -2,6 +2,5 @@
   ObservationDetailsScreen for the Records?
 - do not use dismiss animation for modals
 - make a separate component for modals
-- implement record deletion
-- implement record editing 
+- implement record editing
 - implement record notes

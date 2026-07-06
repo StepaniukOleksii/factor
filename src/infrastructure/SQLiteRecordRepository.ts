@@ -79,4 +79,12 @@ export class SQLiteRecordRepository implements RecordRepository {
       observationId
     );
   }
+
+  async deleteById(recordId: string): Promise<void> {
+    const db = await getDatabase();
+    await db.runAsync(
+      'DELETE FROM records WHERE id = ?',
+      recordId
+    );
+  }
 }

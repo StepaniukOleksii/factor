@@ -16,6 +16,7 @@ describe('GetObservationsUseCase', () => {
       getLastRecordTimestamps: vi.fn().mockResolvedValue(new Map()),
       getRecentRecords: vi.fn(),
       deleteByObservationId: vi.fn(),
+      deleteById: vi.fn(),
     }
 
     const useCase = new GetObservationsUseCase(mockRepo, mockRecordRepo);
@@ -45,6 +46,7 @@ describe('GetObservationsUseCase', () => {
       getLastRecordTimestamps: vi.fn().mockResolvedValue(timestamps),
       getRecentRecords: vi.fn(),
       deleteByObservationId: vi.fn(),
+      deleteById: vi.fn(),
     }
 
     const useCase = new GetObservationsUseCase(mockRepo, mockRecordRepo);

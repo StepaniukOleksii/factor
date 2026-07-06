@@ -5,4 +5,5 @@ export interface RecordRepository {
   getLastRecordTimestamps(observationIds: string[]): Promise<Map<string, Date>>;
   getRecentRecords(observationId: string, limit: number): Promise<Record[]>;
   deleteByObservationId(observationId: string): Promise<void>;
+  deleteById(recordId: string): Promise<void>;
 }

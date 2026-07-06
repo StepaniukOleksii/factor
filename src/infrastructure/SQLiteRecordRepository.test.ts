@@ -66,5 +66,15 @@ describe('SQLiteRecordRepository', () => {
       'obs-1'
     );
   });
+
+  it('should delete a record by its ID', async () => {
+    await repository.deleteById('record-1');
+
+    expect(mockRunAsync).toHaveBeenCalledTimes(1);
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      'DELETE FROM records WHERE id = ?',
+      'record-1'
+    );
+  });
 });
 
