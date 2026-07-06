@@ -6,3 +6,4 @@
 - make a separate component for modals
 - implement record deletion
 - implement record editing 
+- implement record notes
