@@ -13,6 +13,8 @@ describe('DeleteRecordUseCase', () => {
       getRecentRecords: vi.fn(),
       deleteByObservationId: vi.fn(),
       deleteById: vi.fn().mockResolvedValue(undefined),
+      getById: vi.fn(),
+      update: vi.fn(),
     };
     useCase = new DeleteRecordUseCase(mockRecordRepository);
   });

@@ -1,3 +1,4 @@
+import React from "react";
 import {ActivityIndicator, StyleSheet, Text, TouchableOpacity, ViewStyle} from "react-native";
 import {MaterialIcons} from "@expo/vector-icons";
 

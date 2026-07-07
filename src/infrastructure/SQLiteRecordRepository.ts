@@ -87,4 +87,45 @@ export class SQLiteRecordRepository implements RecordRepository {
       recordId
     );
   }
+
+  async getById(recordId: string): Promise<Record | null> {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<{ id: string, observationId: string, timestamp: number }>(
+      'SELECT id, observationId, timestamp FROM records WHERE id = ?',
+      recordId
+    );
+
+    if (rows.length === 0) return null;
+    const row = rows[0];
+
+    const valueRows = await db.getAllAsync<{ metricId: string, valueJson: string }>(
+      'SELECT metricId, valueJson FROM record_values WHERE recordId = ?',
+      [row.id]
+    );
+
+    const valuesMap = new Map();
+    for (const valueRow of valueRows) {
+      valuesMap.set(valueRow.metricId, JSON.parse(valueRow.valueJson));
+    }
+
+    return new Record(row.id, row.observationId, new Date(row.timestamp), valuesMap);
+  }
+
+  async update(record: Record): Promise<void> {
+    const db = await getDatabase();
+
+    await db.withTransactionAsync(async () => {
+      await db.runAsync(
+        'DELETE FROM record_values WHERE recordId = ?',
+        [record.id]
+      );
+
+      for (const [metricId, value] of record.values.entries()) {
+        await db.runAsync(
+          'INSERT INTO record_values (recordId, metricId, valueJson) VALUES (?, ?, ?)',
+          [record.id, metricId, JSON.stringify(value)]
+        );
+      }
+    });
+  }
 }

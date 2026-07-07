@@ -16,6 +16,8 @@ describe('GetRecentRecordsUseCase', () => {
       getRecentRecords: vi.fn().mockResolvedValue(mockRecords),
       deleteByObservationId: vi.fn(),
       deleteById: vi.fn(),
+      getById: vi.fn(),
+      update: vi.fn(),
     };
 
     const useCase = new GetRecentRecordsUseCase(mockRecordRepository);

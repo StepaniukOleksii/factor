@@ -10,20 +10,28 @@ import {
     Switch,
     Text,
     TextInput,
+    TouchableOpacity,
     View,
 } from 'react-native';
+import {MaterialIcons} from '@expo/vector-icons';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
 import {GetObservationByIdUseCase} from '../../application/GetObservationByIdUseCase';
 import {CreateRecordUseCase} from '../../application/CreateRecordUseCase';
+import {GetRecordByIdUseCase} from '../../application/GetRecordByIdUseCase';
+import {UpdateRecordUseCase} from '../../application/UpdateRecordUseCase';
 import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
+import {Record as DomainRecord} from '../../domain/Record';
 import {PrimaryActionButton, ScreenHeader} from "@presentation/components";
+import {formatRelativeTime} from '@shared/formatRelativeTime';
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
 const getObservationByIdUseCase = new GetObservationByIdUseCase(observationRepository);
 const createRecordUseCase = new CreateRecordUseCase(recordRepository, observationRepository);
+const getRecordByIdUseCase = new GetRecordByIdUseCase(recordRepository);
+const updateRecordUseCase = new UpdateRecordUseCase(recordRepository, observationRepository);
 
 const COLORS = {
     background: '#131313',
@@ -41,30 +49,45 @@ const COLORS = {
     error: '#ffb4ab',
 };
 
-export interface CreateRecordScreenProps {
+export interface RecordFormScreenProps {
     observationId: string;
+    recordId?: string;
     onBack: () => void;
     onCreated: () => void;
 }
 
-export function CreateRecordScreen({observationId, onBack, onCreated}: CreateRecordScreenProps) {
+export function RecordFormScreen({observationId, recordId, onBack, onCreated}: RecordFormScreenProps) {
+    const isEditMode = !!recordId;
     const [observation, setObservation] = useState<Observation | null>(null);
+    const [record, setRecord] = useState<DomainRecord | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [values, setValues] = useState<Record<string, any>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
-        loadObservation();
-    }, [observationId]);
+        loadData();
+    }, [observationId, recordId]);
 
-    const loadObservation = async () => {
+    const loadData = async () => {
         try {
             setLoading(true);
             const data = await getObservationByIdUseCase.execute(observationId);
             setObservation(data);
+
+            if (recordId) {
+                const rec = await getRecordByIdUseCase.execute(recordId);
+                setRecord(rec);
+                if (rec) {
+                    const initialValues: Record<string, any> = {};
+                    for (const [metricId, value] of rec.values.entries()) {
+                        initialValues[metricId] = value;
+                    }
+                    setValues(initialValues);
+                }
+            }
         } catch (error) {
-            console.error('Failed to load observation', error);
+            console.error('Failed to load data', error);
         } finally {
             setLoading(false);
         }
@@ -83,6 +106,7 @@ export function CreateRecordScreen({observationId, onBack, onCreated}: CreateRec
 
     const handleSave = async () => {
         if (!observation) return;
+        if (isEditMode && !record) return;
 
         // Validate all metrics
         const newErrors: Record<string, string> = {};
@@ -108,13 +132,21 @@ export function CreateRecordScreen({observationId, onBack, onCreated}: CreateRec
                 value: values[key]
             }));
 
-            await createRecordUseCase.execute({
-                observationId: observation.id,
-                values: commandValues
-            });
+            if (isEditMode && record) {
+                await updateRecordUseCase.execute({
+                    recordId: record.id,
+                    observationId: observation.id,
+                    values: commandValues
+                });
+            } else {
+                await createRecordUseCase.execute({
+                    observationId: observation.id,
+                    values: commandValues
+                });
+            }
             onCreated();
         } catch (error: any) {
-            console.error('Failed to create record', error);
+            console.error(isEditMode ? 'Failed to update record' : 'Failed to create record', error);
             // fallback generic error handling
             alert(error.message || 'Failed to save record.');
         } finally {
@@ -201,9 +233,36 @@ export function CreateRecordScreen({observationId, onBack, onCreated}: CreateRec
         );
     }
 
+    if (isEditMode && !record) {
+        return (
+            <SafeAreaView style={styles.safeArea}>
+                <ScreenHeader title="Not found" onBack={onBack}/>
+                <View style={styles.loadingContainer}>
+                    <Text style={{color: COLORS.onSurface}}>Record not found.</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.safeArea}>
-            <ScreenHeader title={observation.name} onBack={onBack}/>
+            <ScreenHeader
+                title={observation.name}
+                onBack={onBack}
+                rightAction={
+                    isEditMode ? (
+                        <TouchableOpacity onPress={onBack} accessibilityLabel="Cancel editing">
+                            <MaterialIcons name="close" size={24} color={COLORS.primary}/>
+                        </TouchableOpacity>
+                    ) : undefined
+                }
+            />
+
+            {isEditMode && record && (
+                <View style={styles.timestampContainer}>
+                    <Text style={styles.timestampText}>{formatRelativeTime(record.timestamp)}</Text>
+                </View>
+            )}
 
             <KeyboardAvoidingView
                 style={styles.container}
@@ -217,7 +276,7 @@ export function CreateRecordScreen({observationId, onBack, onCreated}: CreateRec
 
                 <View style={styles.footer}>
                     <PrimaryActionButton
-                        label={"Add Record"}
+                        label={isEditMode ? "Save Record" : "Add Record"}
                         onPress={handleSave}
                         loading={saving}/>
                 </View>
@@ -239,6 +298,15 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    timestampContainer: {
+        paddingVertical: 8,
+        alignItems: 'center',
+    },
+    timestampText: {
+        color: COLORS.onSurfaceVariant,
+        fontSize: 13,
+        fontWeight: '500',
     },
     scrollContent: {
         padding: 16,

@@ -6,4 +6,6 @@ export interface RecordRepository {
   getRecentRecords(observationId: string, limit: number): Promise<Record[]>;
   deleteByObservationId(observationId: string): Promise<void>;
   deleteById(recordId: string): Promise<void>;
+  getById(recordId: string): Promise<Record | null>;
+  update(record: Record): Promise<void>;
 }

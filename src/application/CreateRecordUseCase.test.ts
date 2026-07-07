@@ -27,6 +27,8 @@ describe('CreateRecordUseCase', () => {
       getRecentRecords: vi.fn(),
       deleteByObservationId: vi.fn(),
       deleteById: vi.fn(),
+      getById: vi.fn(),
+      update: vi.fn(),
     };
 
     const useCase = new CreateRecordUseCase(mockRecordRepo, mockObservationRepo);
@@ -57,6 +59,8 @@ describe('CreateRecordUseCase', () => {
       getRecentRecords: vi.fn(),
       deleteByObservationId: vi.fn(),
       deleteById: vi.fn(),
+      getById: vi.fn(),
+      update: vi.fn(),
     };
 
     const useCase = new CreateRecordUseCase(mockRecordRepo, mockObservationRepo);
@@ -85,6 +89,8 @@ describe('CreateRecordUseCase', () => {
       getRecentRecords: vi.fn(),
       deleteByObservationId: vi.fn(),
       deleteById: vi.fn(),
+      getById: vi.fn(),
+      update: vi.fn(),
     };
 
     const useCase = new CreateRecordUseCase(mockRecordRepo, mockObservationRepo);

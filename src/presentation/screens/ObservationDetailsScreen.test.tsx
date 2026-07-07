@@ -95,7 +95,7 @@ function findTouchableWithText(root: any, text: string) {
     return null;
 }
 
-async function renderScreen() {
+async function renderScreen(onEditRecord: (recordId: string) => void = vi.fn()) {
     let root: any;
     await act(async () => {
         root = renderer.create(
@@ -103,6 +103,7 @@ async function renderScreen() {
                 observationId="obs-1"
                 onBack={vi.fn()}
                 onCreateRecord={vi.fn()}
+                onEditRecord={onEditRecord}
                 onDeleted={vi.fn()}
             />,
         );
@@ -168,8 +169,9 @@ describe('ObservationDetailsScreen Record Actions', () => {
         expect(titles.length).toBe(0);
     });
 
-    it('closes the contextual menu when Edit Record is pressed', async () => {
-        const root = await renderScreen();
+    it('navigates to edit and closes the contextual menu when Edit Record is pressed', async () => {
+        const onEditRecord = vi.fn();
+        const root = await renderScreen(onEditRecord);
         await openRecordMenu(root);
 
         const editButton = findTouchableWithText(root.root, 'Edit Record');
@@ -178,6 +180,8 @@ describe('ObservationDetailsScreen Record Actions', () => {
         await act(async () => {
             editButton!.props.onPress();
         });
+
+        expect(onEditRecord).toHaveBeenCalledWith('rec-1');
 
         // Menu should be dismissed
         const titles = findAllByText(root.root, 'Record actions');

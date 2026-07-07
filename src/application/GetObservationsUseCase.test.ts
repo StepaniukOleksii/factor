@@ -17,6 +17,8 @@ describe('GetObservationsUseCase', () => {
       getRecentRecords: vi.fn(),
       deleteByObservationId: vi.fn(),
       deleteById: vi.fn(),
+      getById: vi.fn(),
+      update: vi.fn(),
     }
 
     const useCase = new GetObservationsUseCase(mockRepo, mockRecordRepo);
@@ -47,6 +49,8 @@ describe('GetObservationsUseCase', () => {
       getRecentRecords: vi.fn(),
       deleteByObservationId: vi.fn(),
       deleteById: vi.fn(),
+      getById: vi.fn(),
+      update: vi.fn(),
     }
 
     const useCase = new GetObservationsUseCase(mockRepo, mockRecordRepo);

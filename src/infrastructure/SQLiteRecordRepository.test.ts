@@ -2,12 +2,13 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {SQLiteRecordRepository} from './SQLiteRecordRepository';
 import {Record} from '../domain/Record';
 
-const { mockRunAsync, mockWithTransactionAsync } = vi.hoisted(() => {
+const { mockRunAsync, mockWithTransactionAsync, mockGetAllAsync } = vi.hoisted(() => {
   return {
     mockRunAsync: vi.fn().mockResolvedValue(undefined),
     mockWithTransactionAsync: vi.fn().mockImplementation(async (callback) => {
       await callback();
     }),
+    mockGetAllAsync: vi.fn().mockResolvedValue([]),
   };
 });
 
@@ -15,6 +16,7 @@ vi.mock('./Database', () => ({
   getDatabase: vi.fn().mockResolvedValue({
     withTransactionAsync: mockWithTransactionAsync,
     runAsync: mockRunAsync,
+    getAllAsync: mockGetAllAsync,
   })
 }));
 
@@ -75,6 +77,74 @@ describe('SQLiteRecordRepository', () => {
       'DELETE FROM records WHERE id = ?',
       'record-1'
     );
+  });
+
+  it('should return null from getById when no record matches', async () => {
+    mockGetAllAsync.mockResolvedValueOnce([]);
+
+    const result = await repository.getById('missing-record');
+
+    expect(result).toBeNull();
+  });
+
+  it('should return a fully-hydrated record from getById', async () => {
+    const timestamp = new Date();
+    mockGetAllAsync
+      .mockResolvedValueOnce([{id: 'record-1', observationId: 'obs-1', timestamp: timestamp.getTime()}])
+      .mockResolvedValueOnce([
+        {metricId: 'metric-1', valueJson: '42'},
+        {metricId: 'metric-2', valueJson: '"Good"'}
+      ]);
+
+    const result = await repository.getById('record-1');
+
+    expect(mockGetAllAsync).toHaveBeenNthCalledWith(
+      1,
+      'SELECT id, observationId, timestamp FROM records WHERE id = ?',
+      'record-1'
+    );
+    expect(mockGetAllAsync).toHaveBeenNthCalledWith(
+      2,
+      'SELECT metricId, valueJson FROM record_values WHERE recordId = ?',
+      ['record-1']
+    );
+
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe('record-1');
+    expect(result!.observationId).toBe('obs-1');
+    expect(result!.timestamp).toEqual(timestamp);
+    expect(result!.getValue('metric-1')).toBe(42);
+    expect(result!.getValue('metric-2')).toBe('Good');
+  });
+
+  it('should update a record by replacing its values in a transaction', async () => {
+    const values = new Map<string, any>([
+      ['metric-1', 43],
+      ['metric-2', 'Great']
+    ]);
+    const record = new Record('record-1', 'obs-1', new Date(), values);
+
+    await repository.update(record);
+
+    expect(mockWithTransactionAsync).toHaveBeenCalledTimes(1);
+
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      1,
+      'DELETE FROM record_values WHERE recordId = ?',
+      ['record-1']
+    );
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      2,
+      'INSERT INTO record_values (recordId, metricId, valueJson) VALUES (?, ?, ?)',
+      ['record-1', 'metric-1', '43']
+    );
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      3,
+      'INSERT INTO record_values (recordId, metricId, valueJson) VALUES (?, ?, ?)',
+      ['record-1', 'metric-2', '"Great"']
+    );
+
+    expect(mockRunAsync).toHaveBeenCalledTimes(3);
   });
 });
 
