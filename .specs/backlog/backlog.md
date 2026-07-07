@@ -1,3 +1,8 @@
+# Backlog
+
+This is an informal idea/issue capture list — not a specification. It exists to hold loose feature ideas, known
+bugs, and refactor notes until they're ready to become a real spec.
+
 [SPEC]
 
 - On failure, the record isn't removed, the modal stays open, and an error is surfaced via alert(...) (same pattern

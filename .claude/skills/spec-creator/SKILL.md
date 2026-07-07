@@ -19,6 +19,10 @@ Before writing the spec, ensure you have a clear understanding of:
 If the user's initial prompt is too brief or ambiguous, **stop and ask clarifying questions** before you begin
 generating the document.
 
+Check the `.specs/backlog/` directory for entries related to this feature — they can be a useful source of
+requirements, but confirm with the user before folding them in, since backlog entries are informal and may be
+outdated.
+
 ## 2. Use the Template
 
 You **must** use the official template located at `c:\Users\olgau\Developer\factor\.specs\templates\spec-template.md` as
@@ -46,7 +50,12 @@ Save the final generated markdown file into a new directory:
 *(Note: Create a logical, hyphenated directory name for the feature. If the project prefixes feature folders with
 sequential numbers, check the `.specs/features` directory to determine the next logical number).*
 
-## 5. Scope Limit
+## 5. Promote Backlog Items
+
+If the feature originates from (or overlaps with) an entry in `.specs/backlog/`, remove that entry from the backlog
+once the spec is saved, so the idea isn't left behind to later contradict the spec it became.
+
+## 6. Scope Limit
 
 Do **NOT** write any application code when this skill is invoked. Your sole responsibility is to produce the
 specification document.

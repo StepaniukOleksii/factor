@@ -25,6 +25,10 @@ When the user asks you to implement a specification, follow these steps:
   directory and read them to ensure your implementation adheres to all overarching project standards, conventions, and
   architectural rules.
 
+* **Do not use `.specs/backlog/` as a requirements source.** It holds an informal idea/issue list, not specs, and its
+  contents may be stale or contradict the spec you are implementing. Requirements come only from the target
+  `spec.md` and `.specs/project/` guidelines.
+
 ## 4. Implement
 
 * Implement the feature exactly as described in the specification and design.
