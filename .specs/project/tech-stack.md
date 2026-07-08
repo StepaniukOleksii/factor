@@ -118,6 +118,25 @@ Rationale:
 
 ---
 
+## Data Visualization
+
+### Skia
+
+`@shopify/react-native-skia` is used as the rendering foundation for Records visualization (trend
+charts).
+
+Rationale:
+
+* Composable canvas primitives rather than a fixed set of chart components
+* Built-in gesture and animation handling
+* Actively maintained, de facto standard for custom drawing in React Native
+* Compatible with the existing Expo / React Native New Architecture setup
+
+See [ADR-1](../adr/1-visualization-rendering-foundation.md) for the full rationale and alternatives
+considered.
+
+---
+
 ## Deliberately Excluded
 
 The initial version does not use:
@@ -128,6 +147,5 @@ The initial version does not use:
 - Dependency injection frameworks
 - AI/LLM integrations
 - Synchronization services
-- Charting and visualization libraries
 
 These decisions may be revisited through ADRs.
