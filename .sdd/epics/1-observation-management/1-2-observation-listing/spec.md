@@ -101,7 +101,7 @@ Behavior:
 Contains:
 - An empty state message when no Observations exist.
 - A dedicated Observation List screen containing elements according to
-.specs/features/observation-listing/design/list-observations.html
+design/list-observations.html
 
 ### Create Observation Screen
 

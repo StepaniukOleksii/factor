@@ -10,8 +10,8 @@ Observations, so this area is expected to grow well beyond a single chart: multi
 `MetricValueType` (Numeric, Boolean, Enum, Text), time-range selection, per-metric visibility toggles,
 tap-to-detail, and eventually cross-Observation overlay/comparison.
 
-Feature specs in this area will ship as small, lean vertical slices, consistent with existing practice
-(see `.specs/features/`). The rendering foundation, however, is a single upfront choice all of those
+Feature specs in this area will ship as small, lean vertical slices, consistent with existing practice.
+The rendering foundation, however, is a single upfront choice all of those
 slices depend on — reversing it later would mean rewriting every chart built on top of it. It should be
 decided once, before the first slice, rather than revisited per spec.
 
