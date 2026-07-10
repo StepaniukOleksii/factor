@@ -10,9 +10,10 @@ project's standard structure and expectations.
 
 ## 0. Read Project Guidelines
 
-Read `.sdd/project/development-process.md` first. It defines the SDD structure this skill implements — the
-Epic/feature convention, numbering rules, and spec-scoping guidance — and is not repeated here. Skim the other
-`.sdd/project/` documents as relevant to the feature being specified.
+Read these `.sdd/project/` documents before writing anything: `development-process.md`, `product.md`,
+`domain-overview.md`, `design.md`, `architecture.md`, `tech-stack.md`.
+
+Skip `coding-guidelines.md`; that's implementation concern, not spec creation.
 
 ## 1. Information Gathering
 

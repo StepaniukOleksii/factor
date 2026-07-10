@@ -21,13 +21,14 @@ When the user asks you to implement a specification, follow these steps:
 
 ## 3. Read Project Guidelines
 
-* You **must** review the general project guidelines located in the `.sdd/project/` directory. List the files in this
-  directory and read them to ensure your implementation adheres to all overarching project standards, conventions, and
-  architectural rules.
+* You **must** read these `.sdd/project/` documents before implementing: `product.md`, `domain-overview.md`,
+  `design.md`, `architecture.md`, `tech-stack.md`, `coding-guidelines.md`.
+
+* Skip `development-process.md`; that's spec creation concern, not implementation.
 
 * **Do not use `.sdd/backlog/` as a requirements source.** It holds an informal idea/issue list, not specs, and its
   contents may be stale or contradict the spec you are implementing. Requirements come only from the target
-  `spec.md` and `.sdd/project/` guidelines.
+  `spec.md` and the `.sdd/project/` guidelines above.
 
 ## 4. Implement
 
