@@ -8,6 +8,12 @@ description: Creates a new feature specification based on project templates and 
 When tasked with creating a new feature specification, you must ensure the generated document rigorously adheres to the
 project's standard structure and expectations.
 
+## 0. Read Project Guidelines
+
+Read `.sdd/project/development-process.md` first. It defines the SDD structure this skill implements — the
+Epic/feature convention, numbering rules, and spec-scoping guidance — and is not repeated here. Skim the other
+`.sdd/project/` documents as relevant to the feature being specified.
+
 ## 1. Information Gathering
 
 Before writing the spec, ensure you have a clear understanding of:
@@ -23,14 +29,13 @@ Check the `.sdd/backlog/` directory for entries related to this feature — they
 requirements, but confirm with the user before folding them in, since backlog entries are informal and may be
 outdated.
 
-Every feature lives inside an Epic folder under `.sdd/epics/`. Determine which one:
+Determine which Epic this feature belongs to (see `development-process.md` for what an Epic is):
 
 * Check `.sdd/epics/` for an existing epic (other than `0-unparented`) this feature clearly extends. If one looks
   like a fit, confirm with the user before attaching to it.
 * If the user indicates this feature is the start of a new logical group of related features, ask whether to
   create a new epic for it.
-* Otherwise, the feature belongs in `.sdd/epics/0-unparented/` — the default home for features that don't share a
-  genuinely common, bounded outcome with anything else yet. Most features end up here.
+* Otherwise, the feature belongs in `.sdd/epics/0-unparented/` — most features end up here.
 
 ## 2. Use the Template
 
@@ -53,21 +58,13 @@ The **Verification Plan** section must include both *Manual Verification* steps 
 
 ## 4. Saving the Spec
 
-Every feature is saved inside its epic folder under `.sdd/epics/`, using a composite id `[epic-id]-[feature-id]`
-where `feature-id` starts at 1 and increments within that specific epic (a separate counter per epic):
+Save to `.sdd\epics\[epic-id]-[epic-name]\[epic-id]-[feature-id]-[feature-name]\spec.md`, following the numbering
+convention in `development-process.md` (use epic id `0` / `0-unparented` if no epic was a fit).
 
-`.sdd\epics\[epic-id]-[epic-name]\[epic-id]-[feature-id]-[feature-name]\spec.md`
-
-* If no epic was a fit, use `.sdd/epics/0-unparented/` as the epic folder (id `0`).
-* If the feature belongs to a new epic that doesn't exist yet, create it first using
-  `.sdd/templates/epic-template.md`, saved as `.sdd/epics/[epic-id]-[epic-name]/epic.md` (check `.sdd/epics/` for
-  the next sequential epic id). Populate its Goal from the shared purpose of the features that will live inside
-  it. The `Related ADRs` section is optional — omit it entirely unless an ADR actually relates to this epic.
-* No cross-links are required between a feature spec and its epic — folder co-location is the association. Do
-  not add backlink lines to `spec.md` or maintain a feature list inside `epic.md`; the folder's contents are the
-  source of truth for which features belong to the epic.
-* Numbers, once assigned, are never reused or renumbered — if a feature is abandoned, leave the gap rather than
-  shifting the ones after it.
+If the feature belongs to a new epic that doesn't exist yet, create it first using
+`.sdd/templates/epic-template.md`, saved as `.sdd/epics/[epic-id]-[epic-name]/epic.md` (check `.sdd/epics/` for
+the next sequential epic id). Populate its Goal from the shared purpose of the features that will live inside it.
+The `Related ADRs` section is optional — omit it entirely unless an ADR actually relates to this epic.
 
 *(Note: Create a logical, hyphenated name for the feature folder.)*
 
