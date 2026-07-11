@@ -132,6 +132,10 @@ Rationale:
 * Actively maintained, de facto standard for custom drawing in React Native
 * Compatible with the existing Expo / React Native New Architecture setup
 
+Skia v2's native `<Canvas>` requires `react-native-reanimated` (and its `react-native-worklets`
+runtime) even for static charts, so both are required companion dependencies of this choice. Install
+the Expo-pinned versions; `babel-preset-expo` wires the reanimated Babel plugin automatically.
+
 See [ADR-1](../adr/1-visualization-rendering-foundation.md) for the full rationale and alternatives
 considered.
 

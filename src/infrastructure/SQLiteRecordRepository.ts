@@ -1,4 +1,5 @@
 import {RecordRepository} from '../application/RecordRepository';
+import {TimeRange} from '../application/GetMetricSeriesUseCase';
 import {Record} from '../domain/Record';
 import {getDatabase} from './Database';
 
@@ -67,6 +68,33 @@ export class SQLiteRecordRepository implements RecordRepository {
       );
 
       records.push(record);
+    }
+
+    return records;
+  }
+
+  async getByObservationId(observationId: string, range: TimeRange): Promise<Record[]> {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<{ id: string, timestamp: number }>(
+      'SELECT id, timestamp FROM records WHERE observationId = ? AND timestamp >= ? AND timestamp < ? ORDER BY timestamp ASC',
+      observationId,
+      range.start.getTime(),
+      range.end.getTime()
+    );
+
+    const records: Record[] = [];
+    for (const row of rows) {
+      const valueRows = await db.getAllAsync<{ metricId: string, valueJson: string }>(
+        'SELECT metricId, valueJson FROM record_values WHERE recordId = ?',
+        [row.id]
+      );
+
+      const valuesMap = new Map();
+      for (const valueRow of valueRows) {
+        valuesMap.set(valueRow.metricId, JSON.parse(valueRow.valueJson));
+      }
+
+      records.push(new Record(row.id, observationId, new Date(row.timestamp), valuesMap));
     }
 
     return records;

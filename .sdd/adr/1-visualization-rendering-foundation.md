@@ -76,5 +76,12 @@ Costs:
   accordingly, and iOS/Android build toolchains (Xcode, Android SDK) become a hard requirement rather
   than optional.
 * App binary size increases due to the bundled Skia native binaries.
+* `@shopify/react-native-skia` v2's native `<Canvas>` requires `react-native-reanimated` (which in turn
+  pulls `react-native-worklets`) at runtime, even for static, non-animated charts. Although reanimated is
+  declared an *optional* peer dependency, Skia eagerly loads a reanimated-backed module when a Canvas
+  mounts, so the app throws `react-native-reanimated is not installed!` without it. Both packages must be
+  installed (Expo-pinned versions) and the dev client rebuilt; the reanimated Babel plugin is wired
+  automatically by `babel-preset-expo`. This is a hard, if under-advertised, requirement of the chosen
+  foundation, not an optional add-on.
 * Unit tests touching chart components need a mock for `@shopify/react-native-skia` under Vitest, since
   its native bindings don't run in a Node test environment.

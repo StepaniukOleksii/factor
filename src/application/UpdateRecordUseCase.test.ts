@@ -11,6 +11,7 @@ function createMockRecordRepo(overrides: Partial<RecordRepository> = {}): Record
     save: vi.fn(),
     getLastRecordTimestamps: vi.fn(),
     getRecentRecords: vi.fn(),
+    getByObservationId: vi.fn(),
     deleteByObservationId: vi.fn(),
     deleteById: vi.fn(),
     getById: vi.fn(),

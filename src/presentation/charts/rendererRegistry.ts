@@ -1,19 +1,30 @@
-import {MetricValueType} from '../../domain/Metric';
+import type React from 'react';
+import type {Metric, MetricValueType} from '../../domain/Metric';
+import type {MetricSeriesPoint} from '../../application/GetMetricSeriesUseCase';
+import {NumericTrendChart} from './NumericTrendChart';
 
 /**
- * Draws a metric's series onto the chart canvas.
- *
- * The concrete contract is intentionally left open: the visualization slice
- * that registers the first renderer will define it (line / tick / swimlane /
- * marker — see ADR-1). This slice only needs the interface to exist so the
- * registry can be typed.
+ * Props every chart renderer receives: the metric being drawn, its aggregated
+ * series, and the pixel box to draw within. Renderers own their drawing but not
+ * their layout — the screen decides size and labelling.
  */
-export interface ChartRenderer {}
+export interface ChartRendererProps {
+  metric: Metric;
+  points: MetricSeriesPoint[];
+  width: number;
+  height: number;
+}
 
 /**
- * Chart renderers keyed by the `MetricValueType` they draw.
- *
- * Empty for now — later slices register their renderers here rather than
- * inventing their own per-type lookup.
+ * Draws a metric's series onto the chart canvas. A plain React component so it
+ * composes with the rest of the presentation layer.
+ */
+export type ChartRenderer = React.ComponentType<ChartRendererProps>;
+
+/**
+ * Chart renderers keyed by the `MetricValueType` they draw. Slices register
+ * their renderer here rather than inventing their own per-type lookup.
  */
 export const rendererRegistry = new Map<MetricValueType, ChartRenderer>();
+
+rendererRegistry.set('Numeric', NumericTrendChart);

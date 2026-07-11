@@ -25,6 +25,9 @@ export const Line = createStubComponent('Line');
 export const Circle = createStubComponent('Circle');
 export const Rect = createStubComponent('Rect');
 export const Text = createStubComponent('Text');
+export const LinearGradient = createStubComponent('LinearGradient');
+
+export const vec = (x = 0, y = 0): {x: number; y: number} => ({x, y});
 
 export interface SkiaPathStub {
   moveTo(x: number, y: number): SkiaPathStub;

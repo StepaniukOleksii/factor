@@ -4,10 +4,26 @@ import renderer, {act} from 'react-test-renderer';
 import {ObservationDetailsScreen} from './ObservationDetailsScreen';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
+import {NUMERIC_TREND_INSUFFICIENT_MESSAGE} from '../charts/chartDefaults';
 
-const {mockGetRecentRecordsExecute, mockDeleteRecordExecute} = vi.hoisted(() => {
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const defaultObservation = {
+    id: 'obs-1',
+    name: 'Test Observation',
+    metrics: [{id: 'm1', name: 'Metric 1', type: 'numeric'}],
+} as unknown as Observation;
+
+const {
+    mockGetObservationByIdExecute,
+    mockGetRecentRecordsExecute,
+    mockGetRecordsByTimeRangeExecute,
+    mockDeleteRecordExecute,
+} = vi.hoisted(() => {
     return {
+        mockGetObservationByIdExecute: vi.fn(),
         mockGetRecentRecordsExecute: vi.fn(),
+        mockGetRecordsByTimeRangeExecute: vi.fn(),
         mockDeleteRecordExecute: vi.fn(),
     };
 });
@@ -31,17 +47,19 @@ vi.mock('../../infrastructure/SQLiteRecordRepository', () => ({
 
 vi.mock('../../application/GetObservationByIdUseCase', () => ({
     GetObservationByIdUseCase: vi.fn().mockImplementation(() => ({
-        execute: vi.fn().mockResolvedValue({
-            id: 'obs-1',
-            name: 'Test Observation',
-            metrics: [{id: 'm1', name: 'Metric 1', type: 'numeric'}],
-        } as unknown as Observation),
+        execute: mockGetObservationByIdExecute,
     })),
 }));
 
 vi.mock('../../application/GetRecentRecordsUseCase', () => ({
     GetRecentRecordsUseCase: vi.fn().mockImplementation(() => ({
         execute: mockGetRecentRecordsExecute,
+    })),
+}));
+
+vi.mock('../../application/GetRecordsByTimeRangeUseCase', () => ({
+    GetRecordsByTimeRangeUseCase: vi.fn().mockImplementation(() => ({
+        execute: mockGetRecordsByTimeRangeExecute,
     })),
 }));
 
@@ -132,7 +150,9 @@ async function openDeleteRecordConfirmation(root: any) {
 describe('ObservationDetailsScreen Record Actions', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(defaultObservation);
         mockGetRecentRecordsExecute.mockResolvedValue([initialRecord]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
         mockDeleteRecordExecute.mockResolvedValue(undefined);
         vi.stubGlobal('alert', vi.fn());
     });
@@ -309,5 +329,90 @@ describe('ObservationDetailsScreen Record Actions', () => {
 
         // A meaningful error message was surfaced to the user
         expect(globalThis.alert).toHaveBeenCalledWith(expect.stringContaining('Failed to delete record'));
+    });
+});
+
+describe('ObservationDetailsScreen Trends', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(defaultObservation);
+        mockGetRecentRecordsExecute.mockResolvedValue([]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+        vi.stubGlobal('alert', vi.fn());
+    });
+
+    function numericObservation(...metrics: {id: string; name: string}[]): Observation {
+        return {
+            id: 'obs-1',
+            name: 'Sleep Quality',
+            metrics: metrics.map(m => ({...m, type: 'Numeric'})),
+        } as unknown as Observation;
+    }
+
+    function chartRecord(id: string, daysAgo: number, values: [string, number][]): DomainRecord {
+        return new DomainRecord(id, 'obs-1', new Date(Date.now() - daysAgo * DAY_MS), new Map(values));
+    }
+
+    it('renders one chart per Numeric Metric', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            numericObservation({id: 'm1', name: 'Duration'}, {id: 'm2', name: 'Quality'}),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['m1', 5], ['m2', 50]]),
+            chartRecord('b', 1, [['m1', 7], ['m2', 55]]),
+        ]);
+
+        const root = await renderScreen();
+
+        expect(findAllByText(root.root, 'TRENDS').length).toBeGreaterThan(0);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(2);
+        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(0);
+    });
+
+    it('omits the TRENDS section when there are no Numeric Metrics', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue({
+            id: 'obs-1',
+            name: 'Journal',
+            metrics: [
+                {id: 't1', name: 'Notes', type: 'Text'},
+                {id: 'b1', name: 'Done', type: 'Boolean'},
+            ],
+        } as unknown as Observation);
+
+        const root = await renderScreen();
+
+        expect(findAllByText(root.root, 'TRENDS').length).toBe(0);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(0);
+    });
+
+    it('shows the insufficient-data message for a Metric with fewer than two points', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 1, [['m1', 5]]),
+        ]);
+
+        const root = await renderScreen();
+
+        expect(findAllByText(root.root, NUMERIC_TREND_INSUFFICIENT_MESSAGE).length).toBeGreaterThan(0);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(0);
+        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
+    });
+
+    it('renders the RECENT RECORDS section independently of the trends data fetch', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
+        mockGetRecentRecordsExecute.mockResolvedValue([initialRecord]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['m1', 5]]),
+            chartRecord('b', 1, [['m1', 7]]),
+        ]);
+
+        const root = await renderScreen();
+
+        // Recent records renders its own record card from its own fetch...
+        expect(countRecordCards(root.root)).toBe(1);
+        expect(mockGetRecentRecordsExecute).toHaveBeenCalledTimes(1);
+        // ...while the trend chart is populated from a separate range-scoped fetch.
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(1);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
     });
 });

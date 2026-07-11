@@ -1,18 +1,23 @@
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {rendererRegistry} from './rendererRegistry';
+import {NumericTrendChart} from './NumericTrendChart';
 import {MetricValueType} from '../../domain/Metric';
+
+// NumericTrendChart (pulled in transitively when the registry registers it)
+// imports react-native, which can't load raw under Node.
+vi.mock('react-native', () => require('react-native-web'));
 
 describe('rendererRegistry', () => {
   it('imports and initializes without error', () => {
     expect(rendererRegistry).toBeInstanceOf(Map);
   });
 
-  it('starts empty with no renderers registered', () => {
-    expect(rendererRegistry.size).toBe(0);
+  it('is keyed by MetricValueType', () => {
+    const type: MetricValueType = 'Numeric';
+    expect(rendererRegistry.has(type)).toBe(true);
   });
 
-  it('is keyed by MetricValueType so later slices can register into it', () => {
-    const type: MetricValueType = 'Numeric';
-    expect(rendererRegistry.get(type)).toBeUndefined();
+  it('registers NumericTrendChart for the Numeric metric type', () => {
+    expect(rendererRegistry.get('Numeric')).toBe(NumericTrendChart);
   });
 });

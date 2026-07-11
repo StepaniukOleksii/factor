@@ -59,6 +59,48 @@ describe('SQLiteRecordRepository', () => {
     );
   });
 
+  it('should query records by observation and half-open range, ordered ascending', async () => {
+    const range = {
+      start: new Date('2026-06-11T00:00:00.000Z'),
+      end: new Date('2026-07-11T00:00:00.000Z'),
+    };
+    mockGetAllAsync
+      .mockResolvedValueOnce([
+        {id: 'record-1', timestamp: range.start.getTime()},
+        {id: 'record-2', timestamp: range.start.getTime() + 1000},
+      ])
+      .mockResolvedValueOnce([{metricId: 'metric-1', valueJson: '7'}])
+      .mockResolvedValueOnce([{metricId: 'metric-1', valueJson: '9'}]);
+
+    const result = await repository.getByObservationId('obs-1', range);
+
+    expect(mockGetAllAsync).toHaveBeenNthCalledWith(
+      1,
+      'SELECT id, timestamp FROM records WHERE observationId = ? AND timestamp >= ? AND timestamp < ? ORDER BY timestamp ASC',
+      'obs-1',
+      range.start.getTime(),
+      range.end.getTime()
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result[0].id).toBe('record-1');
+    expect(result[0].observationId).toBe('obs-1');
+    expect(result[0].getValue('metric-1')).toBe(7);
+    expect(result[1].id).toBe('record-2');
+    expect(result[1].getValue('metric-1')).toBe(9);
+  });
+
+  it('should return an empty array when no records fall within the range', async () => {
+    mockGetAllAsync.mockResolvedValueOnce([]);
+
+    const result = await repository.getByObservationId('obs-1', {
+      start: new Date(0),
+      end: new Date(1000),
+    });
+
+    expect(result).toEqual([]);
+  });
+
   it('should delete all records for a given observation ID', async () => {
     await repository.deleteByObservationId('obs-1');
 

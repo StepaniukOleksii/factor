@@ -17,19 +17,31 @@ import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservatio
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
 import {GetObservationByIdUseCase} from '../../application/GetObservationByIdUseCase';
 import {GetRecentRecordsUseCase} from '../../application/GetRecentRecordsUseCase';
+import {GetRecordsByTimeRangeUseCase} from '../../application/GetRecordsByTimeRangeUseCase';
 import {DeleteObservationUseCase} from '../../application/DeleteObservationUseCase';
 import {DeleteRecordUseCase} from '../../application/DeleteRecordUseCase';
+import {GetMetricSeriesUseCase, TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
 import {ScreenHeader} from "@presentation/components";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
+import {rendererRegistry} from '../charts/rendererRegistry';
+import {
+    defaultNumericAggregation,
+    getDefaultNumericTrendRange,
+    NUMERIC_TREND_INSUFFICIENT_MESSAGE,
+} from '../charts/chartDefaults';
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
 const getObservationByIdUseCase = new GetObservationByIdUseCase(observationRepository);
 const getRecentRecordsUseCase = new GetRecentRecordsUseCase(recordRepository);
+const getRecordsByTimeRangeUseCase = new GetRecordsByTimeRangeUseCase(recordRepository);
+const getMetricSeriesUseCase = new GetMetricSeriesUseCase();
 const deleteObservationUseCase = new DeleteObservationUseCase(observationRepository, recordRepository);
 const deleteRecordUseCase = new DeleteRecordUseCase(recordRepository);
+
+const TREND_CHART_HEIGHT = 90;
 
 const COLORS = {
     background: '#131313',
@@ -67,6 +79,9 @@ export function ObservationDetailsScreen({
                                          }: ObservationDetailsScreenProps) {
     const [observation, setObservation] = useState<Observation | null>(null);
     const [records, setRecords] = useState<DomainRecord[]>([]);
+    const [chartRecords, setChartRecords] = useState<DomainRecord[]>([]);
+    const [chartRange, setChartRange] = useState<TimeRange | null>(null);
+    const [trendChartWidth, setTrendChartWidth] = useState(0);
     const [loading, setLoading] = useState(true);
     const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
     const [scrollPositions, setScrollPositions] = useState<Record<string, number>>({});
@@ -89,6 +104,13 @@ export function ObservationDetailsScreen({
         setRecords(recentRecords);
     };
 
+    const loadTrendData = async () => {
+        const range = getDefaultNumericTrendRange();
+        const rangeRecords = await getRecordsByTimeRangeUseCase.execute(observationId, range);
+        setChartRange(range);
+        setChartRecords(rangeRecords);
+    };
+
     const loadData = async () => {
         try {
             setLoading(true);
@@ -96,6 +118,7 @@ export function ObservationDetailsScreen({
             setObservation(obs);
             if (obs) {
                 await loadRecentRecords();
+                await loadTrendData();
             }
         } catch (error) {
             console.error('Failed to load observation details', error);
@@ -250,6 +273,55 @@ export function ObservationDetailsScreen({
                         ))}
                     </View>
                 </View>
+
+                {/* Trends Section */}
+                {(() => {
+                    const numericMetrics = observation.metrics.filter(metric => metric.type === 'Numeric');
+                    if (numericMetrics.length === 0) {
+                        return null;
+                    }
+                    const NumericRenderer = rendererRegistry.get('Numeric');
+                    return (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>TRENDS</Text>
+                            <View style={styles.trendsList}>
+                                {numericMetrics.map(metric => {
+                                    const points = chartRange
+                                        ? getMetricSeriesUseCase.execute(chartRecords, metric, chartRange, defaultNumericAggregation)
+                                        : [];
+                                    const hasEnoughData = points.length >= 2;
+                                    return (
+                                        <View key={metric.id} style={styles.trendCard}>
+                                            <Text style={styles.trendCardTitle}>{metric.name}</Text>
+                                            {hasEnoughData && NumericRenderer ? (
+                                                <View
+                                                    testID="trend-chart"
+                                                    style={styles.trendChart}
+                                                    onLayout={(e) => setTrendChartWidth(e.nativeEvent.layout.width)}
+                                                >
+                                                    <NumericRenderer
+                                                        metric={metric}
+                                                        points={points}
+                                                        width={trendChartWidth}
+                                                        height={TREND_CHART_HEIGHT}
+                                                    />
+                                                </View>
+                                            ) : (
+                                                <View style={styles.trendEmpty} testID="trend-empty">
+                                                    <MaterialIcons name="show-chart" size={22}
+                                                                   color={COLORS.onSurfaceVariant}/>
+                                                    <Text style={styles.trendEmptyText}>
+                                                        {NUMERIC_TREND_INSUFFICIENT_MESSAGE}
+                                                    </Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        </View>
+                    );
+                })()}
 
                 {/* Recent Records Section */}
                 <View style={styles.section}>
@@ -602,6 +674,38 @@ const styles = StyleSheet.create({
     metricChipText: {
         color: COLORS.primary,
         fontSize: 14,
+        fontWeight: '500',
+    },
+    trendsList: {
+        gap: 12,
+    },
+    trendCard: {
+        backgroundColor: COLORS.surfaceContainerLow,
+        borderWidth: 1,
+        borderColor: COLORS.outlineVariant,
+        borderRadius: 12,
+        padding: 16,
+    },
+    trendCardTitle: {
+        color: COLORS.primary,
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 12,
+    },
+    trendChart: {
+        width: '100%',
+        height: TREND_CHART_HEIGHT,
+    },
+    trendEmpty: {
+        height: TREND_CHART_HEIGHT,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        opacity: 0.6,
+    },
+    trendEmptyText: {
+        color: COLORS.onSurfaceVariant,
+        fontSize: 12,
         fontWeight: '500',
     },
     recordsList: {
