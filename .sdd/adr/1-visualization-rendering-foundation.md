@@ -4,7 +4,7 @@
 
 ## Context
 
-Records visualization (trend charts over time) is a long-lived, heavily-iterated feature area, not a
+Observation visualization (trend charts over time) is a long-lived, heavily-iterated feature area, not a
 single spec. Factor's core product thesis (see `product.md`) is discovering relationships *between*
 Observations, so this area is expected to grow well beyond a single chart: multiple chart types per
 `MetricValueType` (Numeric, Boolean, Enum, Text), time-range selection, per-metric visibility toggles,
@@ -33,7 +33,7 @@ noting the decision may be revisited through an ADR. This is that ADR.
 
 ## Decision
 
-Adopt `@shopify/react-native-skia` as the rendering foundation for all Records visualization.
+Adopt `@shopify/react-native-skia` as the rendering foundation for all Observation visualization.
 
 Confirmed compatible with the current stack (Expo ~54, React Native 0.81, new architecture default) —
 no upgrade required.

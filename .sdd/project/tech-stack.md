@@ -122,7 +122,7 @@ Rationale:
 
 ### Skia
 
-`@shopify/react-native-skia` is used as the rendering foundation for Records visualization (trend
+`@shopify/react-native-skia` is used as the rendering foundation for Observation visualization (trend
 charts).
 
 Rationale:
