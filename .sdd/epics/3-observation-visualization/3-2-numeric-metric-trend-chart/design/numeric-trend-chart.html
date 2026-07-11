@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Factor - Observation Details (Trends)</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        // Color values copied verbatim from the real COLORS object in
+        // src/presentation/screens/ObservationDetailsScreen.tsx, so this mockup matches the
+        // running app exactly rather than the generic MD3 token set used by earlier mockups.
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "background": "#131313",
+                        "surface": "#131313",
+                        "on-surface": "#e5e2e1",
+                        "on-surface-variant": "#c2c9b9",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-container-highest": "#262626",
+                        "outline-variant": "#42493d",
+                        "outline": "#8c9385",
+                        "primary-container": "#b6f09c",
+                        "on-primary-fixed-variant": "#205110",
+                        "primary": "#f9fff0",
+                        "on-primary": "#0b3900",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005"
+                    },
+                    fontFamily: {
+                        sans: ["Hanken Grotesk"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Hanken Grotesk', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-fixed-variant">
+
+<!-- ScreenHeader (existing component, reused as-is) -->
+<header class="w-full sticky top-0 z-40 bg-background border-b border-outline-variant flex items-center justify-between px-4 h-16 max-w-2xl mx-auto w-full">
+    <button class="w-10 h-10 flex items-center justify-center -ml-2 text-on-surface">
+        <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <span class="text-primary text-lg font-semibold tracking-tight">Sleep Quality</span>
+    <button class="w-10 h-10 flex items-center justify-center -mr-2 text-on-surface">
+        <span class="material-symbols-outlined">more_vert</span>
+    </button>
+</header>
+
+<main class="flex-grow w-full max-w-2xl mx-auto px-6 pt-6 pb-32">
+
+    <!-- Metrics Section (existing, unchanged) -->
+    <section class="mb-10">
+        <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest mb-4">METRICS</h2>
+        <div class="flex flex-wrap gap-3">
+            <div class="flex items-center bg-surface-container-low border border-surface-container-highest rounded-lg px-3 py-2">
+                <span class="w-2 h-2 rounded-full bg-primary-container mr-2"></span>
+                <span class="text-primary text-sm font-medium">Duration</span>
+            </div>
+            <div class="flex items-center bg-surface-container-low border border-surface-container-highest rounded-lg px-3 py-2">
+                <span class="w-2 h-2 rounded-full bg-primary-container mr-2"></span>
+                <span class="text-primary text-sm font-medium">Quality</span>
+            </div>
+            <div class="flex items-center bg-surface-container-low border border-surface-container-highest rounded-lg px-3 py-2">
+                <span class="w-2 h-2 rounded-full bg-primary-container mr-2"></span>
+                <span class="text-primary text-sm font-medium">Resting Heart Rate</span>
+            </div>
+            <div class="flex items-center bg-surface-container-low border border-surface-container-highest rounded-lg px-3 py-2">
+                <span class="w-2 h-2 rounded-full bg-primary-container mr-2"></span>
+                <span class="text-primary text-sm font-medium">Notes</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- TRENDS Section (new, this spec) -->
+    <section class="mb-10">
+        <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest mb-4">TRENDS</h2>
+        <div class="flex flex-col gap-3">
+
+            <!-- Numeric metric with enough data: smooth line, no axis/gridlines/legend -->
+            <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                <h3 class="text-primary text-sm font-semibold mb-3">Duration (hrs)</h3>
+                <svg viewBox="0 0 300 90" class="w-full h-[90px]" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="fillDuration" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#b6f09c" stop-opacity="0.22"/>
+                            <stop offset="100%" stop-color="#b6f09c" stop-opacity="0"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,60 C20,55 30,30 50,28 C70,26 80,50 100,52 C120,54 130,20 150,18
+                             C170,16 180,45 200,48 C220,51 230,35 250,30 C270,25 285,32 300,22
+                             L300,90 L0,90 Z" fill="url(#fillDuration)"/>
+                    <path d="M0,60 C20,55 30,30 50,28 C70,26 80,50 100,52 C120,54 130,20 150,18
+                             C170,16 180,45 200,48 C220,51 230,35 250,30 C270,25 285,32 300,22"
+                          fill="none" stroke="#b6f09c" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+
+            <!-- Second numeric metric, same treatment -->
+            <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                <h3 class="text-primary text-sm font-semibold mb-3">Quality (%)</h3>
+                <svg viewBox="0 0 300 90" class="w-full h-[90px]" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="fillQuality" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#b6f09c" stop-opacity="0.22"/>
+                            <stop offset="100%" stop-color="#b6f09c" stop-opacity="0"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,40 C15,50 35,65 55,62 C75,59 85,35 105,30 C125,25 135,45 155,50
+                             C175,55 185,38 205,32 C225,26 235,40 255,35 C270,31 285,20 300,15
+                             L300,90 L0,90 Z" fill="url(#fillQuality)"/>
+                    <path d="M0,40 C15,50 35,65 55,62 C75,59 85,35 105,30 C125,25 135,45 155,50
+                             C175,55 185,38 205,32 C225,26 235,40 255,35 C270,31 285,20 300,15"
+                          fill="none" stroke="#b6f09c" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+
+            <!-- Numeric metric with fewer than two points in the window: insufficient-data state -->
+            <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                <h3 class="text-primary text-sm font-semibold mb-3">Resting Heart Rate</h3>
+                <div class="h-[90px] flex flex-col items-center justify-center gap-1 opacity-60">
+                    <span class="material-symbols-outlined text-on-surface-variant text-[22px]">show_chart</span>
+                    <span class="text-on-surface-variant text-xs font-medium">Not enough data yet</span>
+                </div>
+            </div>
+
+        </div>
+        <!-- Note: "Notes" is a Text metric — excluded from Trends entirely, per this spec's scope. -->
+    </section>
+
+    <!-- Recent Records Section (existing, unchanged) -->
+    <section class="mb-10">
+        <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest mb-4">RECENT RECORDS</h2>
+        <div class="flex flex-col gap-3">
+
+            <div class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden">
+                <button class="w-full flex items-center justify-between px-2 py-2">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-on-surface-variant text-[16px]">schedule</span>
+                        <span class="text-on-surface text-sm font-medium">2 hours ago</span>
+                    </div>
+                    <span class="material-symbols-outlined text-on-surface-variant">expand_less</span>
+                </button>
+                <div class="px-2 pb-4 pt-2 flex gap-2 overflow-x-auto">
+                    <div class="bg-surface-container-lowest rounded-lg p-3 min-w-[100px]">
+                        <p class="text-on-surface text-[10px] font-bold mb-2">DURATION</p>
+                        <p class="text-primary text-base font-semibold">7.2</p>
+                    </div>
+                    <div class="bg-surface-container-lowest rounded-lg p-3 min-w-[100px]">
+                        <p class="text-on-surface text-[10px] font-bold mb-2">QUALITY</p>
+                        <p class="text-primary text-base font-semibold">85</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between px-2 py-2 border-b border-surface-container-highest">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-on-surface-variant text-[16px]">schedule</span>
+                    <span class="text-on-surface text-sm font-medium">Yesterday, 11:40 PM</span>
+                </div>
+                <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+            </div>
+
+        </div>
+    </section>
+
+</main>
+
+<!-- Footer / Add Record Button (existing, unchanged) -->
+<div class="fixed bottom-0 left-0 w-full bg-background/95 border-t border-surface-container-highest px-4 pt-4 pb-4 z-50">
+    <div class="max-w-2xl mx-auto">
+        <button class="w-full bg-primary-container text-on-primary-fixed-variant rounded-lg py-4 flex items-center justify-center gap-2 font-medium">
+            <span>Add Record</span>
+            <span class="material-symbols-outlined text-[20px]">check</span>
+        </button>
+    </div>
+</div>
+
+</body>
+</html>
