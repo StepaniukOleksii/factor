@@ -2,7 +2,7 @@
 name: spec-implementer
 description: Implements a specific feature specification. ONLY use this skill when the user explicitly asks to implement a spec (e.g., "Implement .sdd/epics/..."). Do NOT use this skill for general fixes, bugs, or minor adjustments.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
 ---
 
 # Spec Implementer
@@ -41,7 +41,13 @@ When the user asks you to implement a specification, follow these steps:
   general project guidelines, **DO NOT make assumptions**. You **MUST** stop and ask the user clarification questions
   before proceeding with the implementation.
 
-## 5. Reuse Seeded Test Data
+## 5. Database Schema Changes
+
+* If the feature changes the database schema (adding, renaming, or dropping a column or table), **stop and ask
+  the user** whether a special in-place migration is needed to preserve existing data, or the database can just
+  be recreated from scratch. Do not assume either approach.
+
+## 6. Reuse Seeded Test Data
 
 * If the repo has a `testing-data.md` (seeded dev/QA fixture data, loaded via a "Reseed test data" dev
   command), check whether an existing seeded observation or metric already covers the feature's manual
