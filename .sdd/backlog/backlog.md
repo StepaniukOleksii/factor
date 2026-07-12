@@ -25,13 +25,6 @@ bugs, and refactor notes until they're ready to become a real spec.
 - implement record notes
 - on the ObservationListScreen should an observation be removed/edited via long press button like it is done on the
   ObservationDetailsScreen for the Records?
-- Observation description.
-  - Observation domain object should also contain a description field. 
-  - It should be optionally defined by user during Observation
-    creation. 
-  - The description should not be displayed on the Observation List screen. 
-  - The description should be displayed on the Observation Details screen as a small text under the title.
-  - For now the field size should be limited to 150 characters.
 
 [BUG]
 
