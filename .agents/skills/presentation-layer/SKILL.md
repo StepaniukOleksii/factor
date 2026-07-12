@@ -1,6 +1,8 @@
 ---
 name: presentation-layer
 description: Enforces the use of reusable presentation components. Should be triggered whenever the agent is creating a new UI screen, modifying the presentation layer, or building UI components.
+metadata:
+  version: "1.0.0"
 ---
 
 # Presentation Layer Skill

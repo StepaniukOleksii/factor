@@ -1,6 +1,8 @@
 ---
 name: spec-implementer
 description: Implements a specific feature specification. ONLY use this skill when the user explicitly asks to implement a spec (e.g., "Implement .sdd/epics/..."). Do NOT use this skill for general fixes, bugs, or minor adjustments.
+metadata:
+  version: "1.4.0"
 ---
 
 # Spec Implementer

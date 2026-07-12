@@ -1,6 +1,8 @@
 ---
 name: spec-creator
 description: Creates a new feature specification based on project templates and existing spec patterns. Triggered when the user asks to create or write a spec for a new feature.
+metadata:
+  version: "1.4.0"
 ---
 
 # Spec Creator Skill
