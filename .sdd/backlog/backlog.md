@@ -35,3 +35,7 @@ bugs, and refactor notes until they're ready to become a real spec.
 [REF]
 
 - make a reusable component for modals
+
+[DOC]
+
+- Create git commit conventions. Describe labels and commit content.
