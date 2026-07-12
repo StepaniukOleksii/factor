@@ -17,6 +17,11 @@ import {
 import {CreateObservationUseCase} from '../../application/CreateObservationUseCase';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {MetricValueType} from '../../domain/Metric';
+import {
+    METRIC_NAME_MAX_LENGTH,
+    OBSERVATION_DESCRIPTION_MAX_LENGTH,
+    OBSERVATION_NAME_MAX_LENGTH,
+} from '../../domain/validationLimits';
 import {MaterialIcons} from '@expo/vector-icons';
 import {PrimaryActionButton, ScreenHeader} from "@presentation/components";
 
@@ -122,7 +127,11 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
                             onChangeText={setObservationName}
                             placeholder="e.g., Sleep Quality, Mood"
                             placeholderTextColor={COLORS.outline}
+                            maxLength={OBSERVATION_NAME_MAX_LENGTH}
                         />
+                        <Text style={styles.charCounter}>
+                            {observationName.length}/{OBSERVATION_NAME_MAX_LENGTH}
+                        </Text>
                     </View>
                     <View style={styles.descriptionSection}>
                         <Text style={styles.label}>DESCRIPTION</Text>
@@ -134,10 +143,12 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
                             placeholderTextColor={COLORS.outline}
                             multiline
                             numberOfLines={3}
-                            maxLength={150}
+                            maxLength={OBSERVATION_DESCRIPTION_MAX_LENGTH}
                             textAlignVertical="top"
                         />
-                        <Text style={styles.charCounter}>{description.length}/150</Text>
+                        <Text style={styles.charCounter}>
+                            {description.length}/{OBSERVATION_DESCRIPTION_MAX_LENGTH}
+                        </Text>
                     </View>
                     <View style={styles.divider}/>
                 </View>
@@ -166,7 +177,11 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
                                             onChangeText={(val) => handleMetricChange(index, 'name', val)}
                                             placeholder="e.g., Duration"
                                             placeholderTextColor={COLORS.outline}
+                                            maxLength={METRIC_NAME_MAX_LENGTH}
                                         />
+                                        <Text style={styles.charCounter}>
+                                            {metric.name.length}/{METRIC_NAME_MAX_LENGTH}
+                                        </Text>
                                     </View>
 
                                     <View style={styles.metricField}>

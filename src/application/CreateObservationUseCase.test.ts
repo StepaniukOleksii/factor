@@ -53,6 +53,29 @@ describe('CreateObservationUseCase', () => {
     expect(mockRepository.save).not.toHaveBeenCalled();
   });
 
+  it('should accept an observation name of exactly 30 characters', async () => {
+    const name = 'a'.repeat(30);
+    const input = {
+      name,
+      metrics: [{name: 'Cups', type: 'Numeric'}]
+    };
+
+    await useCase.execute(input);
+
+    const savedObservation = (mockRepository.save as any).mock.calls[0][0] as Observation;
+    expect(savedObservation.name).toBe(name);
+  });
+
+  it('should throw error if observation name exceeds 30 characters', async () => {
+    const input = {
+      name: 'a'.repeat(31),
+      metrics: [{name: 'Cups', type: 'Numeric'}]
+    };
+
+    await expect(useCase.execute(input)).rejects.toThrow('Observation name cannot exceed 30 characters');
+    expect(mockRepository.save).not.toHaveBeenCalled();
+  });
+
   it('should throw error if metrics are empty', async () => {
     const input = {
       name: 'Coffee',
@@ -70,6 +93,29 @@ describe('CreateObservationUseCase', () => {
     };
 
     await expect(useCase.execute(input)).rejects.toThrow('Metric name cannot be empty');
+    expect(mockRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should accept a metric name of exactly 15 characters', async () => {
+    const metricName = 'a'.repeat(15);
+    const input = {
+      name: 'Coffee',
+      metrics: [{name: metricName, type: 'Numeric'}]
+    };
+
+    await useCase.execute(input);
+
+    const savedObservation = (mockRepository.save as any).mock.calls[0][0] as Observation;
+    expect(savedObservation.metrics[0].name).toBe(metricName);
+  });
+
+  it('should throw error if metric name exceeds 15 characters', async () => {
+    const input = {
+      name: 'Coffee',
+      metrics: [{name: 'a'.repeat(16), type: 'Numeric'}]
+    };
+
+    await expect(useCase.execute(input)).rejects.toThrow('Metric name cannot exceed 15 characters');
     expect(mockRepository.save).not.toHaveBeenCalled();
   });
 
