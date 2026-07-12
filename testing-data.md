@@ -42,6 +42,11 @@ last-record date, and having no records at all. Everything else is per-metric �
 renders one independent trend card per Numeric metric — so those scenarios are combined onto a single
 `mixed metrics` observation instead of one observation each.
 
+`mixed metrics` and `stale records` each carry an optional Observation **description** summarizing what
+the observation covers and why (`no records` deliberately leaves its empty) so both the "description
+shown under the title" and the "no description, no empty gap" states on the details screen are covered
+without manual data entry.
+
 | Observation | Metrics | Record pattern | What it's for |
 |---|---|---|---|
 | `mixed metrics` | Numeric `dense` (0-100) | one point per day, 45 days | A densely-populated trend chart |
@@ -61,6 +66,7 @@ After reseeding, from the observation list screen:
 
 Open **`mixed metrics`** details screen:
 
+- description — small muted text appears under the title, above the METRICS section.
 - `dense` — trend chart renders a populated line with visible day-to-day variation.
 - `sparse` — trend chart renders with visible gaps between points (not one point per day).
 - `insufficient` — trend chart shows the `Not enough data yet` empty state.
@@ -69,9 +75,11 @@ Open **`mixed metrics`** details screen:
 
 Open **`stale records`** details screen:
 
+- description — small muted text appears under the title, above the METRICS section.
 - `value` — trend chart shows `Not enough data yet`; RECENT RECORDS shows entries dated well outside
   the last 30 days.
 
 Open **`no records`** details screen:
 
+- no description text appears under the title, and no empty gap is left in its place.
 - RECENT RECORDS shows `No records yet.`

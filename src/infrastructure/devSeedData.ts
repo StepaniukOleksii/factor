@@ -92,7 +92,7 @@ export function buildSeedData(): SeedEntry[] {
       flagMetric,
       categoryMetric,
       noteMetric,
-    ], 'seeded description shown under the title on the details screen');
+    ], 'Covers every per-metric chart scenario in one place: a dense daily trend, a sparse trend with gaps, a metric with too few points to chart, and non-numeric metrics that share records with the numeric ones instead of charting.');
 
     const dayValues: DayValues = new Map();
 
@@ -128,7 +128,12 @@ export function buildSeedData(): SeedEntry[] {
   // the 30-day window) alongside a stale "last record" date at the list/details level.
   {
     const valueMetric = new Metric(Crypto.randomUUID(), 'value', 'Numeric', {min: 0});
-    const observation = new Observation(Crypto.randomUUID(), 'stale records', [valueMetric]);
+    const observation = new Observation(
+      Crypto.randomUUID(),
+      'stale records',
+      [valueMetric],
+      'All three records are 40-60 days old, outside the 30-day trend window — the chart shows "not enough data yet" even though the last record date is stale rather than missing.'
+    );
     const records: Record[] = [42, 51, 58].map(i =>
       observation.createRecord(
         Crypto.randomUUID(),
