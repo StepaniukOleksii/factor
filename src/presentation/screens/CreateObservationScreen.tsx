@@ -133,6 +133,10 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
                             {observationName.length}/{OBSERVATION_NAME_MAX_LENGTH}
                         </Text>
                     </View>
+                </View>
+
+                <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+                    {/* Description Section */}
                     <View style={styles.descriptionSection}>
                         <Text style={styles.label}>DESCRIPTION</Text>
                         <TextInput
@@ -151,9 +155,6 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
                         </Text>
                     </View>
                     <View style={styles.divider}/>
-                </View>
-
-                <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                     {/* Metrics Section */}
                     <View style={styles.metricsContainer}>
                         <Text style={styles.label}>METRICS</Text>
@@ -251,6 +252,9 @@ const styles = StyleSheet.create({
     stickySection: {
         paddingHorizontal: 16,
         paddingTop: 16,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.outlineVariant,
         backgroundColor: COLORS.background,
         zIndex: 10,
     },
