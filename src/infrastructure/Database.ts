@@ -14,6 +14,7 @@ export async function initDatabase(): Promise<void> {
       CREATE TABLE IF NOT EXISTS observations (
         id TEXT PRIMARY KEY NOT NULL,
         name TEXT NOT NULL,
+        description TEXT,
         createdAt INTEGER NOT NULL
       );
 

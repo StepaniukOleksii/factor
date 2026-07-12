@@ -45,6 +45,7 @@ export interface CreateObservationScreenProps {
 
 export function CreateObservationScreen({onCreated, onBack}: CreateObservationScreenProps) {
     const [observationName, setObservationName] = useState('');
+    const [description, setDescription] = useState('');
     const [metrics, setMetrics] = useState([{name: '', type: 'Numeric'}]);
 
     const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -69,10 +70,12 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
         try {
             await useCase.execute({
                 name: observationName,
+                description: description.trim(),
                 metrics: metrics.map(m => ({name: m.name, type: m.type as string}))
             });
             // Reset form
             setObservationName('');
+            setDescription('');
             setMetrics([{name: '', type: 'Numeric'}]);
             if (onCreated) {
                 onCreated();
@@ -120,6 +123,21 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
                             placeholder="e.g., Sleep Quality, Mood"
                             placeholderTextColor={COLORS.outline}
                         />
+                    </View>
+                    <View style={styles.descriptionSection}>
+                        <Text style={styles.label}>DESCRIPTION</Text>
+                        <TextInput
+                            style={styles.descriptionInput}
+                            value={description}
+                            onChangeText={setDescription}
+                            placeholder="Optional — what does this observation track?"
+                            placeholderTextColor={COLORS.outline}
+                            multiline
+                            numberOfLines={3}
+                            maxLength={150}
+                            textAlignVertical="top"
+                        />
+                        <Text style={styles.charCounter}>{description.length}/150</Text>
                     </View>
                     <View style={styles.divider}/>
                 </View>
@@ -247,6 +265,26 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         color: COLORS.onSurface,
         fontSize: 16,
+    },
+    descriptionSection: {
+        marginTop: 16,
+    },
+    descriptionInput: {
+        backgroundColor: COLORS.surfaceContainerLowest,
+        borderWidth: 1,
+        borderColor: COLORS.outlineVariant,
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        color: COLORS.onSurface,
+        fontSize: 16,
+        minHeight: 72,
+    },
+    charCounter: {
+        fontSize: 12,
+        color: COLORS.outline,
+        alignSelf: 'flex-end',
+        marginTop: 4,
     },
     divider: {
         height: 1,

@@ -9,15 +9,15 @@ supporting context under the title. It deliberately stays off the List screen, w
 many Observations at a glance.
 
 ## 2. Requirements
-* [ ] `Observation` domain entity supports an optional `description` field.
-* [ ] The user can optionally enter a description while creating an Observation, on the Create Observation
+* [x] `Observation` domain entity supports an optional `description` field.
+* [x] The user can optionally enter a description while creating an Observation, on the Create Observation
   screen.
-* [ ] Description is limited to 150 characters; the limit is enforced both in the UI input and by the use case.
-* [ ] Description is persisted alongside the Observation in local storage.
-* [ ] Description is **not** displayed on the Observation List screen.
-* [ ] Description **is** displayed on the Observation Details screen, as small text under the title, and only
+* [x] Description is limited to 150 characters; the limit is enforced both in the UI input and by the use case.
+* [x] Description is persisted alongside the Observation in local storage.
+* [x] Description is **not** displayed on the Observation List screen.
+* [x] Description **is** displayed on the Observation Details screen, as small text under the title, and only
   when non-empty.
-* [ ] Editing an existing Observation's description is out of scope — there is no Observation-editing feature
+* [x] Editing an existing Observation's description is out of scope — there is no Observation-editing feature
   yet, so description can only be set at creation time.
 
 ## 3. Technical Design
@@ -42,12 +42,12 @@ many Observations at a glance.
 
 ### 3.3 Storage Layer
 * **Schema** (`src/infrastructure/Database.ts`): add a nullable `description TEXT` column to the `observations`
-  table.
-  * `initDatabase()` only issues `CREATE TABLE IF NOT EXISTS` — there is no migration runner. Existing local
-    databases already have an `observations` table without this column. Before the existing `CREATE TABLE IF
-    NOT EXISTS` block, check `PRAGMA table_info(observations)` for a `description` column and run
-    `ALTER TABLE observations ADD COLUMN description TEXT` if it's missing, so existing installs upgrade in
-    place without data loss or a crash on startup.
+  table's `CREATE TABLE IF NOT EXISTS` definition.
+  * No migration runner is added. The app is pre-production with no data worth preserving, so upgrading an
+    existing schema in place is out of scope. Any local database created before this change must simply be
+    removed (uninstall the app or clear its storage) so `initDatabase()` recreates it fresh with the new
+    column. Note that reseeding does **not** heal an old database: `reseedDevData()` begins with `findAll()`,
+    which selects `description` and would throw against the old schema before it could wipe anything.
 * **`SQLiteObservationRepository`** (`src/infrastructure/SQLiteObservationRepository.ts`):
   * `save()`: extend the `INSERT INTO observations (...)` statement to include `description`.
   * `findAll()`: extend `ObservationRow` with `description: string | null`, select the column, and pass it into
@@ -75,23 +75,28 @@ many Observations at a glance.
 
 ## 4. Verification Plan
 
+> Seeded data (via **Reseed test data**, see `testing-data.md`) already covers the display side: the
+> `mixed metrics` observation carries a description, while `stale records` and `no records` deliberately
+> have none. Scenarios 1, 2 and 4 can be checked against those without manual entry; scenario 3 still needs
+> the Create screen because it exercises the input limit itself.
+
 ### Manual Verification
 1. Open Create Observation, enter a name, leave Description empty, and save. Open its Details screen — confirm
-   no description text appears and no empty gap is left under the title.
+   no description text appears and no empty gap is left under the title. (Also verifiable on the seeded
+   `stale records` / `no records` details screens.)
 2. Create another Observation with a description under 150 characters. Confirm it appears as small text under
-   the title on the Details screen.
+   the title on the Details screen. (Also verifiable on the seeded `mixed metrics` details screen.)
 3. On the Create screen, try typing more than 150 characters into Description — confirm the input stops
    accepting characters at 150 and any counter shown reads "150/150".
 4. Confirm the Observation List screen shows only name, metrics, and last-record time — no description text for
-   any item, regardless of whether that Observation has one.
+   any item, regardless of whether that Observation has one. (Reseed test data to have both kinds present.)
 5. Restart the app (reload) after creating Observations with and without descriptions — confirm both persist
    correctly across reload.
-6. Against a database created before this change (no `description` column), confirm the app still starts
-   cleanly and pre-existing Observations show no description without crashing.
+6. If a database created before this change exists on the device, remove the app's data (uninstall or clear
+   storage) so it is recreated fresh — no in-place upgrade is provided.
 
 ### Automated Tests
 * **Unit Tests:** `CreateObservationUseCase` — accepts a valid description, rejects one over 150 characters,
   normalizes an empty/whitespace-only description to `null`, and defaults to `null` when omitted.
-* **Integration Tests:** `SQLiteObservationRepository` — `save()` persists `description` (including `null`),
-  `findAll()` round-trips it correctly, and the column-presence upgrade path does not throw when run against a
-  pre-existing `observations` table that lacks the column.
+* **Integration Tests:** `SQLiteObservationRepository` — `save()` persists `description` (including `null`)
+  and `findAll()` round-trips it correctly.

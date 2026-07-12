@@ -8,6 +8,16 @@ describe('Observation', () => {
     expect(obs.metrics.length).toBe(0);
   });
 
+  it('should default description to null', () => {
+    const obs = new Observation('o1', 'Sleep');
+    expect(obs.description).toBeNull();
+  });
+
+  it('should store a provided description', () => {
+    const obs = new Observation('o1', 'Sleep', [], 'How well I slept');
+    expect(obs.description).toBe('How well I slept');
+  });
+
   it('should allow adding and removing metrics', () => {
     const obs = new Observation('o1', 'Sleep');
     const metric = new Metric('m1', 'Duration', 'Numeric');

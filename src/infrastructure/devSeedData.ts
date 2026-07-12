@@ -92,7 +92,7 @@ export function buildSeedData(): SeedEntry[] {
       flagMetric,
       categoryMetric,
       noteMetric,
-    ]);
+    ], 'seeded description shown under the title on the details screen');
 
     const dayValues: DayValues = new Map();
 

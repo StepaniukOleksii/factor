@@ -35,17 +35,18 @@ describe('SQLiteObservationRepository', () => {
       new Metric('metric-1', 'Temperature', 'Numeric'),
       new Metric('metric-2', 'Condition', 'Text')
     ];
-    const observation = new Observation('obs-1', 'Weather', metrics);
+    const observation = new Observation('obs-1', 'Weather', metrics, 'Daily weather log');
 
     await repository.save(observation);
 
     expect(mockWithTransactionAsync).toHaveBeenCalledTimes(1);
-    
+
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       1,
-      'INSERT INTO observations (id, name, createdAt) VALUES (?, ?, ?)',
+      'INSERT INTO observations (id, name, description, createdAt) VALUES (?, ?, ?, ?)',
       'obs-1',
       'Weather',
+      'Daily weather log',
       expect.any(Number)
     );
 
@@ -70,6 +71,21 @@ describe('SQLiteObservationRepository', () => {
     );
   });
 
+  it('should persist a null description', async () => {
+    const observation = new Observation('obs-1', 'Weather', []);
+
+    await repository.save(observation);
+
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      1,
+      'INSERT INTO observations (id, name, description, createdAt) VALUES (?, ?, ?, ?)',
+      'obs-1',
+      'Weather',
+      null,
+      expect.any(Number)
+    );
+  });
+
   describe('findAll', () => {
     it('should return an empty array when no observations exist', async () => {
       mockGetAllAsync.mockResolvedValue([]);
@@ -78,8 +94,22 @@ describe('SQLiteObservationRepository', () => {
 
       expect(result).toEqual([]);
       expect(mockGetAllAsync).toHaveBeenCalledWith(
-        'SELECT id, name, createdAt FROM observations ORDER BY createdAt DESC'
+        'SELECT id, name, description, createdAt FROM observations ORDER BY createdAt DESC'
       );
+    });
+
+    it('should round-trip the observation description, including null', async () => {
+      mockGetAllAsync
+        .mockResolvedValueOnce([
+          { id: 'obs-1', name: 'Sleep Quality', description: 'Nightly sleep tracking', createdAt: 1000 },
+          { id: 'obs-2', name: 'Mood', description: null, createdAt: 900 }
+        ])
+        .mockResolvedValueOnce([]);
+
+      const result = await repository.findAll();
+
+      expect(result[0].description).toBe('Nightly sleep tracking');
+      expect(result[1].description).toBeNull();
     });
 
     it('should return observations with their associated metrics', async () => {

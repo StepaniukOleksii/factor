@@ -5,6 +5,7 @@ import {ObservationRepository} from './ObservationRepository';
 
 export interface CreateObservationInput {
   name: string;
+  description?: string;
   metrics: {
     name: string;
     type: string;
@@ -23,6 +24,12 @@ export class CreateObservationUseCase {
       throw new Error('At least one metric is required');
     }
 
+    const trimmedDescription = input.description?.trim() ?? '';
+    if (trimmedDescription.length > 150) {
+      throw new Error('Observation description cannot exceed 150 characters');
+    }
+    const description = trimmedDescription === '' ? null : trimmedDescription;
+
     const observationId = Crypto.randomUUID();
     const metrics = input.metrics.map(m => {
       if (!m.name || m.name.trim() === '') {
@@ -35,7 +42,7 @@ export class CreateObservationUseCase {
       );
     });
 
-    const observation = new Observation(observationId, input.name.trim(), metrics);
+    const observation = new Observation(observationId, input.name.trim(), metrics, description);
 
     await this.observationRepository.save(observation);
   }

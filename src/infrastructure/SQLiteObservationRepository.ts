@@ -6,6 +6,7 @@ import {getDatabase} from './Database';
 interface ObservationRow {
   id: string;
   name: string;
+  description: string | null;
   createdAt: number;
 }
 
@@ -23,9 +24,10 @@ export class SQLiteObservationRepository implements ObservationRepository {
     
     await db.withTransactionAsync(async () => {
       await db.runAsync(
-        'INSERT INTO observations (id, name, createdAt) VALUES (?, ?, ?)',
+        'INSERT INTO observations (id, name, description, createdAt) VALUES (?, ?, ?, ?)',
         observation.id,
         observation.name,
+        observation.description,
         Date.now()
       );
 
@@ -46,7 +48,7 @@ export class SQLiteObservationRepository implements ObservationRepository {
     const db = await getDatabase();
 
     const observationRows = await db.getAllAsync<ObservationRow>(
-      'SELECT id, name, createdAt FROM observations ORDER BY createdAt DESC'
+      'SELECT id, name, description, createdAt FROM observations ORDER BY createdAt DESC'
     );
 
     if (observationRows.length === 0) {
@@ -71,7 +73,7 @@ export class SQLiteObservationRepository implements ObservationRepository {
 
     return observationRows.map(row => {
       const metrics = metricsByObservation.get(row.id) ?? [];
-      return new Observation(row.id, row.name, metrics);
+      return new Observation(row.id, row.name, metrics, row.description);
     });
   }
 

@@ -72,4 +72,67 @@ describe('CreateObservationUseCase', () => {
     await expect(useCase.execute(input)).rejects.toThrow('Metric name cannot be empty');
     expect(mockRepository.save).not.toHaveBeenCalled();
   });
+
+  it('should accept and trim a valid description', async () => {
+    const input = {
+      name: 'Coffee',
+      description: '  Track my daily coffee intake  ',
+      metrics: [{name: 'Cups', type: 'Numeric'}]
+    };
+
+    await useCase.execute(input);
+
+    const savedObservation = (mockRepository.save as any).mock.calls[0][0] as Observation;
+    expect(savedObservation.description).toBe('Track my daily coffee intake');
+  });
+
+  it('should accept a description of exactly 150 characters', async () => {
+    const description = 'a'.repeat(150);
+    const input = {
+      name: 'Coffee',
+      description,
+      metrics: [{name: 'Cups', type: 'Numeric'}]
+    };
+
+    await useCase.execute(input);
+
+    const savedObservation = (mockRepository.save as any).mock.calls[0][0] as Observation;
+    expect(savedObservation.description).toBe(description);
+  });
+
+  it('should reject a description longer than 150 characters', async () => {
+    const input = {
+      name: 'Coffee',
+      description: 'a'.repeat(151),
+      metrics: [{name: 'Cups', type: 'Numeric'}]
+    };
+
+    await expect(useCase.execute(input)).rejects.toThrow('Observation description cannot exceed 150 characters');
+    expect(mockRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should normalize a whitespace-only description to null', async () => {
+    const input = {
+      name: 'Coffee',
+      description: '   ',
+      metrics: [{name: 'Cups', type: 'Numeric'}]
+    };
+
+    await useCase.execute(input);
+
+    const savedObservation = (mockRepository.save as any).mock.calls[0][0] as Observation;
+    expect(savedObservation.description).toBeNull();
+  });
+
+  it('should default description to null when omitted', async () => {
+    const input = {
+      name: 'Coffee',
+      metrics: [{name: 'Cups', type: 'Numeric'}]
+    };
+
+    await useCase.execute(input);
+
+    const savedObservation = (mockRepository.save as any).mock.calls[0][0] as Observation;
+    expect(savedObservation.description).toBeNull();
+  });
 });

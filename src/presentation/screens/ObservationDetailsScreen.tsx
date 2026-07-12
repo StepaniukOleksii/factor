@@ -261,6 +261,10 @@ export function ObservationDetailsScreen({
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
 
+                {observation.description ? (
+                    <Text style={styles.description}>{observation.description}</Text>
+                ) : null}
+
                 {/* Metrics Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>METRICS</Text>
@@ -638,6 +642,12 @@ const styles = StyleSheet.create({
     scrollContent: {
         padding: 24,
         paddingBottom: 120,
+    },
+    description: {
+        color: COLORS.onSurfaceVariant,
+        fontSize: 14,
+        lineHeight: 20,
+        marginBottom: 24,
     },
     section: {
         marginBottom: 40,

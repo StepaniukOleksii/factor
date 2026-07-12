@@ -4,11 +4,13 @@ import {Record} from './Record';
 
 export class Observation extends Entity<string> {
   public name: string;
+  public description: string | null;
   private _metrics: Map<string, Metric>;
 
-  constructor(id: string, name: string, metrics: Metric[] = []) {
+  constructor(id: string, name: string, metrics: Metric[] = [], description: string | null = null) {
     super(id);
     this.name = name;
+    this.description = description;
     this._metrics = new Map(metrics.map(m => [m.id, m]));
   }
 
