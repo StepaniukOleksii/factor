@@ -1,7 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import {StatusBar} from 'expo-status-bar';
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
+import {registerDevMenuItems} from 'expo-dev-menu';
 import {initDatabase} from './src/infrastructure/Database';
+import {reseedDevData} from './src/infrastructure/devSeed';
 import {AppNavigator} from './src/presentation/navigation/AppNavigator';
 
 export default function App() {
@@ -13,6 +15,25 @@ export default function App() {
       try {
         await initDatabase();
         setIsDbReady(true);
+
+        // Dev-only: lets you populate the DB with fixture data for manual QA
+        // (charts, "last record" states, etc.) without entering data by hand.
+        // Uses expo-dev-menu's custom-item API (not React Native's built-in
+        // DevSettings.addMenuItem) since this project's dev client renders
+        // its own dev menu, which doesn't read from DevSettings.
+        // See testing-data.md and testing-android.md > "Loading test data".
+        if (__DEV__) {
+          registerDevMenuItems([
+            {
+              name: 'Reseed test data',
+              callback: () => {
+                reseedDevData().catch(e => console.error('[devSeed] Reseed failed:', e));
+              },
+            },
+          ]).catch(() => {
+            // Expected on web: expo-dev-menu has no web implementation.
+          });
+        }
       } catch (e: any) {
         setError(e.message || 'Failed to initialize database');
       }

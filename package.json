@@ -7,6 +7,7 @@
     "expo": "~54.0.35",
     "expo-crypto": "~15.0.9",
     "expo-dev-client": "~6.0.21",
+    "expo-dev-menu": "7.0.19",
     "expo-sqlite": "~16.0.4",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",

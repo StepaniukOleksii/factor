@@ -39,6 +39,14 @@ When the user asks you to implement a specification, follow these steps:
   general project guidelines, **DO NOT make assumptions**. You **MUST** stop and ask the user clarification questions
   before proceeding with the implementation.
 
+## 5. Reuse Seeded Test Data
+
+* If the repo has a `testing-data.md` (seeded dev/QA fixture data, loaded via a "Reseed test data" dev
+  command), check whether an existing seeded observation or metric already covers the feature's manual
+  verification scenarios before describing new manual data entry.
+* Reference the specific seeded observation/metric in the spec's Verification Plan section for each
+  scenario it covers. Only propose new seed data if nothing existing covers the scenario.
+
 ## Important Note
 
 This skill is strictly reserved for the initial implementation of features from specification documents. If the user

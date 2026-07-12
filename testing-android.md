@@ -151,6 +151,23 @@ Everyday JS/TSX/logic changes never require a rebuild.
 
 ---
 
+## Loading test data
+
+The app ships a dev-only **"Reseed test data"** command in the React Native dev menu. Selecting it
+wipes the local database and populates it with a fixed dataset covering charts with real history,
+charts with too little data, and observations with no records at all — see
+[testing-data.md](testing-data.md) for exactly what gets seeded, why, and a manual verification
+checklist. It only exists in dev/dev-client builds (gated by `__DEV__`), never in a release build.
+
+To open the dev menu:
+
+* **Physical device** — shake the phone.
+
+This is destructive — it deletes any observations/records already on the device before inserting the
+fixture set, so don't run it if you have manually-entered data you want to keep.
+
+---
+
 ## Automated tests and typechecking
 
 Unchanged and still run on Node, no emulator needed:
