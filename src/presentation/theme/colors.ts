@@ -1,8 +1,9 @@
 /**
- * Shared design tokens for the presentation layer.
+ * Color design tokens for the presentation layer.
  *
  * These are the app's Material color roles (dark scheme). Import from here
- * instead of re-declaring a local `COLORS` object in each screen/component.
+ * (via the `@presentation/theme` barrel) instead of re-declaring a local
+ * `COLORS` object in each screen/component.
  */
 export const COLORS = {
     background: '#131313',
