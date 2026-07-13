@@ -4,9 +4,7 @@ import {
     KeyboardAvoidingView,
     Modal,
     Platform,
-    SafeAreaView,
     ScrollView,
-    StatusBar as RNStatusBar,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -22,8 +20,14 @@ import {
     OBSERVATION_NAME_MAX_LENGTH,
 } from '../../domain/validationLimits';
 import {MaterialIcons} from '@expo/vector-icons';
-import {LabeledTextField, PrimaryActionButton, ScreenHeader} from "@presentation/components";
-import {COLORS, withAlpha} from "@presentation/theme";
+import {
+    FooterBar,
+    LabeledTextField,
+    PrimaryActionButton,
+    ScreenContainer,
+    ScreenHeader
+} from "@presentation/components";
+import {COLORS} from "@presentation/theme";
 
 // Create instances here for simplicity, typically would use DI.
 const repository = new SQLiteObservationRepository();
@@ -91,7 +95,7 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <ScreenContainer>
             <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
                 <ScreenHeader
@@ -178,9 +182,9 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
                 </ScrollView>
 
                 {/* Fixed Footer */}
-                <View style={styles.footer}>
+                <FooterBar>
                     <PrimaryActionButton label="Create Observation" onPress={handleSave}/>
-                </View>
+                </FooterBar>
 
                 {/* Dropdown Modal */}
                 <Modal visible={dropdownVisible} transparent animationType="fade">
@@ -204,16 +208,11 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
                 </Modal>
 
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </ScreenContainer>
     );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: COLORS.background,
-        paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
-    },
     container: {
         flex: 1,
     },
@@ -313,18 +312,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '500',
         color: COLORS.onSurfaceVariant,
-    },
-    footer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: withAlpha(COLORS.background, 0.8),
-        borderTopWidth: 1,
-        borderTopColor: COLORS.outlineVariant,
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: Platform.OS === 'android' ? 40 : 16,
     },
     modalOverlay: {
         flex: 1,

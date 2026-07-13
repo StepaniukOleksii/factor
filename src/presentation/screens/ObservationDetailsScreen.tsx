@@ -1,17 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {
-    ActivityIndicator,
-    Modal,
-    Platform,
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StatusBar as RNStatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+import {Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
@@ -23,8 +11,8 @@ import {DeleteRecordUseCase} from '../../application/DeleteRecordUseCase';
 import {GetMetricSeriesUseCase, TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
-import {ScreenHeader} from "@presentation/components";
-import {COLORS, withAlpha} from "@presentation/theme";
+import {CenteredState, FooterBar, PrimaryActionButton, ScreenContainer, ScreenHeader} from "@presentation/components";
+import {COLORS} from "@presentation/theme";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 import {rendererRegistry} from '../charts/rendererRegistry';
 import {
@@ -183,28 +171,24 @@ export function ObservationDetailsScreen({
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.safeArea}>
+            <ScreenContainer>
                 <ScreenHeader title="Loading..." onBack={onBack}/>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={COLORS.primaryContainer}/>
-                </View>
-            </SafeAreaView>
+                <CenteredState/>
+            </ScreenContainer>
         );
     }
 
     if (!observation) {
         return (
-            <SafeAreaView style={styles.safeArea}>
+            <ScreenContainer>
                 <ScreenHeader title="Not found" onBack={onBack}/>
-                <View style={styles.loadingContainer}>
-                    <Text style={{color: COLORS.onSurface}}>Observation not found.</Text>
-                </View>
-            </SafeAreaView>
+                <CenteredState message="Observation not found."/>
+            </ScreenContainer>
         );
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <ScreenContainer>
             <ScreenHeader
                 title={observation.name}
                 onBack={onBack}
@@ -416,15 +400,9 @@ export function ObservationDetailsScreen({
             </ScrollView>
 
             {/* Footer / Add Record Button */}
-            <View style={styles.footer}>
-                <TouchableOpacity
-                    style={styles.saveButton}
-                    onPress={onCreateRecord}
-                >
-                    <Text style={styles.saveButtonText}>Add Record</Text>
-                    <MaterialIcons name="check" size={20} color={COLORS.onPrimaryFixedVariant}/>
-                </TouchableOpacity>
-            </View>
+            <FooterBar>
+                <PrimaryActionButton label="Add Record" onPress={onCreateRecord}/>
+            </FooterBar>
 
             {/* Record Contextual Menu Modal */}
             <Modal
@@ -555,16 +533,11 @@ export function ObservationDetailsScreen({
                     </View>
                 </View>
             </Modal>
-        </SafeAreaView>
+        </ScreenContainer>
     );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: COLORS.background,
-        paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
-    },
     menuContainer: {
         width: 48,
         alignItems: 'flex-end',
@@ -615,11 +588,6 @@ const styles = StyleSheet.create({
         color: COLORS.error,
         fontSize: 14,
         fontWeight: '500',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     scrollContent: {
         padding: 24,
@@ -792,35 +760,6 @@ const styles = StyleSheet.create({
         bottom: 0,
         backgroundColor: COLORS.outline,
         borderRadius: 2,
-    },
-    footer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: withAlpha(COLORS.background, 0.95),
-        borderTopWidth: 1,
-        borderTopColor: COLORS.surfaceContainerHighest,
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: Platform.OS === 'android' ? 40 : 16,
-        zIndex: 50,
-    },
-    saveButton: {
-        backgroundColor: COLORS.primaryContainer,
-        borderRadius: 8,
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        width: '100%',
-    },
-    saveButtonText: {
-        color: COLORS.onPrimary,
-        fontSize: 16,
-        fontWeight: '500',
     },
     // Modal styles
     modalOverlay: {

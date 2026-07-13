@@ -1,11 +1,8 @@
 import React, {useEffect, useState} from 'react';
 import {
-    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     ScrollView,
-    StatusBar as RNStatusBar,
     StyleSheet,
     Switch,
     Text,
@@ -22,8 +19,15 @@ import {UpdateRecordUseCase} from '../../application/UpdateRecordUseCase';
 import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
 import {Record as DomainRecord} from '../../domain/Record';
-import {LabeledTextField, PrimaryActionButton, ScreenHeader} from "@presentation/components";
-import {COLORS, withAlpha} from "@presentation/theme";
+import {
+    CenteredState,
+    FooterBar,
+    LabeledTextField,
+    PrimaryActionButton,
+    ScreenContainer,
+    ScreenHeader
+} from "@presentation/components";
+import {COLORS} from "@presentation/theme";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 
 const observationRepository = new SQLiteObservationRepository();
@@ -186,39 +190,33 @@ export function RecordFormScreen({observationId, recordId, onBack, onCreated}: R
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.safeArea}>
+            <ScreenContainer>
                 <ScreenHeader title="Loading..." onBack={onBack}/>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={COLORS.primaryContainer}/>
-                </View>
-            </SafeAreaView>
+                <CenteredState/>
+            </ScreenContainer>
         );
     }
 
     if (!observation) {
         return (
-            <SafeAreaView style={styles.safeArea}>
+            <ScreenContainer>
                 <ScreenHeader title="Not found" onBack={onBack}/>
-                <View style={styles.loadingContainer}>
-                    <Text style={{color: COLORS.onSurface}}>Observation not found.</Text>
-                </View>
-            </SafeAreaView>
+                <CenteredState message="Observation not found."/>
+            </ScreenContainer>
         );
     }
 
     if (isEditMode && !record) {
         return (
-            <SafeAreaView style={styles.safeArea}>
+            <ScreenContainer>
                 <ScreenHeader title="Not found" onBack={onBack}/>
-                <View style={styles.loadingContainer}>
-                    <Text style={{color: COLORS.onSurface}}>Record not found.</Text>
-                </View>
-            </SafeAreaView>
+                <CenteredState message="Record not found."/>
+            </ScreenContainer>
         );
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <ScreenContainer>
             <ScreenHeader
                 title={observation.name}
                 onBack={onBack}
@@ -247,30 +245,20 @@ export function RecordFormScreen({observationId, recordId, onBack, onCreated}: R
                     </View>
                 </ScrollView>
 
-                <View style={styles.footer}>
+                <FooterBar>
                     <PrimaryActionButton
                         label={isEditMode ? "Save Record" : "Add Record"}
                         onPress={handleSave}
                         loading={saving}/>
-                </View>
+                </FooterBar>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </ScreenContainer>
     );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: COLORS.background,
-        paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
-    },
     container: {
         flex: 1,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     timestampContainer: {
         paddingVertical: 8,
@@ -310,18 +298,5 @@ const styles = StyleSheet.create({
         color: COLORS.error,
         fontSize: 12,
         marginTop: 4,
-    },
-    footer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: withAlpha(COLORS.background, 0.8),
-        borderTopWidth: 1,
-        borderTopColor: withAlpha(COLORS.outlineVariant, 0.2),
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: Platform.OS === 'android' ? 40 : 16,
-        zIndex: 50,
     },
 });

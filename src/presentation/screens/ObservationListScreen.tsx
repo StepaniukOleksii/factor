@@ -1,20 +1,10 @@
 import React, {useEffect, useState} from 'react';
-import {
-    ActivityIndicator,
-    FlatList,
-    Platform,
-    SafeAreaView,
-    StatusBar as RNStatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
-} from 'react-native';
+import {FlatList, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
 import {GetObservationsUseCase, ObservationListItem} from '../../application/GetObservationsUseCase';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
-import {ScreenHeader} from "@presentation/components";
+import {CenteredState, ScreenContainer, ScreenHeader} from "@presentation/components";
 import {COLORS} from "@presentation/theme";
 
 const repository = new SQLiteObservationRepository();
@@ -106,13 +96,11 @@ export function ObservationListScreen({
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <ScreenContainer>
             <ScreenHeader title="Observations"/>
 
             {loading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={COLORS.primaryContainer}/>
-                </View>
+                <CenteredState/>
             ) : (
                 <FlatList
                     data={observations}
@@ -127,24 +115,14 @@ export function ObservationListScreen({
             <TouchableOpacity style={styles.fab} onPress={onCreateNew}>
                 <MaterialIcons name="add" size={24} color={COLORS.onPrimaryContainer}/>
             </TouchableOpacity>
-        </SafeAreaView>
+        </ScreenContainer>
     );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: COLORS.background,
-        paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
-    },
     listContent: {
         padding: 16,
         paddingBottom: 100, // For FAB
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     emptyContainer: {
         padding: 40,
