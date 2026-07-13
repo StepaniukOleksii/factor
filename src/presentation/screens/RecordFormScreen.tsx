@@ -23,7 +23,7 @@ import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
 import {Record as DomainRecord} from '../../domain/Record';
 import {LabeledTextField, PrimaryActionButton, ScreenHeader} from "@presentation/components";
-import {COLORS} from "@presentation/theme";
+import {COLORS, withAlpha} from "@presentation/theme";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 
 const observationRepository = new SQLiteObservationRepository();
@@ -316,9 +316,9 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'rgba(19, 19, 19, 0.8)',
+        backgroundColor: withAlpha(COLORS.background, 0.8),
         borderTopWidth: 1,
-        borderTopColor: 'rgba(66, 73, 61, 0.2)',
+        borderTopColor: withAlpha(COLORS.outlineVariant, 0.2),
         paddingHorizontal: 16,
         paddingTop: 16,
         paddingBottom: Platform.OS === 'android' ? 40 : 16,

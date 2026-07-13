@@ -23,7 +23,7 @@ import {
 } from '../../domain/validationLimits';
 import {MaterialIcons} from '@expo/vector-icons';
 import {LabeledTextField, PrimaryActionButton, ScreenHeader} from "@presentation/components";
-import {COLORS} from "@presentation/theme";
+import {COLORS, withAlpha} from "@presentation/theme";
 
 // Create instances here for simplicity, typically would use DI.
 const repository = new SQLiteObservationRepository();
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'rgba(19, 19, 19, 0.8)',
+        backgroundColor: withAlpha(COLORS.background, 0.8),
         borderTopWidth: 1,
         borderTopColor: COLORS.outlineVariant,
         paddingHorizontal: 16,

@@ -4,12 +4,14 @@ import {Canvas, LinearGradient, Path, Skia, type SkPath, vec} from '@shopify/rea
 import {MetricSeriesPoint} from '../../application/GetMetricSeriesUseCase';
 import {NUMERIC_TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
 import type {ChartRendererProps} from './rendererRegistry';
+import {COLORS, withAlpha} from '@presentation/theme';
 
-// Matches the screen's `primary-container`; the curve and its fade are the
-// section's only coloured elements, per the design. No new palette is introduced.
-const LINE_COLOR = '#b6f09c';
-const FILL_COLOR_TOP = 'rgba(182, 240, 156, 0.22)';
-const FILL_COLOR_BOTTOM = 'rgba(182, 240, 156, 0)';
+// The curve and its fade are the section's only coloured elements, per the
+// design, and reuse `primaryContainer` from the shared palette — no new colour
+// is introduced here.
+const LINE_COLOR = COLORS.primaryContainer;
+const FILL_COLOR_TOP = withAlpha(COLORS.primaryContainer, 0.22);
+const FILL_COLOR_BOTTOM = withAlpha(COLORS.primaryContainer, 0);
 const STROKE_WIDTH = 2.5;
 // Keeps the stroke off the top/bottom edges so peaks and troughs aren't clipped.
 const VERTICAL_PADDING = 6;
@@ -132,7 +134,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   insufficientText: {
-    color: '#c2c9b9',
+    color: COLORS.onSurfaceVariant,
     fontSize: 12,
     fontWeight: '500',
   },

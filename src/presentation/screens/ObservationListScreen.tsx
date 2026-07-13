@@ -15,28 +15,11 @@ import {GetObservationsUseCase, ObservationListItem} from '../../application/Get
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
 import {ScreenHeader} from "@presentation/components";
+import {COLORS} from "@presentation/theme";
 
 const repository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
 const useCase = new GetObservationsUseCase(repository, recordRepository);
-
-const COLORS = {
-    background: '#131313',
-    surface: '#131313',
-    onSurface: '#e5e2e1',
-    onSurfaceVariant: '#c2c9b9',
-    surfaceContainerLowest: '#0e0e0e',
-    surfaceContainerLow: '#1c1b1b',
-    surfaceContainerHighest: '#353534',
-    outlineVariant: '#42493d',
-    outline: '#8c9385',
-    primaryContainer: '#b6f09c',
-    onPrimaryContainer: '#3c6f2a',
-    primary: '#f9fff0',
-    onPrimary: '#0b3900',
-    onPrimaryFixedVariant: '#205110',
-    error: '#ffb4ab',
-};
 
 export interface ObservationListScreenProps {
     onCreateNew: () => void;

@@ -24,6 +24,7 @@ import {GetMetricSeriesUseCase, TimeRange} from '../../application/GetMetricSeri
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
 import {ScreenHeader} from "@presentation/components";
+import {COLORS, withAlpha} from "@presentation/theme";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 import {rendererRegistry} from '../charts/rendererRegistry';
 import {
@@ -42,25 +43,6 @@ const deleteObservationUseCase = new DeleteObservationUseCase(observationReposit
 const deleteRecordUseCase = new DeleteRecordUseCase(recordRepository);
 
 const TREND_CHART_HEIGHT = 90;
-
-const COLORS = {
-    background: '#131313',
-    surface: '#131313',
-    onSurface: '#e5e2e1',
-    onSurfaceVariant: '#c2c9b9',
-    surfaceContainerLowest: '#0e0e0e',
-    surfaceContainerHighest: '#262626',
-    surfaceContainerHigh: '#2a2a2a',
-    surfaceContainerLow: '#1c1b1b',
-    outlineVariant: '#42493d',
-    outline: '#8c9385',
-    primaryContainer: '#b6f09c',
-    onPrimaryFixedVariant: '#205110',
-    primary: '#f9fff0',
-    onPrimary: '#0b3900',
-    error: '#ffb4ab',
-    onError: '#690005',
-};
 
 export interface ObservationDetailsScreenProps {
     observationId: string;
@@ -816,7 +798,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'rgba(19, 19, 19, 0.95)',
+        backgroundColor: withAlpha(COLORS.background, 0.95),
         borderTopWidth: 1,
         borderTopColor: COLORS.surfaceContainerHighest,
         paddingHorizontal: 16,
@@ -825,7 +807,7 @@ const styles = StyleSheet.create({
         zIndex: 50,
     },
     saveButton: {
-        backgroundColor: '#b6f09c',
+        backgroundColor: COLORS.primaryContainer,
         borderRadius: 8,
         paddingVertical: 16,
         paddingHorizontal: 16,
@@ -836,7 +818,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     saveButtonText: {
-        color: '#0b3900',
+        color: COLORS.onPrimary,
         fontSize: 16,
         fontWeight: '500',
     },

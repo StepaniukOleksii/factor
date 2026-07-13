@@ -11,3 +11,6 @@
 
 /** Material color roles (dark scheme) - background, surface, primary, error, etc. **/
 export {COLORS} from './colors';
+
+/** Derives a translucent `rgba()` string from a solid `COLORS` token (scrims, fills, faded borders). **/
+export {withAlpha} from './withAlpha';
