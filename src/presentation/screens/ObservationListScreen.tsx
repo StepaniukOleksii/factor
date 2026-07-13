@@ -5,7 +5,7 @@ import {GetObservationsUseCase, ObservationListItem} from '../../application/Get
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
 import {CenteredState, ScreenContainer, ScreenHeader} from "@presentation/components";
-import {COLORS} from "@presentation/theme";
+import {COLORS, RADIUS} from "@presentation/theme";
 
 const repository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surfaceContainerLow,
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
-        borderRadius: 12,
+        borderRadius: RADIUS.lg,
         padding: 16,
         marginBottom: 12,
     },
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surfaceContainerHighest,
         paddingHorizontal: 8,
         paddingVertical: 2,
-        borderRadius: 16,
+        borderRadius: RADIUS.xl,
     },
     metricChipText: {
         color: COLORS.onSurfaceVariant,
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     cardAddButton: {
         width: 32,
         height: 32,
-        borderRadius: 4,
+        borderRadius: RADIUS.sm,
         borderWidth: 1,
         borderColor: COLORS.primaryContainer,
         justifyContent: 'center',
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
         right: 16,
         width: 56,
         height: 56,
-        borderRadius: 12,
+        borderRadius: RADIUS.lg,
         backgroundColor: COLORS.primaryContainer,
         justifyContent: 'center',
         alignItems: 'center',

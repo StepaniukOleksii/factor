@@ -27,7 +27,7 @@ import {
     ScreenContainer,
     ScreenHeader
 } from "@presentation/components";
-import {COLORS} from "@presentation/theme";
+import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 
 // Create instances here for simplicity, typically would use DI.
 const repository = new SQLiteObservationRepository();
@@ -238,13 +238,7 @@ const styles = StyleSheet.create({
     section: {
         marginBottom: 0,
     },
-    label: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: COLORS.onSurfaceVariant,
-        letterSpacing: 1.2,
-        marginBottom: 8,
-    },
+    label: {...TYPOGRAPHY.sectionCaption, marginBottom: 8},
     descriptionSection: {
         marginTop: 16,
     },
@@ -260,7 +254,7 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surfaceContainerLow,
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
-        borderRadius: 8,
+        borderRadius: RADIUS.lg,
         padding: 16,
         marginBottom: 16,
     },
@@ -271,16 +265,11 @@ const styles = StyleSheet.create({
     metricField: {
         flex: 1,
     },
-    // Label for the TYPE selector; kept visually in sync with LabeledTextField's label.
-    metricLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: COLORS.onSurfaceVariant,
-        marginBottom: 8,
-    },
+    // Label for the TYPE selector, which can't use LabeledTextField directly.
+    metricLabel: {...TYPOGRAPHY.fieldLabel, marginBottom: 8},
     typeSelector: {
         backgroundColor: COLORS.surfaceContainerLowest,
-        borderRadius: 4,
+        borderRadius: RADIUS.sm,
         paddingHorizontal: 12,
         paddingVertical: 8,
         flexDirection: 'row',
@@ -305,7 +294,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderStyle: 'dashed',
         borderColor: COLORS.outlineVariant,
-        borderRadius: 8,
+        borderRadius: RADIUS.md,
         gap: 8,
     },
     addMetricText: {
@@ -315,14 +304,14 @@ const styles = StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     modalContent: {
         backgroundColor: COLORS.surfaceContainerLow,
         width: '80%',
-        borderRadius: 8,
+        borderRadius: RADIUS.md,
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
         paddingVertical: 8,

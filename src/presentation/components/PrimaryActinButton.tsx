@@ -1,7 +1,7 @@
 import React from "react";
 import {ActivityIndicator, StyleSheet, Text, TouchableOpacity, ViewStyle} from "react-native";
 import {MaterialIcons} from "@expo/vector-icons";
-import {COLORS} from "@presentation/theme";
+import {COLORS, RADIUS} from "@presentation/theme";
 
 export interface PrimaryActinButtonProps {
     label: string;
@@ -44,7 +44,7 @@ export function PrimaryActionButton(
 const styles = StyleSheet.create({
     button: {
         backgroundColor: COLORS.primaryContainer,
-        borderRadius: 8,
+        borderRadius: RADIUS.md,
         paddingVertical: 16,
         paddingHorizontal: 16,
         flexDirection: 'row',

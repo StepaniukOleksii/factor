@@ -1,6 +1,6 @@
 import React, {ReactNode} from "react";
 import {StyleSheet, Text, TextInput, TextInputProps, View} from "react-native";
-import {COLORS} from "@presentation/theme";
+import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 
 export interface LabeledTextFieldProps extends Omit<TextInputProps, "style"> {
     /** Caption shown above the input. */
@@ -72,16 +72,12 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         marginBottom: 8,
     },
-    label: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: COLORS.onSurfaceVariant,
-    },
+    label: TYPOGRAPHY.fieldLabel,
     input: {
         backgroundColor: COLORS.surfaceContainerLowest,
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
-        borderRadius: 8,
+        borderRadius: RADIUS.md,
         paddingHorizontal: 16,
         paddingVertical: 12,
         color: COLORS.onSurface,
@@ -100,9 +96,5 @@ const styles = StyleSheet.create({
         alignSelf: "flex-end",
         marginTop: 4,
     },
-    errorText: {
-        color: COLORS.error,
-        fontSize: 12,
-        marginTop: 4,
-    },
+    errorText: {...TYPOGRAPHY.error, marginTop: 4},
 });

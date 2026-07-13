@@ -12,7 +12,7 @@ import {GetMetricSeriesUseCase, TimeRange} from '../../application/GetMetricSeri
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
 import {CenteredState, FooterBar, PrimaryActionButton, ScreenContainer, ScreenHeader} from "@presentation/components";
-import {COLORS} from "@presentation/theme";
+import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 import {rendererRegistry} from '../charts/rendererRegistry';
 import {
@@ -568,12 +568,8 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surfaceContainerHigh,
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
-        borderRadius: 12,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 4},
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
+        borderRadius: RADIUS.lg,
+        ...ELEVATION.dropdown,
         overflow: 'hidden',
         zIndex: 50,
     },
@@ -602,13 +598,7 @@ const styles = StyleSheet.create({
     section: {
         marginBottom: 40,
     },
-    sectionTitle: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: COLORS.onSurfaceVariant,
-        letterSpacing: 1,
-        marginBottom: 16,
-    },
+    sectionTitle: {...TYPOGRAPHY.sectionCaption, marginBottom: 16},
     metricsRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -620,14 +610,14 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surfaceContainerLow,
         paddingHorizontal: 12,
         paddingVertical: 8,
-        borderRadius: 8,
+        borderRadius: RADIUS.md,
         borderWidth: 1,
         borderColor: COLORS.surfaceContainerHighest,
     },
     metricDot: {
         width: 8,
         height: 8,
-        borderRadius: 4,
+        borderRadius: RADIUS.sm,
         backgroundColor: COLORS.primaryContainer,
         marginRight: 8,
     },
@@ -643,7 +633,7 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surfaceContainerLow,
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
-        borderRadius: 12,
+        borderRadius: RADIUS.lg,
         padding: 16,
     },
     trendCardTitle: {
@@ -684,7 +674,7 @@ const styles = StyleSheet.create({
     recordCardExpanded: {
         backgroundColor: COLORS.surfaceContainerLow,
         borderBottomWidth: 0,
-        borderRadius: 12,
+        borderRadius: RADIUS.lg,
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
         paddingBottom: 0,
@@ -720,7 +710,7 @@ const styles = StyleSheet.create({
     },
     metricValueBlock: {
         backgroundColor: COLORS.surfaceContainerLowest,
-        borderRadius: 8,
+        borderRadius: RADIUS.md,
         padding: 12,
         marginRight: 8,
         minWidth: 100,
@@ -749,7 +739,7 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 4,
         backgroundColor: COLORS.surfaceContainerHighest,
-        borderRadius: 2,
+        borderRadius: RADIUS.xs,
         marginHorizontal: 8,
         position: 'relative',
         overflow: 'hidden',
@@ -759,7 +749,7 @@ const styles = StyleSheet.create({
         top: 0,
         bottom: 0,
         backgroundColor: COLORS.outline,
-        borderRadius: 2,
+        borderRadius: RADIUS.xs,
     },
     // Modal styles
     modalOverlay: {
@@ -773,16 +763,12 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surfaceContainerLow,
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
-        borderRadius: 12,
+        borderRadius: RADIUS.xl,
         maxWidth: 384,
         width: '100%',
         padding: 24,
         gap: 24,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 8},
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
-        elevation: 16,
+        ...ELEVATION.dialog,
     },
     modalTextGroup: {
         gap: 8,
@@ -806,7 +792,7 @@ const styles = StyleSheet.create({
     modalCancelButton: {
         paddingHorizontal: 24,
         paddingVertical: 10,
-        borderRadius: 24,
+        borderRadius: RADIUS.pill,
     },
     modalCancelButtonText: {
         color: COLORS.onSurface,
@@ -816,7 +802,7 @@ const styles = StyleSheet.create({
     modalDeleteButton: {
         paddingHorizontal: 24,
         paddingVertical: 10,
-        borderRadius: 24,
+        borderRadius: RADIUS.pill,
         backgroundColor: COLORS.error,
     },
     modalDeleteButtonDisabled: {
@@ -837,16 +823,12 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surfaceContainerLow,
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
-        borderRadius: 16,
+        borderRadius: RADIUS.xl,
         maxWidth: 320,
         width: '100%',
         padding: 24,
         gap: 24,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 8},
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
-        elevation: 16,
+        ...ELEVATION.dialog,
     },
     recordMenuHeader: {
         gap: 4,
@@ -872,7 +854,7 @@ const styles = StyleSheet.create({
         gap: 12,
         paddingVertical: 12,
         paddingHorizontal: 16,
-        borderRadius: 12,
+        borderRadius: RADIUS.lg,
         backgroundColor: 'transparent',
     },
     recordMenuActionText: {
@@ -891,7 +873,7 @@ const styles = StyleSheet.create({
     recordMenuCancelButton: {
         paddingHorizontal: 16,
         paddingVertical: 8,
-        borderRadius: 24,
+        borderRadius: RADIUS.pill,
     },
     recordMenuCancelText: {
         fontSize: 14,
@@ -902,15 +884,11 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surfaceContainerLow,
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
-        borderRadius: 16,
+        borderRadius: RADIUS.xl,
         maxWidth: 320,
         width: '100%',
         padding: 24,
         gap: 20,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 8},
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
-        elevation: 16,
+        ...ELEVATION.dialog,
     },
 });

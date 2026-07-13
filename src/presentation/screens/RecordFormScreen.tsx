@@ -27,7 +27,7 @@ import {
     ScreenContainer,
     ScreenHeader
 } from "@presentation/components";
-import {COLORS} from "@presentation/theme";
+import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 
 const observationRepository = new SQLiteObservationRepository();
@@ -278,25 +278,16 @@ const styles = StyleSheet.create({
     },
     inputContainer: {
         backgroundColor: COLORS.surfaceContainerLow,
-        borderRadius: 12,
+        borderRadius: RADIUS.lg,
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
         padding: 16,
     },
-    // Label for the Boolean (Switch) field; kept visually in sync with LabeledTextField's label.
-    label: {
-        color: COLORS.onSurfaceVariant,
-        fontWeight: '600',
-        fontSize: 14,
-        marginBottom: 8,
-    },
+    // Label for the Boolean (Switch) field, which can't use LabeledTextField directly.
+    label: {...TYPOGRAPHY.fieldLabel, marginBottom: 8},
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    errorText: {
-        color: COLORS.error,
-        fontSize: 12,
-        marginTop: 4,
-    },
+    errorText: {...TYPOGRAPHY.error, marginTop: 4},
 });
