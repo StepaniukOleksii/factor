@@ -1,12 +1,7 @@
 import React, {ReactNode} from "react";
 import {StyleSheet, Text, TouchableOpacity, View} from "react-native";
 import {MaterialIcons} from "@expo/vector-icons";
-
-const COLORS = {
-    surface: '#131313',
-    primary: '#f9fff0',
-    outlineVariant: '#42493d',
-};
+import {COLORS} from "@presentation/theme";
 
 export interface ScreenHeaderProps {
     title: string;

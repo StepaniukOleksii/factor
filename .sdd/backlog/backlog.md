@@ -35,6 +35,13 @@ bugs, and refactor notes until they're ready to become a real spec.
 [REF]
 
 - make a reusable component for modals
+- Promote `src/presentation/theme.ts` to a namespaced `theme/` folder (e.g. `theme/colors.ts`, plus future
+  `theme/spacing.ts`, `theme/typography.ts`, and a `theme/index.ts` barrel) once a second token category appears.
+  `@presentation/theme` resolves to `theme/index.ts`, so existing imports don't change.
+  - When doing this, update the presentation-layer skill to cover design tokens the same way it covers the
+    component catalog (`src/presentation/components/index.ts`): add a "check the token catalog / reuse existing
+    tokens / add new tokens to the barrel" section pointing at the theme barrel, so colors and other values aren't
+    hardcoded ad hoc in screens and components.
 
 [DOC]
 

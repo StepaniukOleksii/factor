@@ -15,3 +15,8 @@ export {PrimaryActinButtonProps} from './PrimaryActinButton';
 export {ScreenHeader} from './ScreenHeader';
 /** Props interface for ScreenHeader component **/
 export {ScreenHeaderProps} from './ScreenHeader';
+
+/** Labeled text input with optional character counter and inline error - used for form fields across screens **/
+export {LabeledTextField} from './LabeledTextField';
+/** Props interface for LabeledTextField component **/
+export {LabeledTextFieldProps} from './LabeledTextField';

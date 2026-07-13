@@ -1,12 +1,7 @@
 import React from "react";
 import {ActivityIndicator, StyleSheet, Text, TouchableOpacity, ViewStyle} from "react-native";
 import {MaterialIcons} from "@expo/vector-icons";
-
-const COLORS = {
-    primaryContainer: '#b6f09c',
-    onPrimary: '#0b3900',
-    onPrimaryFixedVariant: '#205110'
-}
+import {COLORS} from "@presentation/theme";
 
 export interface PrimaryActinButtonProps {
     label: string;

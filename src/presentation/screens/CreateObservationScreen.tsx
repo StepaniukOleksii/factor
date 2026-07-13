@@ -9,7 +9,6 @@ import {
     StatusBar as RNStatusBar,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     TouchableWithoutFeedback,
     View
@@ -23,25 +22,12 @@ import {
     OBSERVATION_NAME_MAX_LENGTH,
 } from '../../domain/validationLimits';
 import {MaterialIcons} from '@expo/vector-icons';
-import {PrimaryActionButton, ScreenHeader} from "@presentation/components";
+import {LabeledTextField, PrimaryActionButton, ScreenHeader} from "@presentation/components";
+import {COLORS} from "@presentation/theme";
 
 // Create instances here for simplicity, typically would use DI.
 const repository = new SQLiteObservationRepository();
 const useCase = new CreateObservationUseCase(repository);
-
-const COLORS = {
-    background: '#131313',
-    surface: '#131313',
-    onSurface: '#e5e2e1',
-    onSurfaceVariant: '#c2c9b9',
-    surfaceContainerLowest: '#0e0e0e',
-    surfaceContainerLow: '#1c1b1b',
-    outlineVariant: '#42493d',
-    outline: '#8c9385',
-    primaryContainer: '#b6f09c',
-    onPrimaryFixedVariant: '#205110',
-    error: '#ffb4ab',
-};
 
 export interface CreateObservationScreenProps {
     onCreated?: () => void;
@@ -120,39 +106,30 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
                 {/* Sticky Top Section (Observation Name) */}
                 <View style={styles.stickySection}>
                     <View style={styles.section}>
-                        <Text style={styles.label}>OBSERVATION NAME</Text>
-                        <TextInput
-                            style={styles.input}
+                        <LabeledTextField
+                            label="OBSERVATION NAME"
                             value={observationName}
                             onChangeText={setObservationName}
                             placeholder="e.g., Sleep Quality, Mood"
-                            placeholderTextColor={COLORS.outline}
                             maxLength={OBSERVATION_NAME_MAX_LENGTH}
+                            showCounter
                         />
-                        <Text style={styles.charCounter}>
-                            {observationName.length}/{OBSERVATION_NAME_MAX_LENGTH}
-                        </Text>
                     </View>
                 </View>
 
                 <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                     {/* Description Section */}
                     <View style={styles.descriptionSection}>
-                        <Text style={styles.label}>DESCRIPTION</Text>
-                        <TextInput
-                            style={styles.descriptionInput}
+                        <LabeledTextField
+                            label="DESCRIPTION"
                             value={description}
                             onChangeText={setDescription}
                             placeholder="Optional — what does this observation track?"
-                            placeholderTextColor={COLORS.outline}
                             multiline
                             numberOfLines={3}
                             maxLength={OBSERVATION_DESCRIPTION_MAX_LENGTH}
-                            textAlignVertical="top"
+                            showCounter
                         />
-                        <Text style={styles.charCounter}>
-                            {description.length}/{OBSERVATION_DESCRIPTION_MAX_LENGTH}
-                        </Text>
                     </View>
                     <View style={styles.divider}/>
                     {/* Metrics Section */}
@@ -163,26 +140,20 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
                             <View key={index} style={styles.metricCard}>
                                 <View style={styles.metricGrid}>
                                     <View style={styles.metricField}>
-                                        <View style={styles.metricLabelRow}>
-                                            <Text style={styles.metricLabel}>METRIC NAME</Text>
-                                            {metrics.length > 1 && (
+                                        <LabeledTextField
+                                            label="METRIC NAME"
+                                            labelAccessory={metrics.length > 1 ? (
                                                 <TouchableOpacity onPress={() => handleRemoveMetric(index)}
                                                                   style={styles.deleteButton}>
                                                     <MaterialIcons name="delete" size={20} color={COLORS.outline}/>
                                                 </TouchableOpacity>
-                                            )}
-                                        </View>
-                                        <TextInput
-                                            style={styles.metricInput}
+                                            ) : undefined}
                                             value={metric.name}
                                             onChangeText={(val) => handleMetricChange(index, 'name', val)}
                                             placeholder="e.g., Duration"
-                                            placeholderTextColor={COLORS.outline}
                                             maxLength={METRIC_NAME_MAX_LENGTH}
+                                            showCounter
                                         />
-                                        <Text style={styles.charCounter}>
-                                            {metric.name.length}/{METRIC_NAME_MAX_LENGTH}
-                                        </Text>
                                     </View>
 
                                     <View style={styles.metricField}>
@@ -275,35 +246,8 @@ const styles = StyleSheet.create({
         letterSpacing: 1.2,
         marginBottom: 8,
     },
-    input: {
-        backgroundColor: COLORS.surfaceContainerLowest,
-        borderWidth: 1,
-        borderColor: COLORS.outlineVariant,
-        borderRadius: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        color: COLORS.onSurface,
-        fontSize: 16,
-    },
     descriptionSection: {
         marginTop: 16,
-    },
-    descriptionInput: {
-        backgroundColor: COLORS.surfaceContainerLowest,
-        borderWidth: 1,
-        borderColor: COLORS.outlineVariant,
-        borderRadius: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        color: COLORS.onSurface,
-        fontSize: 16,
-        minHeight: 72,
-    },
-    charCounter: {
-        fontSize: 12,
-        color: COLORS.outline,
-        alignSelf: 'flex-end',
-        marginTop: 4,
     },
     divider: {
         height: 1,
@@ -327,27 +271,13 @@ const styles = StyleSheet.create({
     },
     metricField: {
         flex: 1,
-        gap: 4,
     },
-    metricLabelRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 4,
-    },
+    // Label for the TYPE selector; kept visually in sync with LabeledTextField's label.
     metricLabel: {
-        fontSize: 12,
-        color: COLORS.outline,
-    },
-    metricInput: {
-        backgroundColor: COLORS.surfaceContainerLowest,
-        borderWidth: 1,
-        borderColor: 'transparent',
-        borderRadius: 4,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        color: COLORS.onSurface,
-        fontSize: 16,
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.onSurfaceVariant,
+        marginBottom: 8,
     },
     typeSelector: {
         backgroundColor: COLORS.surfaceContainerLowest,
