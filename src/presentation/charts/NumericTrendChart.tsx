@@ -1,7 +1,7 @@
 import React from 'react';
 import {type GestureResponderEvent, Pressable, StyleSheet, Text, View} from 'react-native';
 import {Canvas, Circle, LinearGradient, Path, Skia, type SkPath, vec} from '@shopify/react-native-skia';
-import {MetricSeriesPoint} from '../../application/GetMetricSeriesUseCase';
+import {MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {NUMERIC_TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
 import type {ChartRendererProps} from './rendererRegistry';
 import {COLORS, withAlpha} from '@presentation/theme';
@@ -33,10 +33,12 @@ const POINT_HALO_COLOR = COLORS.surfaceContainerLow;
  * Renders a Numeric metric's aggregated series as a single smooth Skia curve
  * with a soft gradient fill fading out beneath it.
  *
- * The x axis is scaled across the span of the provided points and the y axis
- * across their min/max value; there are no axes, gridlines, or legend. Fewer
- * than two points cannot form a line, so an "insufficient data" message is
- * shown instead of a broken canvas.
+ * The x axis is scaled across `timeRange` — the window the chart is drawn over —
+ * so points sit at their true position in time; a series that stops in the middle
+ * of the window ends in the middle of the chart rather than being stretched to the
+ * right edge. The y axis is scaled across the points' min/max value. There are no
+ * axes, gridlines, or legend. Fewer than two points cannot form a line, so an
+ * "insufficient data" message is shown instead of a broken canvas.
  *
  * Each aggregated point is marked with a small dot so the underlying Records are
  * visible. Tapping a dot (or the curve near it) selects the point nearest the
@@ -44,7 +46,7 @@ const POINT_HALO_COLOR = COLORS.surfaceContainerLow;
  * tap is also close enough to the curve vertically; taps in the empty space above
  * or below miss silently.
  */
-export const NumericTrendChart = ({points, width, height, onPointPress}: ChartRendererProps) => {
+export const NumericTrendChart = ({points, timeRange, width, height, onPointPress}: ChartRendererProps) => {
   if (points.length < 2) {
     return (
       <View style={[styles.insufficient, {height}]}>
@@ -53,7 +55,7 @@ export const NumericTrendChart = ({points, width, height, onPointPress}: ChartRe
     );
   }
 
-  const screenPoints = toScreenPoints(points, width, height);
+  const screenPoints = toScreenPoints(points, timeRange, width, height);
   const linePath = buildSmoothPath(screenPoints);
   const areaPath = buildAreaPath(linePath, screenPoints, height);
 
@@ -160,11 +162,13 @@ function buildAreaPath(linePath: SkPath, screenPoints: Point[], height: number):
   return areaPath;
 }
 
-function toScreenPoints(points: MetricSeriesPoint[], width: number, height: number): Point[] {
-  const xs = points.map(p => p.x);
+function toScreenPoints(points: MetricSeriesPoint[], timeRange: TimeRange, width: number, height: number): Point[] {
   const ys = points.map(p => p.y);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
+  // The x domain is the chart's time window, not the data's own span, so points
+  // land at their real position in time and gaps before the first or after the
+  // last Record stay visible instead of being scaled away.
+  const minX = timeRange.start.getTime();
+  const maxX = timeRange.end.getTime();
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
 

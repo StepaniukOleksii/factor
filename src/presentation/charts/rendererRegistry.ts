@@ -1,12 +1,17 @@
 import type React from 'react';
 import type {Metric, MetricValueType} from '../../domain/Metric';
-import type {MetricSeriesPoint} from '../../application/GetMetricSeriesUseCase';
+import type {MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {NumericTrendChart} from './NumericTrendChart';
 
 /**
  * Props every chart renderer receives: the metric being drawn, its aggregated
- * series, and the pixel box to draw within. Renderers own their drawing but not
- * their layout — the screen decides size and labelling.
+ * series, the time window it is drawn over, and the pixel box to draw within.
+ * Renderers own their drawing but not their layout — the screen decides size and
+ * labelling.
+ *
+ * `timeRange` is the x-axis domain: renderers scale time across `[start, end)`
+ * rather than across the span of the data, so a series whose last point is in the
+ * middle of the window ends in the middle of the chart rather than at the edge.
  *
  * `onPointPress` is invoked with the `recordId` of a tapped series point so the
  * screen can open that Record's detail view; renderers with no tappable state
@@ -15,6 +20,7 @@ import {NumericTrendChart} from './NumericTrendChart';
 export interface ChartRendererProps {
   metric: Metric;
   points: MetricSeriesPoint[];
+  timeRange: TimeRange;
   width: number;
   height: number;
   onPointPress: (recordId: string) => void;

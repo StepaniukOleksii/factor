@@ -272,6 +272,7 @@ export function ObservationDetailsScreen({
                                                     <NumericRenderer
                                                         metric={metric}
                                                         points={points}
+                                                        timeRange={chartRange!}
                                                         width={trendChartWidth}
                                                         height={TREND_CHART_HEIGHT}
                                                         onPointPress={onEditRecord}

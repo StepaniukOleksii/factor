@@ -4,7 +4,7 @@ import renderer, {act} from 'react-test-renderer';
 import {Circle, Skia} from '@shopify/react-native-skia';
 import {NumericTrendChart} from './NumericTrendChart';
 import {NUMERIC_TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
-import {MetricSeriesPoint} from '../../application/GetMetricSeriesUseCase';
+import {MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {Metric} from '../../domain/Metric';
 import {COLORS} from '@presentation/theme';
 
@@ -50,13 +50,30 @@ function findAllByText(root: any, text: string) {
   );
 }
 
-function render(chartPoints: MetricSeriesPoint[], onPointPress = vi.fn()) {
+// Unless a test passes an explicit window, the chart is drawn over the exact span
+// of its data — reproducing the pre-fix "scale x across the data" behaviour so the
+// coordinate-based assertions below stay stable. Tests that exercise the window
+// scaling pass their own wider `timeRange`.
+function dataSpanRange(chartPoints: MetricSeriesPoint[]): TimeRange {
+  const xs = chartPoints.map(p => p.x);
+  return {
+    start: new Date(xs.length ? Math.min(...xs) : 0),
+    end: new Date(xs.length ? Math.max(...xs) : 1),
+  };
+}
+
+function render(
+  chartPoints: MetricSeriesPoint[],
+  onPointPress = vi.fn(),
+  timeRange: TimeRange = dataSpanRange(chartPoints),
+) {
   let root: any;
   act(() => {
     root = renderer.create(
       <NumericTrendChart
         metric={metric}
         points={chartPoints}
+        timeRange={timeRange}
         width={300}
         height={90}
         onPointPress={onPointPress}
@@ -117,6 +134,33 @@ describe('NumericTrendChart', () => {
       .findAllByType(Circle)
       .filter((circle: any) => circle.props.color === COLORS.primaryContainer);
     expect(dots.length).toBe(4);
+  });
+
+  it('scales x across the time window so leading and trailing gaps stay visible', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    // A 30-day window whose data is clustered around days 5-7: there is empty
+    // space both before the first Record and after the last.
+    const timeRange: TimeRange = {start: new Date(0), end: new Date(30 * DAY)};
+    const chartPoints: MetricSeriesPoint[] = [5, 6, 7].map(day => ({
+      x: day * DAY,
+      y: 10 + day,
+      recordId: `r${day}`,
+    }));
+
+    const root = render(chartPoints, vi.fn(), timeRange);
+
+    // The record dots (line-coloured circles) sit at each point's screen x.
+    const dots = root.root
+      .findAllByType(Circle)
+      .filter((circle: any) => circle.props.color === COLORS.primaryContainer);
+    const firstDotX = dots[0].props.cx;
+    const lastDotX = dots[dots.length - 1].props.cx;
+
+    // Day 5 of 30 → 50px in from the left (not pinned to 0); day 7 → 70px, far
+    // from the 300px right edge. The old data-span scaling would place these at
+    // 0 and 300, stretching the curve edge-to-edge.
+    expect(firstDotX).toBeCloseTo((5 / 30) * 300);
+    expect(lastDotX).toBeCloseTo((7 / 30) * 300);
   });
 
   it('renders the insufficient-data message and no path for a single point', () => {
