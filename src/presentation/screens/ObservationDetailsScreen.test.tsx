@@ -398,6 +398,28 @@ describe('ObservationDetailsScreen Trends', () => {
         expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
     });
 
+    it('opens the record behind a tapped chart point via onEditRecord', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
+        // Same value in both records so the series is flat (points sit at the
+        // canvas mid-line), keeping the tap's vertical hit-test independent of the
+        // chart's unmeasured width in the test renderer.
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('earliest', 3, [['m1', 5]]),
+            chartRecord('latest', 1, [['m1', 5]]),
+        ]);
+        const onEditRecord = vi.fn();
+
+        const root = await renderScreen(onEditRecord);
+
+        const pressable = root.root.findByProps({testID: 'numeric-trend-chart-pressable'});
+        await act(async () => {
+            // 45 is the mid-line of the 90px trend chart, where a flat series sits.
+            pressable.props.onPress({nativeEvent: {locationX: 0, locationY: 45}});
+        });
+
+        expect(onEditRecord).toHaveBeenCalledWith('earliest');
+    });
+
     it('renders the RECENT RECORDS section independently of the trends data fetch', async () => {
         mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
         mockGetRecentRecordsExecute.mockResolvedValue([initialRecord]);

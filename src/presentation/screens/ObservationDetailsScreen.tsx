@@ -274,6 +274,7 @@ export function ObservationDetailsScreen({
                                                         points={points}
                                                         width={trendChartWidth}
                                                         height={TREND_CHART_HEIGHT}
+                                                        onPointPress={onEditRecord}
                                                     />
                                                 </View>
                                             ) : (

@@ -7,12 +7,17 @@ import {NumericTrendChart} from './NumericTrendChart';
  * Props every chart renderer receives: the metric being drawn, its aggregated
  * series, and the pixel box to draw within. Renderers own their drawing but not
  * their layout — the screen decides size and labelling.
+ *
+ * `onPointPress` is invoked with the `recordId` of a tapped series point so the
+ * screen can open that Record's detail view; renderers with no tappable state
+ * (e.g. an insufficient-data placeholder) simply never call it.
  */
 export interface ChartRendererProps {
   metric: Metric;
   points: MetricSeriesPoint[];
   width: number;
   height: number;
+  onPointPress: (recordId: string) => void;
 }
 
 /**

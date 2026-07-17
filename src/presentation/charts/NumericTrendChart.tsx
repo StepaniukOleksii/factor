@@ -1,6 +1,6 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
-import {Canvas, LinearGradient, Path, Skia, type SkPath, vec} from '@shopify/react-native-skia';
+import {type GestureResponderEvent, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Canvas, Circle, LinearGradient, Path, Skia, type SkPath, vec} from '@shopify/react-native-skia';
 import {MetricSeriesPoint} from '../../application/GetMetricSeriesUseCase';
 import {NUMERIC_TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
 import type {ChartRendererProps} from './rendererRegistry';
@@ -15,6 +15,19 @@ const FILL_COLOR_BOTTOM = withAlpha(COLORS.primaryContainer, 0);
 const STROKE_WIDTH = 2.5;
 // Keeps the stroke off the top/bottom edges so peaks and troughs aren't clipped.
 const VERTICAL_PADDING = 6;
+// A tap counts as hitting a point only if it falls within this many pixels of the
+// curve vertically — a comfortable touch-target radius that still rejects taps in
+// the empty space above or below the line.
+const VERTICAL_TOLERANCE = 24;
+// A small marker is drawn at each aggregated point so the tappable Records are
+// visible and users know where to aim — otherwise, on a sparse curve, the actual
+// hit targets are invisible. The dot reuses the line colour; a halo in the trend
+// card's own colour rings it so it reads as a distinct node, not a bulge in the
+// line.
+const POINT_RADIUS = 2.5;
+const POINT_HALO_RADIUS = 4;
+const POINT_COLOR = LINE_COLOR;
+const POINT_HALO_COLOR = COLORS.surfaceContainerLow;
 
 /**
  * Renders a Numeric metric's aggregated series as a single smooth Skia curve
@@ -24,8 +37,14 @@ const VERTICAL_PADDING = 6;
  * across their min/max value; there are no axes, gridlines, or legend. Fewer
  * than two points cannot form a line, so an "insufficient data" message is
  * shown instead of a broken canvas.
+ *
+ * Each aggregated point is marked with a small dot so the underlying Records are
+ * visible. Tapping a dot (or the curve near it) selects the point nearest the
+ * tap's horizontal position and opens its Record via `onPointPress`, provided the
+ * tap is also close enough to the curve vertically; taps in the empty space above
+ * or below miss silently.
  */
-export const NumericTrendChart = ({points, width, height}: ChartRendererProps) => {
+export const NumericTrendChart = ({points, width, height, onPointPress}: ChartRendererProps) => {
   if (points.length < 2) {
     return (
       <View style={[styles.insufficient, {height}]}>
@@ -38,30 +57,64 @@ export const NumericTrendChart = ({points, width, height}: ChartRendererProps) =
   const linePath = buildSmoothPath(screenPoints);
   const areaPath = buildAreaPath(linePath, screenPoints, height);
 
+  const handlePress = (event: GestureResponderEvent) => {
+    const {locationX, locationY} = event.nativeEvent;
+    const nearestIndex = nearestPointIndex(screenPoints, locationX);
+    if (Math.abs(screenPoints[nearestIndex].y - locationY) <= VERTICAL_TOLERANCE) {
+      onPointPress(points[nearestIndex].recordId);
+    }
+  };
+
   return (
-    <Canvas style={{width, height}}>
-      <Path path={areaPath}>
-        <LinearGradient
-          start={vec(0, 0)}
-          end={vec(0, height)}
-          colors={[FILL_COLOR_TOP, FILL_COLOR_BOTTOM]}
+    <Pressable testID="numeric-trend-chart-pressable" style={{width, height}} onPress={handlePress}>
+      <Canvas style={{width, height}}>
+        <Path path={areaPath}>
+          <LinearGradient
+            start={vec(0, 0)}
+            end={vec(0, height)}
+            colors={[FILL_COLOR_TOP, FILL_COLOR_BOTTOM]}
+          />
+        </Path>
+        <Path
+          path={linePath}
+          style="stroke"
+          strokeWidth={STROKE_WIDTH}
+          strokeJoin="round"
+          strokeCap="round"
+          color={LINE_COLOR}
         />
-      </Path>
-      <Path
-        path={linePath}
-        style="stroke"
-        strokeWidth={STROKE_WIDTH}
-        strokeJoin="round"
-        strokeCap="round"
-        color={LINE_COLOR}
-      />
-    </Canvas>
+        {screenPoints.map((point, index) => (
+          <React.Fragment key={points[index].recordId}>
+            <Circle cx={point.x} cy={point.y} r={POINT_HALO_RADIUS} color={POINT_HALO_COLOR} />
+            <Circle cx={point.x} cy={point.y} r={POINT_RADIUS} color={POINT_COLOR} />
+          </React.Fragment>
+        ))}
+      </Canvas>
+    </Pressable>
   );
 };
 
 interface Point {
   x: number;
   y: number;
+}
+
+/**
+ * Index of the screen point whose `x` is closest to `locationX`. Hit-testing is
+ * horizontal-nearest rather than an exact hit on the drawn curve, since adjacent
+ * points can sit only a few pixels apart. Ties keep the earlier (leftmost) point.
+ */
+function nearestPointIndex(screenPoints: Point[], locationX: number): number {
+  let nearestIndex = 0;
+  let nearestDistance = Infinity;
+  for (let i = 0; i < screenPoints.length; i++) {
+    const distance = Math.abs(screenPoints[i].x - locationX);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = i;
+    }
+  }
+  return nearestIndex;
 }
 
 /**
