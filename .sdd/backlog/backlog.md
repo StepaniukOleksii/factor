@@ -36,6 +36,8 @@ bugs, and refactor notes until they're ready to become a real spec.
 5. implement record notes
 6. on the ObservationListScreen should an observation be removed/edited via long press button like it is done on the
    ObservationDetailsScreen for the Records?
+7. Metric units. An attribute set by user that contains unit information. Limit to three chars. Should be displayed in
+   paratheses above the chart after the metric name.
 
 [BUG]
 
