@@ -186,23 +186,36 @@ export interface TimeRangeSelectorProps {
 
 ### Manual Verification
 
-1. Open an Observation with at least one Numeric Metric and Records spread across the last year.
+Run "Reseed test data" first (see [testing-data.md](../../../../testing-data.md)); each step below names the
+seeded Observation/Metric that covers it.
+
+1. Open the `mixed metrics` Observation. Its Numeric Metrics are deliberately recorded at different
+   resolutions — `hourly`, `dense`, `sparse`, `yearly`, `insufficient` — so at every preset some chart and some
+   show the placeholder, on one screen.
 2. Verify the Trends section shows a "1D / 1W / 1M / 1Y" selector above the chart cards, with "1M" selected by
    default, and the chart(s) match exactly what
    [Numeric Metric Trend Chart](../3-2-numeric-metric-trend-chart/spec.md) already renders today (same 30-day
    window).
-3. Tap "1W". Verify the selector shows "1W" as selected and the chart(s) re-render using only the last 7 days of
-   Records with daily buckets.
-4. Tap "1D", then "1Y". Verify each re-renders with its own window/bucket size (hourly buckets over the last
-   24h; ~monthly buckets over the last 365 days).
-5. For a Metric with fewer than two Records in a given preset's window (e.g. "1D" for sparse data), verify that
-   preset shows the "Not enough data yet" placeholder while a denser preset (e.g. "1M") shows a real chart for
-   the same Metric.
+3. Tap "1W". Verify the selector shows "1W" as selected and `dense` re-renders using only the last 7 days of
+   Records with daily buckets (7 points rather than 30).
+4. Tap "1Y". Verify `yearly` (a point every 14 days over 350 days) fills out across the window with ~30-day
+   buckets, while `dense` and `sparse` shrink to 3 points bunched against the right-hand edge — all their
+   Records fall in the last two months.
+5. Tap "1D". Verify `hourly` (several Records inside the last 21 hours) is the only Metric still charting,
+   while `dense` and `sparse` — one Record per day at best — fall back to the "Not enough data yet"
+   placeholder. Returning to "1M" charts them again. `insufficient` stays on the placeholder at every preset.
+   Each Metric's state is decided independently of the others on the screen.
 6. Verify the "RECENT RECORDS" section is unaffected by switching presets.
 7. Tap a chart point on a non-default preset to open its Record (existing tap-to-detail), then return. Verify
    the screen reloads with the selector reset to "1M" (consistent with this screen's existing reset-on-remount
    behavior for its other local state).
-8. Verify an Observation with no Numeric Metrics shows neither the Trends section nor the selector.
+8. Open `no numeric` (Enum and Boolean Metrics only). Verify neither the Trends section nor the selector
+   appears anywhere on the screen.
+
+`testing-data.md` tabulates how many aggregated points each seeded Metric has at each preset, so every step
+above has an expected result to check against rather than a judgement call. Steps 4, 5 and 8 rely on fixtures
+added alongside this feature — the `hourly` and `yearly` Metrics and the `no numeric` Observation — since the
+previous seed set could not populate the shortest or longest window, and had no Numeric-free Observation.
 
 ### Automated Tests
 
@@ -218,3 +231,7 @@ export interface TimeRangeSelectorProps {
   `getRecordsByTimeRangeUseCase.execute` with the expected computed range and re-renders charts using the
   expected aggregation; the "RECENT RECORDS" section's data/behavior is unaffected by preset changes; an
   Observation with no Numeric Metrics renders neither the Trends section nor the selector.
+* `devSeedData` tests covering the fixtures the manual steps above depend on: every preset has at least one
+  chartable seeded Metric, `hourly` fills the "1D" window and `yearly` the "1Y" one, and the `no numeric`
+  Observation has no Numeric Metrics. These keep the point counts tabulated in `testing-data.md` honest, so a
+  later change to the seed data cannot quietly invalidate the manual checklist.

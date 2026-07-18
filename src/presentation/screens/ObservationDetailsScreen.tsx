@@ -16,10 +16,13 @@ import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 import {rendererRegistry} from '../charts/rendererRegistry';
 import {
-    defaultNumericAggregation,
-    getDefaultNumericTrendRange,
+    DEFAULT_TIME_RANGE_PRESET,
+    getAggregationForPreset,
+    getTimeRangeForPreset,
     NUMERIC_TREND_INSUFFICIENT_MESSAGE,
+    type TimeRangePreset,
 } from '../charts/chartDefaults';
+import {TimeRangeSelector} from '../charts/TimeRangeSelector';
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
@@ -51,8 +54,10 @@ export function ObservationDetailsScreen({
     const [records, setRecords] = useState<DomainRecord[]>([]);
     const [chartRecords, setChartRecords] = useState<DomainRecord[]>([]);
     const [chartRange, setChartRange] = useState<TimeRange | null>(null);
+    const [timeRangePreset, setTimeRangePreset] = useState<TimeRangePreset>(DEFAULT_TIME_RANGE_PRESET);
     const [trendChartWidth, setTrendChartWidth] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [loadingTrends, setLoadingTrends] = useState(false);
     const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
     const [scrollPositions, setScrollPositions] = useState<Record<string, number>>({});
     const [contentWidths, setContentWidths] = useState<Record<string, number>>({});
@@ -69,16 +74,32 @@ export function ObservationDetailsScreen({
         loadData();
     }, [observationId]);
 
+    // Owns the trend fetch alone, so switching preset re-scopes the charts without
+    // re-fetching the Observation or its Recent Records. Covers the initial load
+    // too: it fires with the default preset once the Observation is in place.
+    useEffect(() => {
+        if (observation) {
+            loadTrendData(timeRangePreset);
+        }
+    }, [observationId, timeRangePreset, observation]);
+
     const loadRecentRecords = async () => {
         const recentRecords = await getRecentRecordsUseCase.execute(observationId, 3);
         setRecords(recentRecords);
     };
 
-    const loadTrendData = async () => {
-        const range = getDefaultNumericTrendRange();
-        const rangeRecords = await getRecordsByTimeRangeUseCase.execute(observationId, range);
-        setChartRange(range);
-        setChartRecords(rangeRecords);
+    const loadTrendData = async (preset: TimeRangePreset) => {
+        try {
+            setLoadingTrends(true);
+            const range = getTimeRangeForPreset(preset);
+            const rangeRecords = await getRecordsByTimeRangeUseCase.execute(observationId, range);
+            setChartRange(range);
+            setChartRecords(rangeRecords);
+        } catch (error) {
+            console.error('Failed to load trend data', error);
+        } finally {
+            setLoadingTrends(false);
+        }
     };
 
     const loadData = async () => {
@@ -88,7 +109,6 @@ export function ObservationDetailsScreen({
             setObservation(obs);
             if (obs) {
                 await loadRecentRecords();
-                await loadTrendData();
             }
         } catch (error) {
             console.error('Failed to load observation details', error);
@@ -238,13 +258,21 @@ export function ObservationDetailsScreen({
                         return null;
                     }
                     const NumericRenderer = rendererRegistry.get('Numeric');
+                    const aggregation = getAggregationForPreset(timeRangePreset);
                     return (
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>TRENDS</Text>
+                            <View style={styles.trendsSelector}>
+                                <TimeRangeSelector
+                                    selected={timeRangePreset}
+                                    onSelect={setTimeRangePreset}
+                                    disabled={loadingTrends}
+                                />
+                            </View>
                             <View style={styles.trendsList}>
                                 {numericMetrics.map(metric => {
                                     const points = chartRange
-                                        ? getMetricSeriesUseCase.execute(chartRecords, metric, chartRange, defaultNumericAggregation)
+                                        ? getMetricSeriesUseCase.execute(chartRecords, metric, chartRange, aggregation)
                                         : [];
                                     const hasEnoughData = points.length >= 2;
                                     return (
@@ -588,6 +616,9 @@ const styles = StyleSheet.create({
         marginBottom: 40,
     },
     sectionTitle: {...TYPOGRAPHY.sectionCaption, marginBottom: 16},
+    trendsSelector: {
+        marginBottom: 16,
+    },
     trendsList: {
         gap: 12,
     },

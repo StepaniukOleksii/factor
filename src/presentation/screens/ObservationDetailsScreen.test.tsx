@@ -4,9 +4,11 @@ import renderer, {act} from 'react-test-renderer';
 import {ObservationDetailsScreen} from './ObservationDetailsScreen';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
-import {NUMERIC_TREND_INSUFFICIENT_MESSAGE} from '../charts/chartDefaults';
+import {NUMERIC_TREND_INSUFFICIENT_MESSAGE, type TimeRangePreset} from '../charts/chartDefaults';
+import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 
 const defaultObservation = {
     id: 'obs-1',
@@ -143,6 +145,42 @@ async function openDeleteRecordConfirmation(root: any) {
     await act(async () => {
         deleteRecordButton!.props.onPress();
     });
+}
+
+function numericObservation(...metrics: {id: string; name: string}[]): Observation {
+    return {
+        id: 'obs-1',
+        name: 'Sleep Quality',
+        metrics: metrics.map(m => ({...m, type: 'Numeric'})),
+    } as unknown as Observation;
+}
+
+function recordAgo(id: string, msAgo: number, values: [string, number][]): DomainRecord {
+    return new DomainRecord(id, 'obs-1', new Date(Date.now() - msAgo), new Map(values));
+}
+
+function chartRecord(id: string, daysAgo: number, values: [string, number][]): DomainRecord {
+    return recordAgo(id, daysAgo * DAY_MS, values);
+}
+
+function chartRecordHoursAgo(id: string, hoursAgo: number, values: [string, number][]): DomainRecord {
+    return recordAgo(id, hoursAgo * HOUR_MS, values);
+}
+
+/** The outermost match is the touchable itself, carrying its press and a11y props. */
+function presetSegment(root: any, preset: TimeRangePreset) {
+    return root.root.findAllByProps({testID: `time-range-preset-${preset}`})[0];
+}
+
+async function selectPreset(root: any, preset: TimeRangePreset) {
+    await act(async () => {
+        presetSegment(root, preset).props.onPress();
+    });
+}
+
+function lastRequestedRange(): TimeRange {
+    const calls = mockGetRecordsByTimeRangeExecute.mock.calls;
+    return calls[calls.length - 1][1] as TimeRange;
 }
 
 // --- Tests ---
@@ -341,18 +379,6 @@ describe('ObservationDetailsScreen Trends', () => {
         vi.stubGlobal('alert', vi.fn());
     });
 
-    function numericObservation(...metrics: {id: string; name: string}[]): Observation {
-        return {
-            id: 'obs-1',
-            name: 'Sleep Quality',
-            metrics: metrics.map(m => ({...m, type: 'Numeric'})),
-        } as unknown as Observation;
-    }
-
-    function chartRecord(id: string, daysAgo: number, values: [string, number][]): DomainRecord {
-        return new DomainRecord(id, 'obs-1', new Date(Date.now() - daysAgo * DAY_MS), new Map(values));
-    }
-
     it('renders one chart per Numeric Metric', async () => {
         mockGetObservationByIdExecute.mockResolvedValue(
             numericObservation({id: 'm1', name: 'Duration'}, {id: 'm2', name: 'Quality'}),
@@ -383,6 +409,8 @@ describe('ObservationDetailsScreen Trends', () => {
 
         expect(findAllByText(root.root, 'TRENDS').length).toBe(0);
         expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(0);
+        // The selector belongs to the section, so it goes away with it.
+        expect(root.root.findAllByProps({testID: 'time-range-preset-1M'}).length).toBe(0);
     });
 
     it('shows the insufficient-data message for a Metric with fewer than two points', async () => {
@@ -436,5 +464,172 @@ describe('ObservationDetailsScreen Trends', () => {
         // ...while the trend chart is populated from a separate range-scoped fetch.
         expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(1);
         expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
+    });
+});
+
+describe('ObservationDetailsScreen Time Range Selector', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
+        mockGetRecentRecordsExecute.mockResolvedValue([]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+        vi.stubGlobal('alert', vi.fn());
+    });
+
+    function expectWindow(range: TimeRange, expectedWindowMs: number) {
+        expect(range.end.getTime() - range.start.getTime()).toBe(expectedWindowMs);
+        // Every preset is a window ending now, computed as the fetch is issued.
+        expect(Date.now() - range.end.getTime()).toBeLessThan(5000);
+    }
+
+    it('selects the one-month preset by default', async () => {
+        const root = await renderScreen();
+
+        const selectedStates = (['1D', '1W', '1M', '1Y'] as TimeRangePreset[]).map(
+            preset => presetSegment(root, preset).props.accessibilityState.selected,
+        );
+
+        expect(selectedStates).toEqual([false, false, true, false]);
+    });
+
+    it('loads the default 30-day window without being asked', async () => {
+        await renderScreen();
+
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(1);
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledWith('obs-1', expect.anything());
+        expectWindow(lastRequestedRange(), 30 * DAY_MS);
+    });
+
+    it.each<[TimeRangePreset, number]>([
+        ['1D', DAY_MS],
+        ['1W', 7 * DAY_MS],
+        ['1Y', 365 * DAY_MS],
+    ])('re-fetches Records over the %s window when that preset is selected', async (preset, expectedWindowMs) => {
+        const root = await renderScreen();
+
+        await selectPreset(root, preset);
+
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(2);
+        expectWindow(lastRequestedRange(), expectedWindowMs);
+        expect(presetSegment(root, preset).props.accessibilityState.selected).toBe(true);
+        expect(presetSegment(root, '1M').props.accessibilityState.selected).toBe(false);
+    });
+
+    it('re-buckets the charts at the selected preset resolution', async () => {
+        // Three Records a couple of hours apart: one day-bucket under "1M" (too
+        // few points to draw), three hour-buckets under "1D".
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecordHoursAgo('a', 6, [['m1', 5]]),
+            chartRecordHoursAgo('b', 4, [['m1', 7]]),
+            chartRecordHoursAgo('c', 2, [['m1', 6]]),
+        ]);
+
+        const root = await renderScreen();
+
+        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(0);
+
+        await selectPreset(root, '1D');
+
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
+        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(0);
+    });
+
+    it('drives every Numeric chart from the one selection', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            numericObservation({id: 'm1', name: 'Duration'}, {id: 'm2', name: 'Quality'}),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['m1', 5], ['m2', 50]]),
+            chartRecord('b', 1, [['m1', 7], ['m2', 55]]),
+        ]);
+
+        const root = await renderScreen();
+
+        await selectPreset(root, '1W');
+
+        // One fetch for the switch, not one per chart, and both charts follow it.
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(2);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(2);
+    });
+
+    it('keeps the insufficient-data state per Metric within the selected window', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            numericObservation({id: 'm1', name: 'Dense'}, {id: 'm2', name: 'Sparse'}),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            // "Dense" keeps two points within the last day; "Sparse" has none there,
+            // though both have plenty across the month.
+            chartRecordHoursAgo('a', 6, [['m1', 5]]),
+            chartRecordHoursAgo('b', 2, [['m1', 7]]),
+            chartRecord('c', 5, [['m1', 6]]),
+            chartRecord('d', 20, [['m2', 50]]),
+            chartRecord('e', 10, [['m2', 55]]),
+        ]);
+
+        const root = await renderScreen();
+
+        // Over a month both Metrics have enough data...
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(2);
+
+        await selectPreset(root, '1D');
+
+        // ...but over a day only "Dense" does, and the other falls back on its own.
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
+        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
+        expect(findAllByText(root.root, NUMERIC_TREND_INSUFFICIENT_MESSAGE).length).toBeGreaterThan(0);
+    });
+
+    it('leaves the RECENT RECORDS section alone when the preset changes', async () => {
+        mockGetRecentRecordsExecute.mockResolvedValue([initialRecord]);
+
+        const root = await renderScreen();
+
+        await selectPreset(root, '1W');
+        await selectPreset(root, '1Y');
+
+        // Recent Records was fetched once, on load, and still shows its own record.
+        expect(mockGetRecentRecordsExecute).toHaveBeenCalledTimes(1);
+        expect(countRecordCards(root.root)).toBe(1);
+    });
+
+    it('disables the selector while a switch is in flight', async () => {
+        let releaseFetch: (records: DomainRecord[]) => void = () => {};
+        mockGetRecordsByTimeRangeExecute.mockReturnValueOnce(
+            new Promise(resolve => {
+                releaseFetch = resolve;
+            }),
+        );
+
+        const root = await renderScreen();
+
+        expect(presetSegment(root, '1D').props.disabled).toBe(true);
+
+        await act(async () => {
+            releaseFetch([]);
+        });
+
+        expect(presetSegment(root, '1D').props.disabled).toBe(false);
+    });
+
+    it('keeps the charts and the selection intact when a switch fails', async () => {
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['m1', 5]]),
+            chartRecord('b', 1, [['m1', 7]]),
+        ]);
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const root = await renderScreen();
+        mockGetRecordsByTimeRangeExecute.mockRejectedValueOnce(new Error('Query failed'));
+
+        await selectPreset(root, '1W');
+
+        // The failure is surfaced, the previous chart stays, and the selector is
+        // usable again rather than stuck disabled.
+        expect(consoleError).toHaveBeenCalledWith('Failed to load trend data', expect.any(Error));
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
+        expect(presetSegment(root, '1W').props.disabled).toBe(false);
+
+        consoleError.mockRestore();
     });
 });
