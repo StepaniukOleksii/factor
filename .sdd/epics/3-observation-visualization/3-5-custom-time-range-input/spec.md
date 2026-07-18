@@ -62,9 +62,14 @@ than exposing aggregation as a separate choice.
   Custom selection.
 * [ ] **No Numeric Metrics:** Consistent with existing behavior, an Observation with no Numeric Metrics
   renders neither the Trends section nor the selector row (so no Custom control either).
-* [ ] **Reset on Screen Remount:** Consistent with the existing preset selection's local UI state, a
-  Custom selection is not persisted — returning from Record edit/creation, or reopening the Observation,
-  resets the selector to the "1M" default, discarding any applied custom range.
+* [ ] **Selection Lasts as Long as the Exploration:** The chosen window belongs to one continuous
+  exploration of one Observation, not to the Details screen (which unmounts on the way to a Record) and
+  not to the session. Screens reached *from* an Observation — Record creation and editing today, an
+  Observation Config or Info screen later — are part of that exploration, so returning from them
+  restores the window that was active, an applied custom range and a preset alike. Leaving the
+  Observation entirely — back to the Observation list, after a deletion, or via any future Home
+  affordance — ends the exploration: coming back in, even to the *same* Observation, starts at the "1M"
+  default. Nothing is persisted across app restarts.
 * [ ] **No Manual Aggregation Control:** Exposing bucket size as its own user-facing choice is explicitly
   out of scope for this slice (see Goal).
 
@@ -269,9 +274,24 @@ export interface CustomTimeRangeModalProps {
 
 **`ObservationDetailsScreen` (`src/presentation/screens/ObservationDetailsScreen.tsx`) changes:**
 
-* `timeRangePreset: TimeRangePreset` state is replaced with
-  `timeRangeSelection: TimeRangeSelection` (`useState(DEFAULT_TIME_RANGE_SELECTION)`), and a new
-  `customModalVisible: boolean` state (`useState(false)`).
+* `timeRangePreset: TimeRangePreset` state is replaced with a `timeRangeSelection: TimeRangeSelection`
+  **prop**, paired with an `onTimeRangeSelectionChange` callback — the screen renders the window it is
+  handed and reports every change rather than holding one, since it unmounts on the way to a Record
+  (see Selection Survives a Record Round Trip). `customModalVisible: boolean` (`useState(false)`) stays
+  local: an open modal should not survive navigation.
+* `AppNavigator` owns the window as a single `TimeRangeSelection` — it is the only component that
+  outlives the Details screen. Its lifetime is tied to an exploration rather than cleared at each exit
+  point, which would leave every future way out of an Observation to remember to clear it:
+  * `exploredObservationId(screen: ScreenState): string | null` classifies each screen as belonging to
+    an Observation's exploration (`ObservationDetails`, `CreateRecord`, `EditRecord`) or outside one
+    (`ObservationList`, `CreateObservation`).
+  * A single `navigate(next)` funnel, which every `navigateToX` helper goes through, resets the window
+    to `DEFAULT_TIME_RANGE_SELECTION` whenever `exploredObservationId` differs between the current and
+    next screen — covering leaving to the list, deletion, and switching Observations in one rule.
+  * The `switch` in `exploredObservationId` is exhaustive over `ScreenState` with an `assertNever`
+    default, so adding a screen fails to typecheck until it is placed inside or outside an exploration.
+    That is the point of the design: a later Config, Info or Home screen cannot silently inherit the
+    wrong behavior by omission. (Verified by adding a screen variant and observing the compile error.)
 * `loadTrendData` takes a `TimeRangeSelection` instead of a `TimeRangePreset`, and resolves it via
   `getTimeRangeForSelection`:
   ```ts
@@ -298,7 +318,7 @@ export interface CustomTimeRangeModalProps {
   ```tsx
   <TimeRangeSelector
     selected={timeRangeSelection}
-    onSelectPreset={preset => setTimeRangeSelection({kind: 'preset', preset})}
+    onSelectPreset={preset => onTimeRangeSelectionChange({kind: 'preset', preset})}
     onPressCustom={() => setCustomModalVisible(true)}
     disabled={loadingTrends}
   />
@@ -307,7 +327,7 @@ export interface CustomTimeRangeModalProps {
     initialRange={getTimeRangeForSelection(timeRangeSelection)}
     onCancel={() => setCustomModalVisible(false)}
     onApply={range => {
-      setTimeRangeSelection({kind: 'custom', range});
+      onTimeRangeSelectionChange({kind: 'custom', range});
       setCustomModalVisible(false);
     }}
   />
@@ -344,9 +364,14 @@ Run "Reseed test data" first (see [testing-data.md](../../../../testing-data.md)
    [testing-data.md](../../../../testing-data.md)) still charts, since its bucket size stays sub-day
    regardless of the one-day input span, while `dense`/`sparse` fall back to "Not enough data yet".
 9. Confirm RECENT RECORDS is unaffected by any of the above.
-10. Tap a chart point to open its Record, then return. Confirm the screen reloads with the selector reset
-    to "1M" (Custom selection not retained), consistent with existing preset reset-on-remount behavior.
-11. Open `no numeric`. Confirm neither the Trends section nor the selector (Custom included) appears.
+10. With the custom range from step 5 still applied, tap a chart point to open its Record, then return.
+    Confirm the Custom segment still reads that range and the charts are still scoped to it — not reset
+    to "1M". Repeat with "1W" selected, and again via "Add Record" instead of a chart point, to confirm
+    a preset and the creation path survive the same trip.
+11. Still with a custom range applied, go back to the Observation list, then reopen `mixed metrics`.
+    Confirm it starts at "1M": leaving the Observation ends the exploration, so the window is not
+    carried into the next one even for the same Observation.
+12. Open `no numeric`. Confirm neither the Trends section nor the selector (Custom included) appears.
 
 ### Automated Tests
 
@@ -377,9 +402,17 @@ Run "Reseed test data" first (see [testing-data.md](../../../../testing-data.md)
   End=Jul 18 produces `{start: Jul 15 00:00, end: Jul 19 00:00}`); pressing Cancel calls `onCancel` and
   never `onApply`; reopening after a Cancel re-syncs fields to the (possibly different) `initialRange`
   passed on the next open, rather than retaining the discarded edit.
-* `ObservationDetailsScreen` tests: applying a custom range sets `timeRangeSelection` to
-  `{kind: 'custom', range}`, calls `getRecordsByTimeRangeUseCase.execute` with that exact range, and
+* `ObservationDetailsScreen` tests: applying a custom range reports `{kind: 'custom', range}` to
+  `onTimeRangeSelectionChange`, calls `getRecordsByTimeRangeUseCase.execute` with that exact range, and
   aggregates via `getAggregationForCustomRange`; selecting a preset after a custom range clears the custom
-  selection (preset segment selected, Custom reverts to reading "Custom"); RECENT RECORDS is unaffected by
-  opening/applying/canceling the Custom modal; an Observation with no Numeric Metrics renders neither the
-  Trends section nor the selector.
+  selection (preset segment selected, Custom reverts to reading "Custom"); the screen renders whichever
+  `timeRangeSelection` it is handed rather than defaulting, so a restored window shows up as the active
+  one; RECENT RECORDS is unaffected by opening/applying/canceling the Custom modal; an Observation with no
+  Numeric Metrics renders neither the Trends section nor the selector.
+* `AppNavigator` tests, with every screen stubbed to the props the navigator drives it with, covering
+  both sides of the exploration boundary: a freshly opened Observation starts at
+  `DEFAULT_TIME_RANGE_SELECTION`; a window chosen, then left via tap-to-Record (asserting the Details
+  screen really does unmount, so the state genuinely could not have survived locally) and returned to,
+  comes back intact — for a preset and a custom range alike, and via Record creation as well as edit;
+  while going out to the Observation list, or having the Observation deleted, drops it, so reopening
+  even the *same* Observation starts at the default, as does opening a different one.

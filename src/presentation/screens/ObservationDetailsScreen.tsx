@@ -16,13 +16,13 @@ import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 import {rendererRegistry} from '../charts/rendererRegistry';
 import {
-    DEFAULT_TIME_RANGE_PRESET,
-    getAggregationForPreset,
-    getTimeRangeForPreset,
+    getAggregationForSelection,
+    getTimeRangeForSelection,
     NUMERIC_TREND_INSUFFICIENT_MESSAGE,
-    type TimeRangePreset,
+    type TimeRangeSelection,
 } from '../charts/chartDefaults';
 import {TimeRangeSelector} from '../charts/TimeRangeSelector';
+import {CustomTimeRangeModal} from '../charts/CustomTimeRangeModal';
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
@@ -37,6 +37,13 @@ const TREND_CHART_HEIGHT = 90;
 
 export interface ObservationDetailsScreenProps {
     observationId: string;
+    /**
+     * The Trends window to render. Owned by the navigator rather than this
+     * screen: opening a Record unmounts the screen, and the selection has to
+     * outlive that so returning lands back on the window the user chose.
+     */
+    timeRangeSelection: TimeRangeSelection;
+    onTimeRangeSelectionChange: (selection: TimeRangeSelection) => void;
     onBack: () => void;
     onCreateRecord: () => void;
     onEditRecord: (recordId: string) => void;
@@ -45,6 +52,8 @@ export interface ObservationDetailsScreenProps {
 
 export function ObservationDetailsScreen({
                                              observationId,
+                                             timeRangeSelection,
+                                             onTimeRangeSelectionChange,
                                              onBack,
                                              onCreateRecord,
                                              onEditRecord,
@@ -54,7 +63,7 @@ export function ObservationDetailsScreen({
     const [records, setRecords] = useState<DomainRecord[]>([]);
     const [chartRecords, setChartRecords] = useState<DomainRecord[]>([]);
     const [chartRange, setChartRange] = useState<TimeRange | null>(null);
-    const [timeRangePreset, setTimeRangePreset] = useState<TimeRangePreset>(DEFAULT_TIME_RANGE_PRESET);
+    const [customModalVisible, setCustomModalVisible] = useState(false);
     const [trendChartWidth, setTrendChartWidth] = useState(0);
     const [loading, setLoading] = useState(true);
     const [loadingTrends, setLoadingTrends] = useState(false);
@@ -74,24 +83,24 @@ export function ObservationDetailsScreen({
         loadData();
     }, [observationId]);
 
-    // Owns the trend fetch alone, so switching preset re-scopes the charts without
+    // Owns the trend fetch alone, so switching window re-scopes the charts without
     // re-fetching the Observation or its Recent Records. Covers the initial load
-    // too: it fires with the default preset once the Observation is in place.
+    // too: it fires with the default selection once the Observation is in place.
     useEffect(() => {
         if (observation) {
-            loadTrendData(timeRangePreset);
+            loadTrendData(timeRangeSelection);
         }
-    }, [observationId, timeRangePreset, observation]);
+    }, [observationId, timeRangeSelection, observation]);
 
     const loadRecentRecords = async () => {
         const recentRecords = await getRecentRecordsUseCase.execute(observationId, 3);
         setRecords(recentRecords);
     };
 
-    const loadTrendData = async (preset: TimeRangePreset) => {
+    const loadTrendData = async (selection: TimeRangeSelection) => {
         try {
             setLoadingTrends(true);
-            const range = getTimeRangeForPreset(preset);
+            const range = getTimeRangeForSelection(selection);
             const rangeRecords = await getRecordsByTimeRangeUseCase.execute(observationId, range);
             setChartRange(range);
             setChartRecords(rangeRecords);
@@ -258,17 +267,27 @@ export function ObservationDetailsScreen({
                         return null;
                     }
                     const NumericRenderer = rendererRegistry.get('Numeric');
-                    const aggregation = getAggregationForPreset(timeRangePreset);
+                    const aggregation = getAggregationForSelection(timeRangeSelection);
                     return (
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>TRENDS</Text>
                             <View style={styles.trendsSelector}>
                                 <TimeRangeSelector
-                                    selected={timeRangePreset}
-                                    onSelect={setTimeRangePreset}
+                                    selected={timeRangeSelection}
+                                    onSelectPreset={preset => onTimeRangeSelectionChange({kind: 'preset', preset})}
+                                    onPressCustom={() => setCustomModalVisible(true)}
                                     disabled={loadingTrends}
                                 />
                             </View>
+                            <CustomTimeRangeModal
+                                visible={customModalVisible}
+                                initialRange={getTimeRangeForSelection(timeRangeSelection)}
+                                onCancel={() => setCustomModalVisible(false)}
+                                onApply={range => {
+                                    onTimeRangeSelectionChange({kind: 'custom', range});
+                                    setCustomModalVisible(false);
+                                }}
+                            />
                             <View style={styles.trendsList}>
                                 {numericMetrics.map(metric => {
                                     const points = chartRange

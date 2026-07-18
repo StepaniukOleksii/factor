@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "main": "index.ts",
   "dependencies": {
+    "@react-native-community/datetimepicker": "8.4.4",
     "@shopify/react-native-skia": "2.2.12",
     "expo": "~54.0.35",
     "expo-crypto": "~15.0.9",

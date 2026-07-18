@@ -141,6 +141,24 @@ considered.
 
 ---
 
+## Date Input
+
+### DateTimePicker
+
+`@react-native-community/datetimepicker` provides the platform's native date picker, used to enter a
+custom time range for an Observation's trend charts.
+
+Rationale:
+
+* Each platform's own date UI, rather than a hand-built in-app calendar to maintain
+* Expo-supported: installed with `npx expo install`, and its config plugin registers automatically
+* Long-standing React Native Community package with wide adoption
+
+Install the Expo-pinned version. It ships native code, so adding it requires rebuilding the dev client;
+it has no web implementation, so the picker is unavailable under `expo start --web`.
+
+---
+
 ## Deliberately Excluded
 
 The initial version does not use:

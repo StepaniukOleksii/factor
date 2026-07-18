@@ -46,3 +46,50 @@ export function getTimeRangeForPreset(preset: TimeRangePreset, now: Date = new D
 export function getAggregationForPreset(preset: TimeRangePreset): AggregationStrategy {
   return {bucketSizeMs: TIME_RANGE_PRESETS[preset].bucketSizeMs};
 }
+
+/**
+ * Which window the Trends section is currently scoped to: one of the four fixed
+ * presets, or an arbitrary range the user entered. Wraps `TimeRangePreset`
+ * rather than replacing it, since a preset is still the default and the common
+ * case.
+ */
+export type TimeRangeSelection =
+  | {kind: 'preset'; preset: TimeRangePreset}
+  | {kind: 'custom'; range: TimeRange};
+
+export const DEFAULT_TIME_RANGE_SELECTION: TimeRangeSelection = {
+  kind: 'preset',
+  preset: DEFAULT_TIME_RANGE_PRESET,
+};
+
+const CUSTOM_RANGE_TARGET_BUCKETS = 30;
+
+/**
+ * Bucket size for an arbitrary custom range: targets ~30 buckets across the
+ * range's span, floored at 1 hour and always a whole number of hours, so a
+ * short custom range doesn't collapse to too few buckets and a long one doesn't
+ * explode into thousands of them. Independent of the day-level precision
+ * Start/End are selected at — bucket size and input granularity are separate
+ * concerns, same as they are for the four presets.
+ */
+export function getAggregationForCustomRange(range: TimeRange): AggregationStrategy {
+  const spanMs = range.end.getTime() - range.start.getTime();
+  const rawBucketMs = spanMs / CUSTOM_RANGE_TARGET_BUCKETS;
+  const bucketSizeMs = Math.max(HOUR_MS, Math.ceil(rawBucketMs / HOUR_MS) * HOUR_MS);
+  return {bucketSizeMs};
+}
+
+export function getTimeRangeForSelection(
+  selection: TimeRangeSelection,
+  now: Date = new Date(),
+): TimeRange {
+  return selection.kind === 'preset'
+    ? getTimeRangeForPreset(selection.preset, now)
+    : selection.range;
+}
+
+export function getAggregationForSelection(selection: TimeRangeSelection): AggregationStrategy {
+  return selection.kind === 'preset'
+    ? getAggregationForPreset(selection.preset)
+    : getAggregationForCustomRange(selection.range);
+}

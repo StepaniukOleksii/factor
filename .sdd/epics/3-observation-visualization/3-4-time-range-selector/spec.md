@@ -56,6 +56,10 @@ later slices already in the backlog.
 * [ ] **Preset Resets on Screen Remount:** Consistent with this screen's existing local UI state (expanded
   Record, scroll positions), the selected preset is not persisted — returning from Record edit/creation, or
   reopening the Observation, resets the selection to the "1M" default.
+  * **Revised by [Custom Time Range Input](../3-5-custom-time-range-input/spec.md).** Discarding the
+    window on the way back from a Record proved to be a bug in use, not a simplification: tapping a chart
+    point to inspect a Record and returning silently threw the window away. The selection now lives in
+    `AppNavigator` and survives the round trip, per Observation, for presets and custom ranges alike.
 
 ## 3. Technical Design
 
@@ -207,8 +211,8 @@ seeded Observation/Metric that covers it.
    Each Metric's state is decided independently of the others on the screen.
 6. Verify the "RECENT RECORDS" section is unaffected by switching presets.
 7. Tap a chart point on a non-default preset to open its Record (existing tap-to-detail), then return. Verify
-   the screen reloads with the selector reset to "1M" (consistent with this screen's existing reset-on-remount
-   behavior for its other local state).
+   the selector still shows that preset — see the revision note under Preset Resets on Screen Remount above;
+   this step originally expected a reset to "1M".
 8. Open `no numeric` (Enum and Boolean Metrics only). Verify neither the Trends section nor the selector
    appears anywhere on the screen.
 

@@ -1,11 +1,18 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
+import {Text} from 'react-native';
 import {ObservationDetailsScreen} from './ObservationDetailsScreen';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
-import {NUMERIC_TREND_INSUFFICIENT_MESSAGE, type TimeRangePreset} from '../charts/chartDefaults';
+import {
+    DEFAULT_TIME_RANGE_SELECTION,
+    NUMERIC_TREND_INSUFFICIENT_MESSAGE,
+    type TimeRangePreset,
+    type TimeRangeSelection,
+} from '../charts/chartDefaults';
 import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
+import {formatShortDate, formatTimeRange} from '@shared/formatTimeRange';
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -38,6 +45,9 @@ vi.mock('react-native', () => {
 });
 vi.mock('@expo/vector-icons', () => ({
     MaterialIcons: 'MaterialIcons',
+}));
+vi.mock('@react-native-community/datetimepicker', () => ({
+    default: 'DateTimePicker',
 }));
 
 vi.mock('../../infrastructure/SQLiteObservationRepository', () => ({
@@ -115,15 +125,49 @@ function findTouchableWithText(root: any, text: string) {
     return null;
 }
 
+/**
+ * Stands in for `AppNavigator`, which owns the selection: it hands back
+ * whatever the screen reports, so pressing a segment re-scopes the charts the
+ * way it does in the running app.
+ */
+function NavigatorHarness({onEditRecord}: {onEditRecord: (recordId: string) => void}) {
+    const [selection, setSelection] = useState<TimeRangeSelection>(DEFAULT_TIME_RANGE_SELECTION);
+    return (
+        <ObservationDetailsScreen
+            observationId="obs-1"
+            timeRangeSelection={selection}
+            onTimeRangeSelectionChange={setSelection}
+            onBack={vi.fn()}
+            onCreateRecord={vi.fn()}
+            onEditRecord={onEditRecord}
+            onDeleted={vi.fn()}
+        />
+    );
+}
+
 async function renderScreen(onEditRecord: (recordId: string) => void = vi.fn()) {
+    let root: any;
+    await act(async () => {
+        root = renderer.create(<NavigatorHarness onEditRecord={onEditRecord}/>);
+    });
+    return root!;
+}
+
+/** Renders with the window pinned, the way the navigator hands a restored one back. */
+async function renderScreenWithSelection(
+    timeRangeSelection: TimeRangeSelection,
+    onTimeRangeSelectionChange: (selection: TimeRangeSelection) => void = vi.fn(),
+) {
     let root: any;
     await act(async () => {
         root = renderer.create(
             <ObservationDetailsScreen
                 observationId="obs-1"
+                timeRangeSelection={timeRangeSelection}
+                onTimeRangeSelectionChange={onTimeRangeSelectionChange}
                 onBack={vi.fn()}
                 onCreateRecord={vi.fn()}
-                onEditRecord={onEditRecord}
+                onEditRecord={vi.fn()}
                 onDeleted={vi.fn()}
             />,
         );
@@ -172,6 +216,10 @@ function presetSegment(root: any, preset: TimeRangePreset) {
     return root.root.findAllByProps({testID: `time-range-preset-${preset}`})[0];
 }
 
+function customSegment(root: any) {
+    return root.root.findAllByProps({testID: 'time-range-custom'})[0];
+}
+
 async function selectPreset(root: any, preset: TimeRangePreset) {
     await act(async () => {
         presetSegment(root, preset).props.onPress();
@@ -181,6 +229,57 @@ async function selectPreset(root: any, preset: TimeRangePreset) {
 function lastRequestedRange(): TimeRange {
     const calls = mockGetRecordsByTimeRangeExecute.mock.calls;
     return calls[calls.length - 1][1] as TimeRange;
+}
+
+/** Local midnight `daysAgo` days back - a day the range modal can be set to. */
+function dayAt(daysAgo: number): Date {
+    const date = new Date(Date.now() - daysAgo * DAY_MS);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/** Local midnight of the day after `day` - the exclusive end of that day. */
+function endOfDay(day: Date): Date {
+    return new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+}
+
+async function openCustomModal(root: any) {
+    await act(async () => {
+        customSegment(root).props.onPress();
+    });
+}
+
+function customRangeField(root: any, endpoint: 'start' | 'end') {
+    return root.root.findAllByProps({testID: `custom-range-${endpoint}-date`})[0];
+}
+
+function customRangeFieldValue(root: any, endpoint: 'start' | 'end'): string {
+    return customRangeField(root, endpoint).findAllByType(Text)[0].props.children;
+}
+
+async function pickCustomDay(root: any, endpoint: 'start' | 'end', day: Date) {
+    await act(async () => {
+        customRangeField(root, endpoint).props.onPress();
+    });
+    await act(async () => {
+        root.root
+            .findAllByProps({testID: `custom-range-${endpoint}-picker`})[0]
+            .props.onChange({type: 'set'}, day);
+    });
+}
+
+async function pressCustomModalButton(root: any, label: 'Apply' | 'Cancel') {
+    await act(async () => {
+        root.root
+            .findAllByProps({accessibilityLabel: `${label} custom time range`})[0]
+            .props.onPress();
+    });
+}
+
+/** Opens the modal, moves Start back `daysAgo` days, and applies. */
+async function applyCustomRange(root: any, daysAgo: number) {
+    await openCustomModal(root);
+    await pickCustomDay(root, 'start', dayAt(daysAgo));
+    await pressCustomModalButton(root, 'Apply');
 }
 
 // --- Tests ---
@@ -409,8 +508,10 @@ describe('ObservationDetailsScreen Trends', () => {
 
         expect(findAllByText(root.root, 'TRENDS').length).toBe(0);
         expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(0);
-        // The selector belongs to the section, so it goes away with it.
+        // The selector belongs to the section, so it goes away with it - the
+        // Custom segment and its modal included.
         expect(root.root.findAllByProps({testID: 'time-range-preset-1M'}).length).toBe(0);
+        expect(root.root.findAllByProps({testID: 'time-range-custom'}).length).toBe(0);
     });
 
     it('shows the insufficient-data message for a Metric with fewer than two points', async () => {
@@ -604,12 +705,14 @@ describe('ObservationDetailsScreen Time Range Selector', () => {
         const root = await renderScreen();
 
         expect(presetSegment(root, '1D').props.disabled).toBe(true);
+        expect(customSegment(root).props.disabled).toBe(true);
 
         await act(async () => {
             releaseFetch([]);
         });
 
         expect(presetSegment(root, '1D').props.disabled).toBe(false);
+        expect(customSegment(root).props.disabled).toBe(false);
     });
 
     it('keeps the charts and the selection intact when a switch fails', async () => {
@@ -631,5 +734,154 @@ describe('ObservationDetailsScreen Time Range Selector', () => {
         expect(presetSegment(root, '1W').props.disabled).toBe(false);
 
         consoleError.mockRestore();
+    });
+});
+
+describe('ObservationDetailsScreen Custom Time Range', () => {
+    const ALL_PRESETS: TimeRangePreset[] = ['1D', '1W', '1M', '1Y'];
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
+        mockGetRecentRecordsExecute.mockResolvedValue([]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+        vi.stubGlobal('alert', vi.fn());
+    });
+
+    it("opens the modal pre-filled from the active preset's concrete window", async () => {
+        const root = await renderScreen();
+
+        await selectPreset(root, '1W');
+        await openCustomModal(root);
+
+        expect(customRangeFieldValue(root, 'start')).toBe(formatShortDate(dayAt(7)));
+        expect(customRangeFieldValue(root, 'end')).toBe(formatShortDate(dayAt(0)));
+    });
+
+    it('re-fetches Records over the applied custom window', async () => {
+        const root = await renderScreen();
+
+        await applyCustomRange(root, 4);
+
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(2);
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenLastCalledWith('obs-1', {
+            start: dayAt(4),
+            end: endOfDay(dayAt(0)),
+        });
+    });
+
+    it('re-buckets the charts at the applied window resolution', async () => {
+        // Three Records a couple of hours apart: one day-bucket under "1M" (too
+        // few points to draw), separate four-hour buckets over a five-day custom
+        // window, which targets ~30 buckets rather than a preset's fixed size.
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecordHoursAgo('a', 6, [['m1', 5]]),
+            chartRecordHoursAgo('b', 4, [['m1', 7]]),
+            chartRecordHoursAgo('c', 2, [['m1', 6]]),
+        ]);
+
+        const root = await renderScreen();
+        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
+
+        await applyCustomRange(root, 4);
+
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
+        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(0);
+    });
+
+    it('labels the Custom segment with the applied range and deselects every preset', async () => {
+        const root = await renderScreen();
+
+        await applyCustomRange(root, 4);
+
+        expect(customSegment(root).props.accessibilityState.selected).toBe(true);
+        expect(
+            ALL_PRESETS.map(preset => presetSegment(root, preset).props.accessibilityState.selected),
+        ).toEqual([false, false, false, false]);
+        expect(findAllByText(root.root, formatTimeRange(lastRequestedRange())).length).toBeGreaterThan(0);
+        // The parent closed the modal in the same update that applied the range.
+        expect(findAllByText(root.root, 'Custom time range').length).toBe(0);
+    });
+
+    it('drops the applied range as soon as a preset is selected', async () => {
+        const root = await renderScreen();
+        await applyCustomRange(root, 4);
+        const appliedLabel = formatTimeRange(lastRequestedRange());
+
+        await selectPreset(root, '1W');
+
+        expect(presetSegment(root, '1W').props.accessibilityState.selected).toBe(true);
+        expect(customSegment(root).props.accessibilityState.selected).toBe(false);
+        // The segment reverts rather than keeping a stale range on show.
+        expect(findAllByText(root.root, appliedLabel).length).toBe(0);
+        expect(findAllByText(root.root, 'Custom').length).toBeGreaterThan(0);
+
+        const range = lastRequestedRange();
+        expect(range.end.getTime() - range.start.getTime()).toBe(7 * DAY_MS);
+    });
+
+    it('changes neither the selection nor the charts when the modal is cancelled', async () => {
+        const root = await renderScreen();
+
+        await openCustomModal(root);
+        await pickCustomDay(root, 'start', dayAt(4));
+        await pressCustomModalButton(root, 'Cancel');
+
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(1);
+        expect(presetSegment(root, '1M').props.accessibilityState.selected).toBe(true);
+        expect(customSegment(root).props.accessibilityState.selected).toBe(false);
+        expect(findAllByText(root.root, 'Custom time range').length).toBe(0);
+    });
+
+    it('leaves the RECENT RECORDS section alone across the whole custom flow', async () => {
+        mockGetRecentRecordsExecute.mockResolvedValue([initialRecord]);
+
+        const root = await renderScreen();
+
+        await applyCustomRange(root, 4);
+
+        expect(mockGetRecentRecordsExecute).toHaveBeenCalledTimes(1);
+        expect(countRecordCards(root.root)).toBe(1);
+    });
+
+    // The screen unmounts whenever a Record is opened, so it cannot own the
+    // selection - it renders the one it is handed and reports every change,
+    // leaving the navigator to carry it across the trip.
+    it('renders the window it is handed rather than falling back to the default', async () => {
+        const range: TimeRange = {start: dayAt(4), end: endOfDay(dayAt(0))};
+
+        const root = await renderScreenWithSelection({kind: 'custom', range});
+
+        expect(customSegment(root).props.accessibilityState.selected).toBe(true);
+        expect(presetSegment(root, '1M').props.accessibilityState.selected).toBe(false);
+        expect(findAllByText(root.root, formatTimeRange(range)).length).toBeGreaterThan(0);
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledWith('obs-1', range);
+    });
+
+    it('reports an applied custom range to its owner instead of keeping it', async () => {
+        const onTimeRangeSelectionChange = vi.fn();
+        const root = await renderScreenWithSelection(
+            DEFAULT_TIME_RANGE_SELECTION,
+            onTimeRangeSelectionChange,
+        );
+
+        await applyCustomRange(root, 4);
+
+        expect(onTimeRangeSelectionChange).toHaveBeenCalledWith({
+            kind: 'custom',
+            range: {start: dayAt(4), end: endOfDay(dayAt(0))},
+        });
+    });
+
+    it('reports a selected preset to its owner too', async () => {
+        const onTimeRangeSelectionChange = vi.fn();
+        const root = await renderScreenWithSelection(
+            DEFAULT_TIME_RANGE_SELECTION,
+            onTimeRangeSelectionChange,
+        );
+
+        await selectPreset(root, '1W');
+
+        expect(onTimeRangeSelectionChange).toHaveBeenCalledWith({kind: 'preset', preset: '1W'});
     });
 });
