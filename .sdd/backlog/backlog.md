@@ -54,3 +54,5 @@ bugs, and refactor notes until they're ready to become a real spec.
 
 1. Create git commit conventions. Describe labels and commit content.
 2. Resolve or instruct regarding "expo-sqlite's web/OPFS path not being set up."
+3. Adjust sepc-creator to not provide code examples, but keep only high level overview. Maybe ask claude to analyze last
+   few specs
