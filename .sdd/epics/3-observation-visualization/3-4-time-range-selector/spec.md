@@ -43,8 +43,8 @@ later slices already in the backlog.
   Metrics on the same screen have enough data for that preset.
 * [ ] **Selector Disabled While Loading:** The four preset controls are disabled while a preset switch's Record
   fetch is in flight, preventing overlapping reloads from rapid re-tapping.
-* [ ] **Other Sections Unaffected:** The "METRICS" chip row and "RECENT RECORDS" section are unaffected by preset
-  selection — they keep using their own existing, independent data (`GetRecentRecordsUseCase`, unchanged).
+* [ ] **Other Sections Unaffected:** The "RECENT RECORDS" section is unaffected by preset selection — it keeps
+  using its own existing, independent data (`GetRecentRecordsUseCase`, unchanged).
 * [ ] **No Numeric Metrics:** If the Observation has no Numeric Metrics, neither the Trends section nor the
   selector is rendered, consistent with the existing behavior established by
   [Numeric Metric Trend Chart](../3-2-numeric-metric-trend-chart/spec.md).
@@ -132,7 +132,7 @@ export interface TimeRangeSelectorProps {
 * The segment matching `selected` is visually distinguished (e.g. filled `primaryContainer` background) from the
   rest (`surfaceContainerLow`), reusing the existing palette — no new colors are introduced. Exact spacing/sizing
   should follow the design mockup once supplied (see note below); until then, implement using the same
-  chip/card visual language as this screen's existing `metricChip`/`trendCard` styles for consistency.
+  card visual language as this screen's existing `trendCard` style for consistency.
 * When `disabled`, segments are non-interactive and visually muted (e.g. reduced opacity), matching this
   screen's existing disabled-button treatment (e.g. `modalDeleteButtonDisabled`).
 * Each segment has an `accessibilityLabel` (e.g. "Show last day", "Show last week", "Show last month", "Show
@@ -198,7 +198,7 @@ export interface TimeRangeSelectorProps {
 5. For a Metric with fewer than two Records in a given preset's window (e.g. "1D" for sparse data), verify that
    preset shows the "Not enough data yet" placeholder while a denser preset (e.g. "1M") shows a real chart for
    the same Metric.
-6. Verify the "METRICS" chip row and "RECENT RECORDS" section are unaffected by switching presets.
+6. Verify the "RECENT RECORDS" section is unaffected by switching presets.
 7. Tap a chart point on a non-default preset to open its Record (existing tap-to-detail), then return. Verify
    the screen reloads with the selector reset to "1M" (consistent with this screen's existing reset-on-remount
    behavior for its other local state).

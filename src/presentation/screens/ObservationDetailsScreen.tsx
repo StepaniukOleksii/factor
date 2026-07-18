@@ -231,19 +231,6 @@ export function ObservationDetailsScreen({
                     <Text style={styles.description}>{observation.description}</Text>
                 ) : null}
 
-                {/* Metrics Section */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>METRICS</Text>
-                    <View style={styles.metricsRow}>
-                        {observation.metrics.map(metric => (
-                            <View key={metric.id} style={styles.metricChip}>
-                                <View style={styles.metricDot}/>
-                                <Text style={styles.metricChipText}>{metric.name}</Text>
-                            </View>
-                        ))}
-                    </View>
-                </View>
-
                 {/* Trends Section */}
                 {(() => {
                     const numericMetrics = observation.metrics.filter(metric => metric.type === 'Numeric');
@@ -601,33 +588,6 @@ const styles = StyleSheet.create({
         marginBottom: 40,
     },
     sectionTitle: {...TYPOGRAPHY.sectionCaption, marginBottom: 16},
-    metricsRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-    },
-    metricChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: COLORS.surfaceContainerLow,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: RADIUS.md,
-        borderWidth: 1,
-        borderColor: COLORS.surfaceContainerHighest,
-    },
-    metricDot: {
-        width: 8,
-        height: 8,
-        borderRadius: RADIUS.sm,
-        backgroundColor: COLORS.primaryContainer,
-        marginRight: 8,
-    },
-    metricChipText: {
-        color: COLORS.primary,
-        fontSize: 14,
-        fontWeight: '500',
-    },
     trendsList: {
         gap: 12,
     },
