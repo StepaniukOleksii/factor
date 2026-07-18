@@ -103,14 +103,23 @@ it — not just Metro (Metro already reaches the phone over Wi-Fi regardless, ca
 **Prerequisite: the phone and this PC must be on the same Wi-Fi network.** A mismatch (phone on mobile
 data, PC on a different SSID or on Ethernet with Wi-Fi off) is the most common reason this doesn't work.
 
+Both steps below are required. Turning the toggle on only makes the phone *listen* — adb does not
+discover it on its own, so nothing appears in `adb devices` until you have explicitly paired and
+connected.
+
 1. On the phone: Settings → Developer options → **Wireless debugging** → turn it on.
-2. Tap into **Wireless debugging** → **Pair device with pairing code**. This shows an IP address, a
-   pairing port, and a 6-digit code — keep the screen open.
+2. Tap into **Wireless debugging** → **Pair device with pairing code** (tap the row itself, not the
+   toggle). This shows an IP address, a pairing port, and a 6-digit code — keep the screen open, since
+   closing it ends the pairing session.
 3. On the PC, pair (one-time per network):
    ```
    adb pair <ip>:<pairing-port>
    ```
-   Enter the 6-digit code when prompted.
+   Enter the 6-digit code when prompted. The code can also be passed inline, which skips the prompt —
+   necessary when pairing from a non-interactive shell, where the prompt would just hang:
+   ```
+   adb pair <ip>:<pairing-port> <code>
+   ```
 4. Back on the phone's main Wireless debugging screen, note the IP address and port shown there — a
    different, stable port from the pairing one. Connect:
    ```
@@ -196,6 +205,9 @@ Skia's own Jest helpers apply as-is under Vitest.
   only makes the phone available, it doesn't connect anything by itself. adb still needs the one-time
   pairing plus an explicit `adb connect <ip>:<port>` — see
   [Wireless debugging](#wireless-debugging-no-cable) above.
+* **Pairing succeeded but `adb connect` fails or times out** — the pairing port and the connection port
+  are different, and both screens show an `IP:PORT` pair, so they are easy to mix up. `adb connect`
+  takes the port from the *main* Wireless debugging screen, not the one in the pairing dialog.
 * **Wireless debugging was working, then stopped, or never connects** — check that the phone and PC are
   actually on the *same* Wi-Fi network. This is the single most common cause (e.g. phone slipped onto
   mobile data, or the PC is on a different SSID) and won't show any error beyond `adb connect` timing
