@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Factor - Custom Time Range Input</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        // Color values copied verbatim from src/presentation/theme/colors.ts, so this
+        // mockup matches the running app exactly rather than a generic MD3 token set.
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "background": "#131313",
+                        "surface": "#131313",
+                        "on-surface": "#e5e2e1",
+                        "on-surface-variant": "#c2c9b9",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-container-highest": "#353534",
+                        "outline-variant": "#42493d",
+                        "outline": "#8c9385",
+                        "primary-container": "#b6f09c",
+                        "on-primary-container": "#3c6f2a",
+                        "on-primary-fixed-variant": "#205110",
+                        "primary": "#f9fff0",
+                        "on-primary": "#0b3900",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005"
+                    },
+                    fontFamily: {
+                        sans: ["Hanken Grotesk"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Hanken Grotesk', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .frame { width: 390px; max-width: 100%; }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+
+<!--
+  This file documents every new visual state this spec introduces. It is a reference
+  sheet, not a single simulated screen — panels are labeled and stacked so each state
+  can be reviewed independently. Elements marked "existing" are unchanged and included
+  only for surrounding context.
+-->
+
+<main class="max-w-5xl mx-auto px-6 py-10 flex flex-col gap-14">
+
+    <div>
+        <h1 class="text-xl font-semibold text-primary">Custom Time Range Input</h1>
+        <p class="text-on-surface-variant text-sm mt-1">Visual reference for the states this spec adds to the
+            Observation Details screen's Trends section.</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PANEL 1: Full screen context, Custom range applied (hero state) -->
+    <!-- ============================================================ -->
+    <section class="flex flex-col gap-3">
+        <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest">SCREEN — CUSTOM RANGE
+            APPLIED</h2>
+        <div class="frame border border-outline-variant rounded-2xl overflow-hidden bg-background">
+
+            <!-- ScreenHeader (existing, reused as-is) -->
+            <header class="w-full flex items-center justify-between px-4 h-16 border-b border-outline-variant">
+                <span class="material-symbols-outlined text-on-surface">arrow_back</span>
+                <span class="text-primary text-lg font-semibold tracking-tight">Sleep Quality</span>
+                <span class="material-symbols-outlined text-on-surface">more_vert</span>
+            </header>
+
+            <div class="px-6 pt-6 pb-8 flex flex-col gap-10">
+
+                <!-- Metrics Section (existing, unchanged) -->
+                <section>
+                    <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest mb-4">METRICS</h2>
+                    <div class="flex flex-wrap gap-3">
+                        <div class="flex items-center bg-surface-container-low border border-surface-container-highest rounded-lg px-3 py-2">
+                            <span class="w-2 h-2 rounded-full bg-primary-container mr-2"></span>
+                            <span class="text-primary text-sm font-medium">Duration</span>
+                        </div>
+                        <div class="flex items-center bg-surface-container-low border border-surface-container-highest rounded-lg px-3 py-2">
+                            <span class="w-2 h-2 rounded-full bg-primary-container mr-2"></span>
+                            <span class="text-primary text-sm font-medium">Quality</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TRENDS Section (row changed by this spec: fifth "Custom" segment) -->
+                <section>
+                    <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest mb-4">TRENDS</h2>
+
+                    <!-- Time Range Selector row -->
+                    <div class="flex gap-2 mb-4">
+                        <button class="flex-1 flex items-center justify-center py-2 rounded-xl border border-outline-variant bg-surface-container-low">
+                            <span class="text-on-surface-variant text-[13px] font-semibold">1D</span>
+                        </button>
+                        <button class="flex-1 flex items-center justify-center py-2 rounded-xl border border-outline-variant bg-surface-container-low">
+                            <span class="text-on-surface-variant text-[13px] font-semibold">1W</span>
+                        </button>
+                        <button class="flex-1 flex items-center justify-center py-2 rounded-xl border border-outline-variant bg-surface-container-low">
+                            <span class="text-on-surface-variant text-[13px] font-semibold">1M</span>
+                        </button>
+                        <button class="flex-1 flex items-center justify-center py-2 rounded-xl border border-outline-variant bg-surface-container-low">
+                            <span class="text-on-surface-variant text-[13px] font-semibold">1Y</span>
+                        </button>
+                        <!-- flex-[2]: roughly double a preset segment's width, to fit an applied range -->
+                        <button class="flex-[2] flex flex-col items-center justify-center py-1.5 px-1 rounded-xl border border-primary-container bg-primary-container">
+                            <span class="text-on-primary text-[11px] font-semibold leading-tight">Jul 15 - Jul 18</span>
+                        </button>
+                    </div>
+
+                    <!-- Chart cards (existing rendering, unchanged by this spec) -->
+                    <div class="flex flex-col gap-3">
+                        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                            <h3 class="text-primary text-sm font-semibold mb-3">Duration (hrs)</h3>
+                            <svg viewBox="0 0 300 90" class="w-full h-[90px]" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="fillDuration" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#b6f09c" stop-opacity="0.22"/>
+                                        <stop offset="100%" stop-color="#b6f09c" stop-opacity="0"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M0,60 C20,55 30,30 50,28 C70,26 80,50 100,52 C120,54 130,20 150,18
+                                         C170,16 180,45 200,48 C220,51 230,35 250,30 C270,25 285,32 300,22
+                                         L300,90 L0,90 Z" fill="url(#fillDuration)"/>
+                                <path d="M0,60 C20,55 30,30 50,28 C70,26 80,50 100,52 C120,54 130,20 150,18
+                                         C170,16 180,45 200,48 C220,51 230,35 250,30 C270,25 285,32 300,22"
+                                      fill="none" stroke="#b6f09c" stroke-width="2.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                            <h3 class="text-primary text-sm font-semibold mb-3">Quality (%)</h3>
+                            <div class="h-[90px] flex flex-col items-center justify-center gap-1 opacity-60">
+                                <span class="material-symbols-outlined text-on-surface-variant text-[22px]">show_chart</span>
+                                <span class="text-on-surface-variant text-xs font-medium">Not enough data yet</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Recent Records Section (existing, unaffected by this spec) -->
+                <section>
+                    <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest mb-4">RECENT
+                        RECORDS</h2>
+                    <div class="flex items-center justify-between px-2 py-2 border-b border-surface-container-highest">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-on-surface-variant text-[16px]">schedule</span>
+                            <span class="text-on-surface text-sm font-medium">2 hours ago</span>
+                        </div>
+                        <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- PANEL 2: Selector row in isolation, both states side by side -->
+    <!-- ============================================================ -->
+    <section class="flex flex-col gap-3">
+        <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest">SELECTOR ROW — BOTH
+            STATES</h2>
+        <div class="flex flex-col md:flex-row gap-6">
+
+            <div class="frame flex flex-col gap-2">
+                <span class="text-on-surface-variant text-xs font-medium">Default — no custom range applied yet</span>
+                <div class="flex gap-2 p-4 bg-surface-container-lowest rounded-xl border border-outline-variant">
+                    <button class="flex-1 flex items-center justify-center py-2 rounded-xl border border-primary-container bg-primary-container">
+                        <span class="text-on-primary text-[13px] font-semibold">1M</span>
+                    </button>
+                    <button class="flex-1 flex items-center justify-center py-2 rounded-xl border border-outline-variant bg-surface-container-low">
+                        <span class="text-on-surface-variant text-[13px] font-semibold">1Y</span>
+                    </button>
+                    <button class="flex-[2] flex items-center justify-center py-2 px-1 rounded-xl border border-outline-variant bg-surface-container-low">
+                        <span class="text-on-surface-variant text-[13px] font-semibold">Custom</span>
+                    </button>
+                </div>
+                <p class="text-on-surface-variant text-xs">"1M" selected (the existing default). Custom segment
+                    reads the literal word "Custom" and is visually unselected — same treatment as any other
+                    unselected preset.</p>
+            </div>
+
+            <div class="frame flex flex-col gap-2">
+                <span class="text-on-surface-variant text-xs font-medium">After tapping "1W" — Custom deselects</span>
+                <div class="flex gap-2 p-4 bg-surface-container-lowest rounded-xl border border-outline-variant">
+                    <button class="flex-1 flex items-center justify-center py-2 rounded-xl border border-primary-container bg-primary-container">
+                        <span class="text-on-primary text-[13px] font-semibold">1W</span>
+                    </button>
+                    <button class="flex-1 flex items-center justify-center py-2 rounded-xl border border-outline-variant bg-surface-container-low">
+                        <span class="text-on-surface-variant text-[13px] font-semibold">1Y</span>
+                    </button>
+                    <button class="flex-[2] flex items-center justify-center py-2 px-1 rounded-xl border border-outline-variant bg-surface-container-low">
+                        <span class="text-on-surface-variant text-[13px] font-semibold">Custom</span>
+                    </button>
+                </div>
+                <p class="text-on-surface-variant text-xs">Switching to any preset after a custom range was
+                    active reverts Custom's label to "Custom" — it does not keep showing the stale applied
+                    range once deselected.</p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- PANEL 3: Custom Time Range modal — valid selection -->
+    <!-- ============================================================ -->
+    <section class="flex flex-col gap-3">
+        <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest">MODAL — VALID SELECTION
+            (APPLY ENABLED)</h2>
+        <div class="frame relative rounded-2xl overflow-hidden border border-outline-variant" style="aspect-ratio: 390/560;">
+            <!-- Dimmed screen behind the modal, cropped, for context only -->
+            <div class="absolute inset-0 bg-background opacity-40 blur-[1px] p-6 pt-16">
+                <div class="flex gap-2 mb-4">
+                    <div class="flex-1 h-9 rounded-xl bg-surface-container-low border border-outline-variant"></div>
+                    <div class="flex-1 h-9 rounded-xl bg-surface-container-low border border-outline-variant"></div>
+                    <div class="flex-1 h-9 rounded-xl bg-surface-container-low border border-outline-variant"></div>
+                    <div class="flex-1 h-9 rounded-xl bg-surface-container-low border border-outline-variant"></div>
+                    <div class="flex-[2] h-9 rounded-xl bg-surface-container-low border border-outline-variant"></div>
+                </div>
+                <div class="h-24 rounded-xl bg-surface-container-low border border-outline-variant"></div>
+            </div>
+            <div class="absolute inset-0 bg-black/60 flex items-center justify-center p-4">
+                <div class="bg-surface-container-low border border-outline-variant rounded-2xl w-full max-w-[340px] p-6 flex flex-col gap-6 shadow-2xl">
+                    <div class="flex flex-col gap-1">
+                        <h2 class="text-lg font-bold text-on-surface">Custom time range</h2>
+                        <p class="text-on-surface-variant text-sm">Choose a start and end day.</p>
+                    </div>
+
+                    <!-- Start -->
+                    <div class="flex flex-col gap-2">
+                        <span class="text-on-surface text-sm font-semibold">Start</span>
+                        <button class="h-11 px-3 rounded flex items-center justify-between bg-surface-container-lowest border border-outline-variant">
+                            <span class="text-on-surface text-sm">Jul 15</span>
+                            <span class="material-symbols-outlined text-on-surface-variant text-[18px]">calendar_month</span>
+                        </button>
+                    </div>
+
+                    <!-- End -->
+                    <div class="flex flex-col gap-2">
+                        <span class="text-on-surface text-sm font-semibold">End</span>
+                        <button class="h-11 px-3 rounded flex items-center justify-between bg-surface-container-lowest border border-outline-variant">
+                            <span class="text-on-surface text-sm">Jul 18</span>
+                            <span class="material-symbols-outlined text-on-surface-variant text-[18px]">calendar_month</span>
+                        </button>
+                    </div>
+
+                    <div class="flex justify-end gap-3">
+                        <button class="px-6 py-2.5 rounded-full text-on-surface text-sm font-medium">Cancel</button>
+                        <button class="px-6 py-2.5 rounded-full bg-primary-container text-on-primary text-sm font-medium">Apply</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- PANEL 4: Custom Time Range modal — validation error -->
+    <!-- ============================================================ -->
+    <section class="flex flex-col gap-3 pb-4">
+        <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest">MODAL — END NOT AFTER START
+            (APPLY DISABLED)</h2>
+        <div class="frame relative rounded-2xl overflow-hidden border border-outline-variant" style="aspect-ratio: 390/520;">
+            <div class="absolute inset-0 bg-black/60 flex items-center justify-center p-4">
+                <div class="bg-surface-container-low border border-outline-variant rounded-2xl w-full max-w-[340px] p-6 flex flex-col gap-6 shadow-2xl">
+                    <div class="flex flex-col gap-1">
+                        <h2 class="text-lg font-bold text-on-surface">Custom time range</h2>
+                        <p class="text-on-surface-variant text-sm">Choose a start and end day.</p>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <span class="text-on-surface text-sm font-semibold">Start</span>
+                        <button class="h-11 px-3 rounded flex items-center justify-between bg-surface-container-lowest border border-error">
+                            <span class="text-on-surface text-sm">Jul 18</span>
+                            <span class="material-symbols-outlined text-on-surface-variant text-[18px]">calendar_month</span>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <span class="text-on-surface text-sm font-semibold">End</span>
+                        <button class="h-11 px-3 rounded flex items-center justify-between bg-surface-container-lowest border border-error">
+                            <span class="text-on-surface text-sm">Jul 17</span>
+                            <span class="material-symbols-outlined text-on-surface-variant text-[18px]">calendar_month</span>
+                        </button>
+                    </div>
+
+                    <span class="text-error text-xs -mt-2">End can't be before start</span>
+
+                    <div class="flex justify-end gap-3">
+                        <button class="px-6 py-2.5 rounded-full text-on-surface text-sm font-medium">Cancel</button>
+                        <button class="px-6 py-2.5 rounded-full bg-primary-container text-on-primary text-sm font-medium opacity-60" disabled>Apply</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+</body>
+</html>
