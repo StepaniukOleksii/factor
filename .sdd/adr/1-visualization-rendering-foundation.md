@@ -38,7 +38,7 @@ Adopt `@shopify/react-native-skia` as the rendering foundation for all Observati
 Confirmed compatible with the current stack (Expo ~54, React Native 0.81, new architecture default) —
 no upgrade required.
 
-Alongside the rendering choice, structure the feature around three seams so future vertical slices are
+Alongside the rendering choice, structure the feature around two seams so future vertical slices are
 additive rather than rearchitecting:
 
 * **Data-shaping decoupled from rendering** — a pure function `(records, metric, timeRange, aggregation)
@@ -46,7 +46,6 @@ additive rather than rearchitecting:
   a future cross-Observation overlay is a composition of two calls rather than a new subsystem.
 * **A per-`MetricValueType` renderer strategy** (line / tick / swimlane / marker), sharing one x-scale,
   one gesture controller, and one hit-test path to the existing record-detail view.
-* **Shared time-range/view state** in a single Zustand store, rather than per-chart-card state.
 
 ## Trade-offs
 
