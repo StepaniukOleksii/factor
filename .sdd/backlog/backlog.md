@@ -3,7 +3,7 @@
 This is an informal idea/issue capture list — not a specification. It exists to hold loose feature ideas, known
 bugs, and refactor notes until they're ready to become a real spec.
 
-[SPEC]
+[FEAT]
 
 1. Observation Visualization (3-observation-visualization epic), planned slices after 3-1 (foundation, already
    speced), 3-2 (numeric metric trend chart, already speced), and 3-3 (tap chart point to open Record detail,
