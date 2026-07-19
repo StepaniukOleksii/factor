@@ -2,7 +2,7 @@
 name: spec-creator
 description: Creates a new feature specification based on project templates and existing spec patterns. Triggered when the user asks to create or write a spec for a new feature.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
 ---
 
 # Spec Creator Skill
@@ -56,6 +56,16 @@ Pay special attention to the **Technical Design** section, ensuring it covers:
 * **Application Layer:** Define the use cases or commands, including inputs and expected behaviors.
 * **Storage Layer:** Define the necessary repository interfaces and implementation details.
 * **User Interface:** Detail the required screens, components, and user interactions.
+
+**Describe, don't implement.** Write the Technical Design in prose and structured bullet lists. Name entities,
+fields, types, methods, and components with inline code formatting (e.g. `observationId: UUID`,
+`CreateObservationUseCase`), but do **not** include code blocks containing actual implementation — function
+bodies, JSX, full type/interface declarations, or anything resembling a diff. Choosing exact syntax and control
+flow is the implementer's job, not the spec's: embedding it in the spec creates a second, unmaintained copy of
+the implementation that silently drifts from the real code as the feature evolves, and forces later specs to
+carry "superseded by" corrections when it does. `1-1-observation-creation/spec.md` is the model to follow here
+— it specifies fields and behavior without a single code block; do not emulate specs that embed code, even if
+they are more recent.
 
 The **Verification Plan** section must include both *Manual Verification* steps and expectations for *Automated Tests*.
 
