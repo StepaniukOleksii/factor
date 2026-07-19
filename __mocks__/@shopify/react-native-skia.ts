@@ -9,6 +9,7 @@
  * Extend this as later visualization slices use more Skia primitives.
  */
 import type {ReactNode} from 'react';
+import {vi} from 'vitest';
 
 type StubProps = {children?: ReactNode};
 
@@ -64,5 +65,10 @@ export const Skia = {
   },
 };
 
-export const useFont = (): null => null;
+/**
+ * Loads a typeface asynchronously on device, so it answers `null` until the
+ * font resolves. A spy rather than a plain stub, so a test can hand back its
+ * own font double and exercise what the component draws once one is available.
+ */
+export const useFont = vi.fn((): unknown => null);
 export const useCanvasRef = (): {current: null} => ({current: null});

@@ -37,7 +37,9 @@ const getMetricSeriesUseCase = new GetMetricSeriesUseCase();
 const deleteObservationUseCase = new DeleteObservationUseCase(observationRepository, recordRepository);
 const deleteRecordUseCase = new DeleteRecordUseCase(recordRepository);
 
-const TREND_CHART_HEIGHT = 90;
+// Tall enough that the plotted curve keeps roughly the room it had before the
+// chart started reserving a strip along its bottom edge for time labels.
+const TREND_CHART_HEIGHT = 108;
 
 export type ObservationDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'ObservationDetails'>;
 

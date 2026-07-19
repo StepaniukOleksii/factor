@@ -139,6 +139,17 @@ the Expo-pinned versions; `babel-preset-expo` wires the reanimated Babel plugin 
 See [ADR-1](../adr/1-visualization-rendering-foundation.md) for the full rationale and alternatives
 considered.
 
+#### Skia text rendering
+
+Trend chart axis labels are drawn with Skia's own text primitives. A `Canvas` cannot composite a
+platform `Text` element, so anything drawn inside one — labels included — has to go through Skia.
+
+That requires a typeface Skia owns, which a bundled font file provides: `assets/fonts/Roboto-Regular.ttf`
+(see [its README](../../assets/fonts/README.md) for provenance). A bundled file rather than a
+system-matched family, so labels render identically on every device. Skia loads it asynchronously, so
+anything drawing text must tolerate a `null` font for the first render or two and omit its text until
+the typeface resolves, rather than blocking the whole chart.
+
 ---
 
 ## Navigation
