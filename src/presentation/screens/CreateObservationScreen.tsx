@@ -11,6 +11,7 @@ import {
     TouchableWithoutFeedback,
     View
 } from 'react-native';
+import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {CreateObservationUseCase} from '../../application/CreateObservationUseCase';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {MetricValueType} from '../../domain/Metric';
@@ -28,17 +29,15 @@ import {
     ScreenHeader
 } from "@presentation/components";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
+import type {RootStackParamList} from '../navigation/routes';
 
 // Create instances here for simplicity, typically would use DI.
 const repository = new SQLiteObservationRepository();
 const useCase = new CreateObservationUseCase(repository);
 
-export interface CreateObservationScreenProps {
-    onCreated?: () => void;
-    onBack?: () => void;
-}
+export type CreateObservationScreenProps = NativeStackScreenProps<RootStackParamList, 'CreateObservation'>;
 
-export function CreateObservationScreen({onCreated, onBack}: CreateObservationScreenProps) {
+export function CreateObservationScreen({navigation}: CreateObservationScreenProps) {
     const [observationName, setObservationName] = useState('');
     const [description, setDescription] = useState('');
     const [metrics, setMetrics] = useState([{name: '', type: 'Numeric'}]);
@@ -68,15 +67,7 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
                 description: description.trim(),
                 metrics: metrics.map(m => ({name: m.name, type: m.type as string}))
             });
-            // Reset form
-            setObservationName('');
-            setDescription('');
-            setMetrics([{name: '', type: 'Numeric'}]);
-            if (onCreated) {
-                onCreated();
-            } else {
-                Alert.alert('Success', 'Observation created successfully!');
-            }
+            navigation.goBack();
         } catch (error: any) {
             Alert.alert('Error', error.message || 'An error occurred while saving.');
         }
@@ -100,7 +91,7 @@ export function CreateObservationScreen({onCreated, onBack}: CreateObservationSc
 
                 <ScreenHeader
                     title="New Observation"
-                    onBack={onBack}
+                    onBack={() => navigation.goBack()}
                     rightAction={
                         <TouchableOpacity style={styles.iconButton}>
                             <MaterialIcons name="more-vert" size={24} color={COLORS.onSurface}/>

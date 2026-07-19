@@ -58,8 +58,13 @@ later slices already in the backlog.
   reopening the Observation, resets the selection to the "1M" default.
   * **Revised by [Custom Time Range Input](../3-5-custom-time-range-input/spec.md).** Discarding the
     window on the way back from a Record proved to be a bug in use, not a simplification: tapping a chart
-    point to inspect a Record and returning silently threw the window away. The selection now lives in
-    `AppNavigator` and survives the round trip, per Observation, for presets and custom ranges alike.
+    point to inspect a Record and returning silently threw the window away. The selection survives the
+    round trip, per Observation, for presets and custom ranges alike.
+  * **Mechanism superseded by [Navigation Foundation](../../0-unparented/0-1-navigation-foundation/spec.md).**
+    The premise above — that the screen remounts on the way back from a Record — no longer holds. On a
+    native stack the screen stays mounted underneath, so the selection is ordinary local state that
+    outlives the trip on its own, and is destroyed with the screen when the user pops out to the
+    Observation list. The behaviour described in the revision above is unchanged.
 
 ## 3. Technical Design
 

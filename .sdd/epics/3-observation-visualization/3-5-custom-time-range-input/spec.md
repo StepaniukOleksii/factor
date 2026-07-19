@@ -70,6 +70,13 @@ than exposing aggregation as a separate choice.
   Observation entirely — back to the Observation list, after a deletion, or via any future Home
   affordance — ends the exploration: coming back in, even to the *same* Observation, starts at the "1M"
   default. Nothing is persisted across app restarts.
+  * **Mechanism superseded by [Navigation Foundation](../../0-unparented/0-1-navigation-foundation/spec.md).**
+    The behaviour above is exactly what it remains; only how it is achieved changed. The parenthetical no
+    longer holds — the Details screen does not unmount on the way to a Record — and "exploration" is no
+    longer a concept the code names. A stack expresses it directly: screens opened from an Observation sit
+    on top of its Details screen, which stays mounted and keeps its state, and popping out to the list
+    destroys it. The window is therefore ordinary local state in the screen that owns it, and a future
+    Config, Info or Home screen needs no classifying.
 * [ ] **No Manual Aggregation Control:** Exposing bucket size as its own user-facing choice is explicitly
   out of scope for this slice (see Goal).
 
@@ -292,6 +299,14 @@ export interface CustomTimeRangeModalProps {
     default, so adding a screen fails to typecheck until it is placed inside or outside an exploration.
     That is the point of the design: a later Config, Info or Home screen cannot silently inherit the
     wrong behavior by omission. (Verified by adding a screen variant and observing the compile error.)
+
+> **The two bullets above are superseded by**
+> [Navigation Foundation](../../0-unparented/0-1-navigation-foundation/spec.md), which describes what is
+> in the code now. `ScreenState`, `exploredObservationId`, the `navigate` funnel and its `assertNever`
+> are all deleted along with the hand-rolled navigator. `timeRangeSelection` is local
+> `useState(DEFAULT_TIME_RANGE_SELECTION)` in `ObservationDetailsScreen` again, and the two props added
+> for the navigator are gone. The screen's data loading also moved to a focus effect, since a preserved
+> screen no longer reloads by being rebuilt on return.
 * `loadTrendData` takes a `TimeRangeSelection` instead of a `TimeRangePreset`, and resolves it via
   `getTimeRangeForSelection`:
   ```ts
@@ -416,3 +431,10 @@ Run "Reseed test data" first (see [testing-data.md](../../../../testing-data.md)
   comes back intact — for a preset and a custom range alike, and via Record creation as well as edit;
   while going out to the Observation list, or having the Observation deleted, drops it, so reopening
   even the *same* Observation starts at the default, as does opening a different one.
+
+> **Superseded by** [Navigation Foundation](../../0-unparented/0-1-navigation-foundation/spec.md) where
+> these two bullets describe the prop contract rather than the behaviour. The screen no longer reports its
+> selection to an owner or renders one it is handed, so those assertions are gone; the rest of the
+> `ObservationDetailsScreen` bullet carries over with the selection owned locally. The navigator's tests
+> were rewritten against the stack: the window's lifetime is now asserted as screen-local state surviving
+> a push-and-pop and dying with the screen, rather than against the deleted exploration classifier.

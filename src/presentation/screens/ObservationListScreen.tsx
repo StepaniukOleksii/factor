@@ -1,33 +1,34 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {FlatList, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
+import {useFocusEffect} from '@react-navigation/native';
+import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {GetObservationsUseCase, ObservationListItem} from '../../application/GetObservationsUseCase';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
 import {CenteredState, ScreenContainer, ScreenHeader} from "@presentation/components";
 import {COLORS, RADIUS} from "@presentation/theme";
+import type {RootStackParamList} from '../navigation/routes';
 
 const repository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
 const useCase = new GetObservationsUseCase(repository, recordRepository);
 
-export interface ObservationListScreenProps {
-    onCreateNew: () => void;
-    onCreateRecord: (observationId: string) => void;
-    onObservationSelected: (observationId: string) => void;
-}
+export type ObservationListScreenProps = NativeStackScreenProps<RootStackParamList, 'ObservationList'>;
 
-export function ObservationListScreen({
-                                          onCreateNew,
-                                          onCreateRecord,
-                                          onObservationSelected
-                                      }: ObservationListScreenProps) {
+export function ObservationListScreen({navigation}: ObservationListScreenProps) {
     const [observations, setObservations] = useState<ObservationListItem[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadObservations();
-    }, []);
+    // As the stack's root this screen stays mounted for the whole session, so a
+    // mount effect would only ever fire once. Reloading on focus is what keeps
+    // an Observation created, deleted, or recorded against above it from
+    // leaving the list showing what it showed on launch (ADR-2).
+    useFocusEffect(
+        useCallback(() => {
+            loadObservations();
+        }, []),
+    );
 
     const loadObservations = async () => {
         try {
@@ -54,7 +55,7 @@ export function ObservationListScreen({
                 <View style={styles.cardHeader}>
                     <TouchableOpacity
                         style={styles.cardContent}
-                        onPress={() => onObservationSelected(item.observation.id)}
+                        onPress={() => navigation.navigate('ObservationDetails', {observationId: item.observation.id})}
                         activeOpacity={0.8}
                     >
                         <Text style={styles.cardTitle}>{item.observation.name}</Text>
@@ -76,7 +77,7 @@ export function ObservationListScreen({
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.cardAddButton}
-                        onPress={() => onCreateRecord(item.observation.id)}
+                        onPress={() => navigation.navigate('CreateRecord', {observationId: item.observation.id})}
                     >
                         <MaterialIcons name="add" size={24} color={COLORS.primaryContainer}/>
                     </TouchableOpacity>
@@ -112,7 +113,7 @@ export function ObservationListScreen({
             )}
 
             {/* FAB */}
-            <TouchableOpacity style={styles.fab} onPress={onCreateNew}>
+            <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('CreateObservation')}>
                 <MaterialIcons name="add" size={24} color={COLORS.onPrimaryContainer}/>
             </TouchableOpacity>
         </ScreenContainer>

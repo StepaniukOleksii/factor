@@ -3,7 +3,7 @@
 ## Purpose
 
 This document describes how to build and run Factor on Android now that Records visualization depends
-on `@shopify/react-native-skia` (see [ADR-1](../adr/1-visualization-rendering-foundation.md)). Skia
+on `@shopify/react-native-skia` (see [ADR-1](.sdd/adr/1-visualization-rendering-foundation.md)). Skia
 ships native code, so the app can no longer run inside the plain Expo Go app — it needs a custom
 development build.
 
@@ -153,10 +153,16 @@ If you're testing over a flaky network, `npm run start-tunnel` works the same wa
 
 **You only need `npm run android` (not just `npm start`) when:**
 
-* a native dependency is added, removed, or upgraded (e.g. bumping `@shopify/react-native-skia`)
+* a native dependency is added, removed, or upgraded — e.g. bumping `@shopify/react-native-skia`, or
+  adding `react-native-screens` and `react-native-safe-area-context` as React Navigation did
+  ([ADR-2](.sdd/adr/2-navigation-foundation.md))
 * `app.json`'s native config changes (icons, permissions, package name, etc.)
 
 Everyday JS/TSX/logic changes never require a rebuild.
+
+The catch is that nothing warns you: a dev client built before the dependency was added keeps loading
+the new JS bundle happily and then crashes when the missing native module is first touched. After
+pulling a branch that adds one, rebuild before concluding anything is broken.
 
 ---
 
@@ -186,10 +192,18 @@ npm run test
 npm run typecheck
 ```
 
-One thing to watch for: any Vitest test that renders a component using `@shopify/react-native-skia`
-will need a mock, since Skia's native bindings don't exist in a Node test environment. There isn't one
-in place yet — add it when the first Skia-based component gets test coverage, rather than assuming
-Skia's own Jest helpers apply as-is under Vitest.
+One thing to watch for: a package that ships native code cannot be loaded in a Node test environment,
+so any test pulling one in needs a stand-in. The established pattern is a hand-written stub in
+`__mocks__/`, activated globally in `vitest.setup.ts` so that every test gets it without repeating the
+mock per file:
+
+* `__mocks__/@shopify/react-native-skia.ts` — for the trend charts ([ADR-1](.sdd/adr/1-visualization-rendering-foundation.md))
+* `__mocks__/react-native-safe-area-context.tsx` — reached indirectly, through React Navigation
+  ([ADR-2](.sdd/adr/2-navigation-foundation.md))
+
+Extend the existing stub when a test needs a primitive it doesn't cover yet; add a new one, alongside a
+`vi.mock` line in `vitest.setup.ts`, when a new native dependency first gets test coverage. Write the
+stub by hand rather than assuming a package's own Jest helpers apply as-is under Vitest.
 
 ---
 

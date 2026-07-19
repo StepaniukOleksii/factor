@@ -10,6 +10,7 @@ import {
     View,
 } from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
+import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
 import {GetObservationByIdUseCase} from '../../application/GetObservationByIdUseCase';
@@ -29,6 +30,7 @@ import {
 } from "@presentation/components";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
+import type {RootStackParamList} from '../navigation/routes';
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
@@ -37,15 +39,27 @@ const createRecordUseCase = new CreateRecordUseCase(recordRepository, observatio
 const getRecordByIdUseCase = new GetRecordByIdUseCase(recordRepository);
 const updateRecordUseCase = new UpdateRecordUseCase(recordRepository, observationRepository);
 
-export interface RecordFormScreenProps {
-    observationId: string;
-    recordId?: string;
-    onBack: () => void;
-    onCreated: () => void;
-}
+/** One screen behind two routes - see `AppNavigator`. */
+export type RecordFormScreenProps = NativeStackScreenProps<RootStackParamList, 'CreateRecord' | 'EditRecord'>;
 
-export function RecordFormScreen({observationId, recordId, onBack, onCreated}: RecordFormScreenProps) {
+export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
+    const {observationId} = route.params;
+    // The `EditRecord` route is the one that carries a Record to load; without
+    // one this is the `CreateRecord` route and the form starts empty.
+    const recordId = 'recordId' in route.params ? route.params.recordId : undefined;
     const isEditMode = !!recordId;
+
+    const onBack = () => navigation.goBack();
+
+    /**
+     * Opened from the Observation, its details screen is still mounted below -
+     * pop back onto it, window and scroll position intact. Opened from the
+     * Observation list there is none, so `popTo` puts one in this form's place
+     * instead: the user lands on what they just recorded against, and pressing
+     * back from there reaches the list rather than the form they submitted.
+     */
+    const onSaved = () => navigation.popTo('ObservationDetails', {observationId});
+
     const [observation, setObservation] = useState<Observation | null>(null);
     const [record, setRecord] = useState<DomainRecord | null>(null);
     const [loading, setLoading] = useState(true);
@@ -132,7 +146,7 @@ export function RecordFormScreen({observationId, recordId, onBack, onCreated}: R
                     values: commandValues
                 });
             }
-            onCreated();
+            onSaved();
         } catch (error: any) {
             console.error(isEditMode ? 'Failed to update record' : 'Failed to create record', error);
             // fallback generic error handling

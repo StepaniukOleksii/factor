@@ -1,6 +1,8 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
+import {useFocusEffect} from '@react-navigation/native';
+import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
 import {GetObservationByIdUseCase} from '../../application/GetObservationByIdUseCase';
@@ -16,6 +18,7 @@ import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 import {rendererRegistry} from '../charts/rendererRegistry';
 import {
+    DEFAULT_TIME_RANGE_SELECTION,
     getAggregationForSelection,
     getTimeRangeForSelection,
     NUMERIC_TREND_INSUFFICIENT_MESSAGE,
@@ -23,6 +26,7 @@ import {
 } from '../charts/chartDefaults';
 import {TimeRangeSelector} from '../charts/TimeRangeSelector';
 import {CustomTimeRangeModal} from '../charts/CustomTimeRangeModal';
+import type {RootStackParamList} from '../navigation/routes';
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
@@ -35,30 +39,24 @@ const deleteRecordUseCase = new DeleteRecordUseCase(recordRepository);
 
 const TREND_CHART_HEIGHT = 90;
 
-export interface ObservationDetailsScreenProps {
-    observationId: string;
-    /**
-     * The Trends window to render. Owned by the navigator rather than this
-     * screen: opening a Record unmounts the screen, and the selection has to
-     * outlive that so returning lands back on the window the user chose.
-     */
-    timeRangeSelection: TimeRangeSelection;
-    onTimeRangeSelectionChange: (selection: TimeRangeSelection) => void;
-    onBack: () => void;
-    onCreateRecord: () => void;
-    onEditRecord: (recordId: string) => void;
-    onDeleted: () => void;
-}
+export type ObservationDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'ObservationDetails'>;
 
-export function ObservationDetailsScreen({
-                                             observationId,
-                                             timeRangeSelection,
-                                             onTimeRangeSelectionChange,
-                                             onBack,
-                                             onCreateRecord,
-                                             onEditRecord,
-                                             onDeleted
-                                         }: ObservationDetailsScreenProps) {
+export function ObservationDetailsScreen({route, navigation}: ObservationDetailsScreenProps) {
+    const {observationId} = route.params;
+
+    const onBack = () => navigation.goBack();
+    const onCreateRecord = () => navigation.navigate('CreateRecord', {observationId});
+    const onEditRecord = (recordId: string) => navigation.navigate('EditRecord', {observationId, recordId});
+    // The Observation this journey was about no longer exists, so the whole
+    // journey goes with it rather than leaving a screen for it behind.
+    const onDeleted = () => navigation.popToTop();
+
+    // The Trends window the user picked. Ordinary local state: screens pushed
+    // on top of this one leave it mounted, so the selection survives a trip to
+    // a Record and back, and dies with the screen when the user pops out to the
+    // list - which is the exploration scoping, for free (ADR-2).
+    const [timeRangeSelection, setTimeRangeSelection] =
+        useState<TimeRangeSelection>(DEFAULT_TIME_RANGE_SELECTION);
     const [observation, setObservation] = useState<Observation | null>(null);
     const [records, setRecords] = useState<DomainRecord[]>([]);
     const [chartRecords, setChartRecords] = useState<DomainRecord[]>([]);
@@ -79,18 +77,28 @@ export function ObservationDetailsScreen({
     const [recordToDelete, setRecordToDelete] = useState<DomainRecord | null>(null);
     const [deletingRecord, setDeletingRecord] = useState(false);
 
-    useEffect(() => {
-        loadData();
-    }, [observationId]);
+    // On focus rather than on mount: this screen stays mounted while a Record
+    // screen sits on top of it, so a mount effect would fire once and never
+    // again, and a Record added or edited up there would never appear here.
+    // Deliberately not keyed on the selected window - choosing one re-scopes
+    // the charts only, below.
+    useFocusEffect(
+        useCallback(() => {
+            loadData();
+        }, [observationId]),
+    );
 
-    // Owns the trend fetch alone, so switching window re-scopes the charts without
-    // re-fetching the Observation or its Recent Records. Covers the initial load
-    // too: it fires with the default selection once the Observation is in place.
-    useEffect(() => {
-        if (observation) {
+    // Owns the trend fetch alone, so switching window re-scopes the charts
+    // without re-fetching the Observation or its Recent Records. Keyed on the
+    // selection as well as focus, which covers all three moments it has to
+    // cover: the first load, a switch while the screen is up, and the return
+    // from a Record - the last re-querying whatever window is showing, since a
+    // refresh reloads data without disturbing the user's choice of window.
+    useFocusEffect(
+        useCallback(() => {
             loadTrendData(timeRangeSelection);
-        }
-    }, [observationId, timeRangeSelection, observation]);
+        }, [observationId, timeRangeSelection]),
+    );
 
     const loadRecentRecords = async () => {
         const recentRecords = await getRecentRecordsUseCase.execute(observationId, 3);
@@ -274,7 +282,7 @@ export function ObservationDetailsScreen({
                             <View style={styles.trendsSelector}>
                                 <TimeRangeSelector
                                     selected={timeRangeSelection}
-                                    onSelectPreset={preset => onTimeRangeSelectionChange({kind: 'preset', preset})}
+                                    onSelectPreset={preset => setTimeRangeSelection({kind: 'preset', preset})}
                                     onPressCustom={() => setCustomModalVisible(true)}
                                     disabled={loadingTrends}
                                 />
@@ -284,7 +292,7 @@ export function ObservationDetailsScreen({
                                 initialRange={getTimeRangeForSelection(timeRangeSelection)}
                                 onCancel={() => setCustomModalVisible(false)}
                                 onApply={range => {
-                                    onTimeRangeSelectionChange({kind: 'custom', range});
+                                    setTimeRangeSelection({kind: 'custom', range});
                                     setCustomModalVisible(false);
                                 }}
                             />

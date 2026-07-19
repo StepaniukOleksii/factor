@@ -1,16 +1,11 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
 import {Text} from 'react-native';
 import {ObservationDetailsScreen} from './ObservationDetailsScreen';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
-import {
-    DEFAULT_TIME_RANGE_SELECTION,
-    NUMERIC_TREND_INSUFFICIENT_MESSAGE,
-    type TimeRangePreset,
-    type TimeRangeSelection,
-} from '../charts/chartDefaults';
+import {NUMERIC_TREND_INSUFFICIENT_MESSAGE, type TimeRangePreset,} from '../charts/chartDefaults';
 import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {formatShortDate, formatTimeRange} from '@shared/formatTimeRange';
 
@@ -49,6 +44,30 @@ vi.mock('@expo/vector-icons', () => ({
 vi.mock('@react-native-community/datetimepicker', () => ({
     default: 'DateTimePicker',
 }));
+
+const {focusListeners} = vi.hoisted(() => ({focusListeners: new Set<() => void>()}));
+
+// `useFocusEffect` is the only React Navigation API the screen itself uses, so
+// stubbing it is all that stands between this test and a NavigationContainer.
+// Keyed on the callback exactly as the real hook is - so a changed time range
+// re-runs it - plus a counter `refocusScreen` below bumps, standing in for the
+// screen being returned to.
+vi.mock('@react-navigation/native', () => {
+    const React = require('react');
+    return {
+        useFocusEffect: (callback: React.EffectCallback) => {
+            const [focusCount, setFocusCount] = React.useState(0);
+            React.useEffect(() => {
+                const listener = () => setFocusCount((count: number) => count + 1);
+                focusListeners.add(listener);
+                return () => {
+                    focusListeners.delete(listener);
+                };
+            }, []);
+            React.useEffect(callback, [callback, focusCount]);
+        },
+    };
+});
 
 vi.mock('../../infrastructure/SQLiteObservationRepository', () => ({
     SQLiteObservationRepository: vi.fn(),
@@ -126,53 +145,29 @@ function findTouchableWithText(root: any, text: string) {
 }
 
 /**
- * Stands in for `AppNavigator`, which owns the selection: it hands back
- * whatever the screen reports, so pressing a segment re-scopes the charts the
- * way it does in the running app.
+ * The screen owns its time range again, so no harness holds one for it. It
+ * takes its Observation from the route and pushes routes to move, so both are
+ * faked here - `navigate` is the spy standing in for what used to be the
+ * `onEditRecord` prop.
  */
-function NavigatorHarness({onEditRecord}: {onEditRecord: (recordId: string) => void}) {
-    const [selection, setSelection] = useState<TimeRangeSelection>(DEFAULT_TIME_RANGE_SELECTION);
-    return (
-        <ObservationDetailsScreen
-            observationId="obs-1"
-            timeRangeSelection={selection}
-            onTimeRangeSelectionChange={setSelection}
-            onBack={vi.fn()}
-            onCreateRecord={vi.fn()}
-            onEditRecord={onEditRecord}
-            onDeleted={vi.fn()}
-        />
-    );
-}
-
-async function renderScreen(onEditRecord: (recordId: string) => void = vi.fn()) {
-    let root: any;
-    await act(async () => {
-        root = renderer.create(<NavigatorHarness onEditRecord={onEditRecord}/>);
-    });
-    return root!;
-}
-
-/** Renders with the window pinned, the way the navigator hands a restored one back. */
-async function renderScreenWithSelection(
-    timeRangeSelection: TimeRangeSelection,
-    onTimeRangeSelectionChange: (selection: TimeRangeSelection) => void = vi.fn(),
-) {
+async function renderScreen(navigate: (name: string, params: unknown) => void = vi.fn()) {
     let root: any;
     await act(async () => {
         root = renderer.create(
             <ObservationDetailsScreen
-                observationId="obs-1"
-                timeRangeSelection={timeRangeSelection}
-                onTimeRangeSelectionChange={onTimeRangeSelectionChange}
-                onBack={vi.fn()}
-                onCreateRecord={vi.fn()}
-                onEditRecord={vi.fn()}
-                onDeleted={vi.fn()}
+                route={{name: 'ObservationDetails', params: {observationId: 'obs-1'}} as any}
+                navigation={{navigate, goBack: vi.fn(), popToTop: vi.fn()} as any}
             />,
         );
     });
     return root!;
+}
+
+/** Re-runs the screen's focus effects, the way returning to it does. */
+async function refocusScreen() {
+    await act(async () => {
+        focusListeners.forEach(listener => listener());
+    });
 }
 
 async function openRecordMenu(root: any) {
@@ -327,8 +322,8 @@ describe('ObservationDetailsScreen Record Actions', () => {
     });
 
     it('navigates to edit and closes the contextual menu when Edit Record is pressed', async () => {
-        const onEditRecord = vi.fn();
-        const root = await renderScreen(onEditRecord);
+        const navigate = vi.fn();
+        const root = await renderScreen(navigate);
         await openRecordMenu(root);
 
         const editButton = findTouchableWithText(root.root, 'Edit Record');
@@ -338,7 +333,7 @@ describe('ObservationDetailsScreen Record Actions', () => {
             editButton!.props.onPress();
         });
 
-        expect(onEditRecord).toHaveBeenCalledWith('rec-1');
+        expect(navigate).toHaveBeenCalledWith('EditRecord', {observationId: 'obs-1', recordId: 'rec-1'});
 
         // Menu should be dismissed
         const titles = findAllByText(root.root, 'Record actions');
@@ -527,7 +522,7 @@ describe('ObservationDetailsScreen Trends', () => {
         expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
     });
 
-    it('opens the record behind a tapped chart point via onEditRecord', async () => {
+    it('opens the record behind a tapped chart point', async () => {
         mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
         // Same value in both records so the series is flat (points sit at the
         // canvas mid-line), keeping the tap's vertical hit-test independent of the
@@ -536,9 +531,9 @@ describe('ObservationDetailsScreen Trends', () => {
             chartRecord('earliest', 3, [['m1', 5]]),
             chartRecord('latest', 1, [['m1', 5]]),
         ]);
-        const onEditRecord = vi.fn();
+        const navigate = vi.fn();
 
-        const root = await renderScreen(onEditRecord);
+        const root = await renderScreen(navigate);
 
         const pressable = root.root.findByProps({testID: 'numeric-trend-chart-pressable'});
         await act(async () => {
@@ -546,7 +541,7 @@ describe('ObservationDetailsScreen Trends', () => {
             pressable.props.onPress({nativeEvent: {locationX: 0, locationY: 45}});
         });
 
-        expect(onEditRecord).toHaveBeenCalledWith('earliest');
+        expect(navigate).toHaveBeenCalledWith('EditRecord', {observationId: 'obs-1', recordId: 'earliest'});
     });
 
     it('renders the RECENT RECORDS section independently of the trends data fetch', async () => {
@@ -844,44 +839,85 @@ describe('ObservationDetailsScreen Custom Time Range', () => {
         expect(countRecordCards(root.root)).toBe(1);
     });
 
-    // The screen unmounts whenever a Record is opened, so it cannot own the
-    // selection - it renders the one it is handed and reports every change,
-    // leaving the navigator to carry it across the trip.
-    it('renders the window it is handed rather than falling back to the default', async () => {
-        const range: TimeRange = {start: dayAt(4), end: endOfDay(dayAt(0))};
+});
 
-        const root = await renderScreenWithSelection({kind: 'custom', range});
-
-        expect(customSegment(root).props.accessibilityState.selected).toBe(true);
-        expect(presetSegment(root, '1M').props.accessibilityState.selected).toBe(false);
-        expect(findAllByText(root.root, formatTimeRange(range)).length).toBeGreaterThan(0);
-        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledWith('obs-1', range);
+/**
+ * The screen stays mounted while a Record screen sits on top of it, so it no
+ * longer reloads by being rebuilt on the way back. These cover what has to
+ * replace that.
+ */
+describe('ObservationDetailsScreen Focus Refresh', () => {
+    beforeEach(() => {
+        // Screens rendered by earlier tests are never unmounted, so their focus
+        // listeners would still be in the set and would answer a refocus by
+        // re-querying through the same shared mocks. Only this test's screen
+        // should respond.
+        focusListeners.clear();
+        vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
+        mockGetRecentRecordsExecute.mockResolvedValue([]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+        vi.stubGlobal('alert', vi.fn());
     });
 
-    it('reports an applied custom range to its owner instead of keeping it', async () => {
-        const onTimeRangeSelectionChange = vi.fn();
-        const root = await renderScreenWithSelection(
-            DEFAULT_TIME_RANGE_SELECTION,
-            onTimeRangeSelectionChange,
-        );
+    it('reloads the Observation and its Recent Records when the screen regains focus', async () => {
+        const root = await renderScreen();
+        expect(countRecordCards(root.root)).toBe(0);
 
+        // Stands in for a Record added on the screen above this one.
+        mockGetRecentRecordsExecute.mockResolvedValue([initialRecord]);
+        await refocusScreen();
+
+        expect(mockGetObservationByIdExecute).toHaveBeenCalledTimes(2);
+        expect(mockGetRecentRecordsExecute).toHaveBeenCalledTimes(2);
+        expect(countRecordCards(root.root)).toBe(1);
+    });
+
+    it('re-queries the trend data on focus so a Record added above shows up in the charts', async () => {
+        const root = await renderScreen();
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(1);
+
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['m1', 5]]),
+            chartRecord('b', 1, [['m1', 7]]),
+        ]);
+        await refocusScreen();
+
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(2);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
+    });
+
+    it('refreshes against the applied custom range rather than resetting to the default', async () => {
+        const root = await renderScreen();
         await applyCustomRange(root, 4);
+        const appliedRange = {start: dayAt(4), end: endOfDay(dayAt(0))};
 
-        expect(onTimeRangeSelectionChange).toHaveBeenCalledWith({
-            kind: 'custom',
-            range: {start: dayAt(4), end: endOfDay(dayAt(0))},
-        });
+        await refocusScreen();
+
+        // Reloading data and resetting the window are different things, and only
+        // the first is wanted: the refresh re-queries the window on show.
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenLastCalledWith('obs-1', appliedRange);
+        expect(customSegment(root).props.accessibilityState.selected).toBe(true);
+        expect(findAllByText(root.root, formatTimeRange(appliedRange)).length).toBeGreaterThan(0);
     });
 
-    it('reports a selected preset to its owner too', async () => {
-        const onTimeRangeSelectionChange = vi.fn();
-        const root = await renderScreenWithSelection(
-            DEFAULT_TIME_RANGE_SELECTION,
-            onTimeRangeSelectionChange,
-        );
+    it('refreshes against a selected preset rather than resetting to the default', async () => {
+        const root = await renderScreen();
+        await selectPreset(root, '1W');
+
+        await refocusScreen();
+
+        expect(lastRequestedRange().end.getTime() - lastRequestedRange().start.getTime()).toBe(7 * DAY_MS);
+        expect(presetSegment(root, '1W').props.accessibilityState.selected).toBe(true);
+    });
+
+    it('leaves the Recent Records alone when only the window changes', async () => {
+        const root = await renderScreen();
 
         await selectPreset(root, '1W');
 
-        expect(onTimeRangeSelectionChange).toHaveBeenCalledWith({kind: 'preset', preset: '1W'});
+        // A window switch is not a refresh - it re-scopes the charts only.
+        expect(mockGetObservationByIdExecute).toHaveBeenCalledTimes(1);
+        expect(mockGetRecentRecordsExecute).toHaveBeenCalledTimes(1);
     });
 });

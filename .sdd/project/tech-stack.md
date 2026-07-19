@@ -141,6 +141,37 @@ considered.
 
 ---
 
+## Navigation
+
+### React Navigation
+
+`@react-navigation/native` with `@react-navigation/native-stack` provides navigation, as a single native
+stack.
+
+Rationale:
+
+* De facto standard for React Native, supported first-class by Expo
+* Stack semantics scope screen state structurally: a pushed screen leaves the one below mounted, popping
+  returns to that same instance, and popping a screen off destroys it
+* Handles the Android hardware back button and system back gesture
+* Deep linking, tabs and drawers remain available without rearchitecting
+
+Requires `react-native-screens` and `react-native-safe-area-context`, both of which ship native code, so
+adding them requires rebuilding the dev client. Install the Expo-pinned versions.
+
+The framework's native header is **not** used: `ScreenHeader` remains the app's header on every screen.
+
+Because screens stay mounted while covered, two conventions apply:
+
+* **A screen refreshes on focus**, via `useFocusEffect`, whenever it shows data a screen above it can
+  change.
+* **View state scoped to one screen's visit belongs in that screen's own state.** Zustand remains the
+  approved choice for state that is genuinely application-wide.
+
+See [ADR-2](../adr/2-navigation-foundation.md) for the full rationale and alternatives considered.
+
+---
+
 ## Date Input
 
 ### DateTimePicker

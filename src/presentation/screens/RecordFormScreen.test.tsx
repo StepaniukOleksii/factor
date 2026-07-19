@@ -108,17 +108,25 @@ const durationMetric = new Metric('metric-1', 'Duration', 'Numeric');
 const restedMetric = new Metric('metric-2', 'Well Rested', 'Boolean');
 const observation = new Observation('obs-1', 'Sleep Quality', [durationMetric, restedMetric]);
 
+/**
+ * The screen takes its ids from the route and leaves through the stack, so both
+ * are faked here rather than passed as callbacks. Backing out pops, and saving
+ * pops back onto the Observation - spying on those two navigation calls asserts
+ * exactly what the `onBack`/`onCreated` props used to.
+ */
 async function renderScreen(props: Partial<{ observationId: string, recordId: string, onBack: () => void, onCreated: () => void }> = {}) {
     const onBack = props.onBack ?? vi.fn();
     const onCreated = props.onCreated ?? vi.fn();
+    const observationId = props.observationId ?? 'obs-1';
+    const route = props.recordId
+        ? {name: 'EditRecord', params: {observationId, recordId: props.recordId}}
+        : {name: 'CreateRecord', params: {observationId}};
     let root: any;
     await act(async () => {
         root = renderer.create(
             <RecordFormScreen
-                observationId={props.observationId ?? 'obs-1'}
-                recordId={props.recordId}
-                onBack={onBack}
-                onCreated={onCreated}
+                route={route as any}
+                navigation={{goBack: onBack, popTo: onCreated} as any}
             />,
         );
     });

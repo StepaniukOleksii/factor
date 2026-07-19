@@ -16,5 +16,15 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./vitest.setup.ts'],
+    server: {
+      deps: {
+        // React Navigation ships ESM with extensionless relative imports, which
+        // Node's own loader cannot resolve. Inlining hands these packages to
+        // Vite, which resolves them the way Metro does on device - and brings
+        // them under the per-test `react-native` mock, since only modules Vitest
+        // processes itself go through its mock registry.
+        inline: [/@react-navigation\//],
+      },
+    },
   },
 });
