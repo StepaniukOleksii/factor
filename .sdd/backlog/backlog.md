@@ -12,11 +12,6 @@ bugs, and refactor notes until they're ready to become a real spec.
       multiple Records should narrow the chart to that bucket's own time span at finer aggregation, rather than
       opening one arbitrary Record. Supersedes 3-3's "opens the earliest Record in the bucket" placeholder for
       aggregated points; depends on 3-4 (time range selector) for its range/aggregation state.
-    - Axis scale on trend charts (time on the x axis, value breakdown on the y axis): reverses 3-2's deliberate
-      no-axis minimalism call, so treat it as a conscious design decision, not a drive-by addition. Needs Skia
-      text rendering (unused anywhere in the app so far) and is best sequenced with/after 3-4 (time range
-      selector), since label granularity depends on the selected range.
-
     - Two-phase chart tap: a first tap shows a vertical line mirrored across all of an Observation's charts at
       that time position; a second tap navigates to the Record detail view. Replaces 3-3's immediate-navigate-
       on-tap behavior and needs state shared across every chart on screen rather than per card; needs its own

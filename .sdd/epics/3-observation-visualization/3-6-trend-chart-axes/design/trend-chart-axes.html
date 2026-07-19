@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Factor - Trend Chart Axes</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        // Color values copied verbatim from src/presentation/theme/colors.ts, so this
+        // mockup matches the running app exactly rather than a generic MD3 token set.
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "background": "#131313",
+                        "surface": "#131313",
+                        "on-surface": "#e5e2e1",
+                        "on-surface-variant": "#c2c9b9",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-container-highest": "#353534",
+                        "outline-variant": "#42493d",
+                        "outline": "#8c9385",
+                        "primary-container": "#b6f09c",
+                        "on-primary-container": "#3c6f2a",
+                        "on-primary-fixed-variant": "#205110",
+                        "primary": "#f9fff0",
+                        "on-primary": "#0b3900",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005"
+                    },
+                    fontFamily: {
+                        sans: ["Hanken Grotesk"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Hanken Grotesk', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .frame { width: 390px; max-width: 100%; }
+        .seg { transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease; }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+
+<!--
+  This file documents the axis-label states this spec adds to the Numeric trend chart
+  (src/presentation/charts/NumericTrendChart.tsx). Panel 1 is a live, click-driven
+  preview - its Time Range Selector row is fully wired in JS, exactly mirroring the
+  real component's props, so every preset and a sample Custom range can be inspected
+  without five separate screenshots. Panel 2 lays all five states out side by side for
+  a single-glance comparison. Panel 3 demonstrates the Custom range's dynamic label
+  format across three span tiers. Panel 4 annotates the layout mechanics (plotting
+  rectangle, label gutters) the spec's Chart Rendering section describes. Curves are
+  built client-side with the same Catmull-Rom-to-cubic-Bezier construction
+  NumericTrendChart.tsx uses, so the shapes are representative, not arbitrary art.
+-->
+
+<main class="max-w-5xl mx-auto px-6 py-10 flex flex-col gap-14">
+
+    <div>
+        <h1 class="text-xl font-semibold text-primary">Trend Chart Axes</h1>
+        <p class="text-on-surface-variant text-sm mt-1 max-w-2xl">Visual reference for the axis labels and
+            gridlines this spec adds to every Numeric trend chart, across all four presets and a Custom
+            range at three different spans.</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PANEL 1: Live, interactive screen preview -->
+    <!-- ============================================================ -->
+    <section class="flex flex-col gap-3">
+        <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest">SCREEN — INTERACTIVE
+            PREVIEW (click a range below)</h2>
+        <div class="frame border border-outline-variant rounded-2xl overflow-hidden bg-background">
+
+            <!-- ScreenHeader (existing, reused as-is) -->
+            <header class="w-full flex items-center justify-between px-4 h-16 border-b border-outline-variant">
+                <span class="material-symbols-outlined text-on-surface">arrow_back</span>
+                <span class="text-primary text-lg font-semibold tracking-tight">Sleep Quality</span>
+                <span class="material-symbols-outlined text-on-surface">more_vert</span>
+            </header>
+
+            <div class="px-6 pt-6 pb-8 flex flex-col gap-10">
+
+                <!-- Metrics Section (existing, unchanged) -->
+                <section>
+                    <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest mb-4">METRICS</h2>
+                    <div class="flex flex-wrap gap-3">
+                        <div class="flex items-center bg-surface-container-low border border-surface-container-highest rounded-lg px-3 py-2">
+                            <span class="w-2 h-2 rounded-full bg-primary-container mr-2"></span>
+                            <span class="text-primary text-sm font-medium">Duration</span>
+                        </div>
+                        <div class="flex items-center bg-surface-container-low border border-surface-container-highest rounded-lg px-3 py-2">
+                            <span class="w-2 h-2 rounded-full bg-primary-container mr-2"></span>
+                            <span class="text-primary text-sm font-medium">Quality</span>
+                        </div>
+                        <div class="flex items-center bg-surface-container-low border border-surface-container-highest rounded-lg px-3 py-2">
+                            <span class="w-2 h-2 rounded-full bg-primary-container mr-2"></span>
+                            <span class="text-primary text-sm font-medium">Resting Heart Rate</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TRENDS Section -->
+                <section>
+                    <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest mb-4">TRENDS</h2>
+
+                    <!-- Time Range Selector row - this IS the interactive control -->
+                    <div class="flex gap-2 mb-4" id="selectorRow">
+                        <button data-preset="1D" onclick="selectPreset('1D')"
+                                class="seg flex-1 flex items-center justify-center py-2 rounded-xl border border-outline-variant bg-surface-container-low">
+                            <span class="seg-label text-on-surface-variant text-[13px] font-semibold">1D</span>
+                        </button>
+                        <button data-preset="1W" onclick="selectPreset('1W')"
+                                class="seg flex-1 flex items-center justify-center py-2 rounded-xl border border-outline-variant bg-surface-container-low">
+                            <span class="seg-label text-on-surface-variant text-[13px] font-semibold">1W</span>
+                        </button>
+                        <button data-preset="1M" onclick="selectPreset('1M')"
+                                class="seg flex-1 flex items-center justify-center py-2 rounded-xl border border-primary-container bg-primary-container">
+                            <span class="seg-label text-on-primary text-[13px] font-semibold">1M</span>
+                        </button>
+                        <button data-preset="1Y" onclick="selectPreset('1Y')"
+                                class="seg flex-1 flex items-center justify-center py-2 rounded-xl border border-outline-variant bg-surface-container-low">
+                            <span class="seg-label text-on-surface-variant text-[13px] font-semibold">1Y</span>
+                        </button>
+                        <button data-preset="custom" onclick="selectPreset('custom')"
+                                class="seg flex-[2] flex items-center justify-center py-2 px-1 rounded-xl border border-outline-variant bg-surface-container-low">
+                            <span class="seg-label text-on-surface-variant text-[13px] font-semibold">Custom</span>
+                        </button>
+                    </div>
+
+                    <!-- Chart cards -->
+                    <div class="flex flex-col gap-3">
+                        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                            <h3 class="text-primary text-sm font-semibold mb-3">Duration (hrs)</h3>
+                            <svg id="chart-duration" viewBox="0 0 300 108" class="w-full h-[108px]"
+                                 preserveAspectRatio="none"></svg>
+                        </div>
+                        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                            <h3 class="text-primary text-sm font-semibold mb-3">Quality (%)</h3>
+                            <svg id="chart-quality" viewBox="0 0 300 108" class="w-full h-[108px]"
+                                 preserveAspectRatio="none"></svg>
+                        </div>
+                        <!-- Insufficient-data state: static, unaffected by the selector at any range -->
+                        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                            <h3 class="text-primary text-sm font-semibold mb-3">Resting Heart Rate</h3>
+                            <div class="h-[90px] flex flex-col items-center justify-center gap-1 opacity-60">
+                                <span class="material-symbols-outlined text-on-surface-variant text-[22px]">show_chart</span>
+                                <span class="text-on-surface-variant text-xs font-medium">Not enough data yet</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Recent Records Section (existing, unaffected) -->
+                <section>
+                    <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest mb-4">RECENT
+                        RECORDS</h2>
+                    <div class="flex items-center justify-between px-2 py-2 border-b border-surface-container-highest">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-on-surface-variant text-[16px]">schedule</span>
+                            <span class="text-on-surface text-sm font-medium">2 hours ago</span>
+                        </div>
+                        <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+
+        <ul class="text-on-surface-variant text-xs max-w-2xl list-disc list-inside flex flex-col gap-1 mt-1">
+            <li>Time-label format and count both adapt to the window's <em>span</em>, not to which preset
+                produced it — see the table and Panel 3 below for the full rule.</li>
+            <li>1D: 24-hour scale, 8 ticks, bare hour numbers (no AM/PM) — try it above.</li>
+            <li>1W: 7 ticks, one weekday-initial letter per day (M/T/W/T/F/S/S).</li>
+            <li>1M: 5 ticks, short dates (e.g. "Jul 19"), unchanged format from before — just one more of
+                them.</li>
+            <li>1Y: 5 ticks, month + <strong>2-digit</strong> year (e.g. "Jul '26"), never the full 4-digit
+                year.</li>
+            <li>Duration and Quality never share a value scale — each chart's 5 gridlines/labels reflect only
+                its own min–max, recomputed independently per card.</li>
+            <li>An hour or weekday scale centres every label within its own slice instead of pinning it to
+                the slice's start — so no tick sits at the plot's exact left/right edge (try "1D" or "1W"
+                above and compare the margins to "1M"'s, which does touch both edges). This also avoids a
+                duplicate label, since 24 hours and 7 weekdays both wrap back to their own start.</li>
+            <li>Resting Heart Rate stays in its axis-free "Not enough data yet" state at every range —
+                clicking presets above never gives it gridlines.</li>
+            <li>Tapping "Custom" applies the same sample 5-day range shown in
+                <a class="underline" href="../../3-5-custom-time-range-input/design/custom-time-range.html">Custom
+                    Time Range Input</a>'s mockup; the segment's own label switches from the word "Custom" to
+                the applied range, exactly as it does today.</li>
+        </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- PANEL 2: All five states at a glance -->
+    <!-- ============================================================ -->
+    <section class="flex flex-col gap-3">
+        <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest">ALL FIVE STATES — SIDE BY
+            SIDE (Duration)</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="flex flex-col gap-2">
+                <span class="text-on-surface text-xs font-semibold">1D</span>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-3">
+                    <svg id="grid-1D" viewBox="0 0 300 108" class="w-full h-[108px]" preserveAspectRatio="none"></svg>
+                </div>
+                <span class="text-on-surface-variant text-[11px]">24h scale, 8 hour numbers</span>
+            </div>
+            <div class="flex flex-col gap-2">
+                <span class="text-on-surface text-xs font-semibold">1W</span>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-3">
+                    <svg id="grid-1W" viewBox="0 0 300 108" class="w-full h-[108px]" preserveAspectRatio="none"></svg>
+                </div>
+                <span class="text-on-surface-variant text-[11px]">7 weekday letters</span>
+            </div>
+            <div class="flex flex-col gap-2">
+                <span class="text-on-surface text-xs font-semibold">1M (default)</span>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-3">
+                    <svg id="grid-1M" viewBox="0 0 300 108" class="w-full h-[108px]" preserveAspectRatio="none"></svg>
+                </div>
+                <span class="text-on-surface-variant text-[11px]">5 short-date labels</span>
+            </div>
+            <div class="flex flex-col gap-2">
+                <span class="text-on-surface text-xs font-semibold">1Y</span>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-3">
+                    <svg id="grid-1Y" viewBox="0 0 300 108" class="w-full h-[108px]" preserveAspectRatio="none"></svg>
+                </div>
+                <span class="text-on-surface-variant text-[11px]">5 labels, month + 2-digit year</span>
+            </div>
+            <div class="flex flex-col gap-2">
+                <span class="text-on-surface text-xs font-semibold">Custom (Jul 14 – Jul 18)</span>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-3">
+                    <svg id="grid-custom" viewBox="0 0 300 108" class="w-full h-[108px]" preserveAspectRatio="none"></svg>
+                </div>
+                <span class="text-on-surface-variant text-[11px]">5 days → week-style (see Panel 3)</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- PANEL 3: Custom range - dynamic label format across span tiers -->
+    <!-- ============================================================ -->
+    <section class="flex flex-col gap-3">
+        <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest">CUSTOM RANGE — LABEL
+            FORMAT IS DYNAMIC, BY SPAN</h2>
+        <p class="text-on-surface-variant text-xs max-w-2xl">A Custom range doesn't get its own fixed format —
+            it reuses whichever preset tier its <em>span</em> falls into, exactly as if that span had been a
+            preset all along. The three ranges below are all "Custom", picked only to land in each tier.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="flex flex-col gap-2">
+                <span class="text-on-surface text-xs font-semibold">Jul 14 – Jul 18 (5 days)</span>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-3">
+                    <svg id="tier-short" viewBox="0 0 300 108" class="w-full h-[108px]" preserveAspectRatio="none"></svg>
+                </div>
+                <span class="text-on-surface-variant text-[11px]">span ≤ 7 days → <strong>week style</strong>,
+                    one letter per day in range (5, not forced to 7)</span>
+            </div>
+            <div class="flex flex-col gap-2">
+                <span class="text-on-surface text-xs font-semibold">Jun 5 – Jul 19 (45 days)</span>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-3">
+                    <svg id="tier-medium" viewBox="0 0 300 108" class="w-full h-[108px]" preserveAspectRatio="none"></svg>
+                </div>
+                <span class="text-on-surface-variant text-[11px]">7 days &lt; span ≤ ~2 months →
+                    <strong>month style</strong>, 5 short-date labels</span>
+            </div>
+            <div class="flex flex-col gap-2">
+                <span class="text-on-surface text-xs font-semibold">Sep 1 '25 – Jul 19 '26 (321 days)</span>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-3">
+                    <svg id="tier-long" viewBox="0 0 300 108" class="w-full h-[108px]" preserveAspectRatio="none"></svg>
+                </div>
+                <span class="text-on-surface-variant text-[11px]">span &gt; ~2 months →
+                    <strong>year style</strong>, 5 labels, month + 2-digit year</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- PANEL 4: Chart anatomy / layout mechanics -->
+    <!-- ============================================================ -->
+    <section class="flex flex-col gap-3 pb-4">
+        <h2 class="text-[13px] font-semibold text-on-surface-variant tracking-widest">CHART ANATOMY — LAYOUT
+            MECHANICS (diagram overlay, not part of the rendered UI)</h2>
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4 max-w-2xl">
+            <h3 class="text-primary text-sm font-semibold mb-3">Duration (hrs) — 1M, annotated</h3>
+            <svg id="chart-anatomy" viewBox="0 0 300 108" class="w-full h-[220px]" preserveAspectRatio="none"></svg>
+        </div>
+        <p class="text-on-surface-variant text-xs max-w-2xl">The curve, gradient fill, and record markers are
+            unchanged from <a class="underline" href="../../3-3-tap-to-record-detail/spec.md">Tap Chart Point
+                to Open Record Detail</a> — only the rectangle they're drawn into shrinks, offset by the
+            value-axis gutter (the thin vertical tick at the dashed rectangle's left edge) and reduced by the
+            time-axis gutter (the thin horizontal tick below it), per this spec's §3.4.</p>
+    </section>
+
+</main>
+
+<script>
+    // Plotting rectangle inside the shared 300x108 viewBox: left gutter for value
+    // labels, bottom gutter for time labels - mirrors NumericTrendChart.tsx's
+    // reduced plotting rectangle (spec §3.4) rather than the full chart box.
+    const PLOT = {x0: 24, x1: 296, y0: 5, y1: 94};
+    const CHART_H = 108;
+
+    function scalePoints(points, minY, maxY) {
+        const xw = PLOT.x1 - PLOT.x0;
+        const yh = PLOT.y1 - PLOT.y0;
+        const ySpan = (maxY - minY) || 1;
+        return points.map(p => ({
+            x: PLOT.x0 + p.x * xw,
+            y: PLOT.y1 - ((p.y - minY) / ySpan) * yh,
+        }));
+    }
+
+    // Same Catmull-Rom-to-cubic-Bezier construction as buildSmoothPath in
+    // NumericTrendChart.tsx, so these mockup curves are representative.
+    function smoothPath(pts) {
+        let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+        for (let i = 0; i < pts.length - 1; i++) {
+            const p0 = pts[i - 1] || pts[i];
+            const p1 = pts[i];
+            const p2 = pts[i + 1];
+            const p3 = pts[i + 2] || p2;
+            const cp1x = p1.x + (p2.x - p0.x) / 6;
+            const cp1y = p1.y + (p2.y - p0.y) / 6;
+            const cp2x = p2.x - (p3.x - p1.x) / 6;
+            const cp2y = p2.y - (p3.y - p1.y) / 6;
+            d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+        }
+        return d;
+    }
+
+    // 'endpoints': N ticks span the full window, first at its start, last at its
+    // end - right for Month/Year style, where start and end are two genuinely
+    // different, meaningful dates.
+    // 'divisions': N ticks mark the centre of N equal slices, none at the plot's
+    // edge - right for Hour/Week-letter style, where the scale wraps (hour 24 is
+    // hour 0 of the next day; weekday 8 is weekday 1 again), so a tick at the
+    // exact end would duplicate the first label rather than add information.
+    function timeTickRatios(count, mode) {
+        if (mode === 'divisions') {
+            // Centred within each slice, not pinned to its start - so a Week
+            // tier's "M" sits over the middle of Monday, not its first instant,
+            // and no tick lands exactly on the plot's left/right edge.
+            return Array.from({length: count}, (_, i) => (i + 0.5) / count);
+        }
+        return count === 1 ? [0] : Array.from({length: count}, (_, i) => i / (count - 1));
+    }
+
+    function renderChart(svgEl, {points, timeLabels, tickMode = 'endpoints', gradId, format, annotate}) {
+        const ys = points.map(p => p.y);
+        const minY = Math.min(...ys), maxY = Math.max(...ys);
+        const scaled = scalePoints(points, minY, maxY);
+        const linePath = smoothPath(scaled);
+        const last = scaled[scaled.length - 1], first = scaled[0];
+        const areaPath = `${linePath} L ${last.x.toFixed(1)} ${PLOT.y1} L ${first.x.toFixed(1)} ${PLOT.y1} Z`;
+
+        let svg = `<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#b6f09c" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="#b6f09c" stop-opacity="0"/>
+        </linearGradient></defs>`;
+
+        // Value axis: 5 evenly spaced gridlines + labels, this chart's own min-max.
+        [0, 0.25, 0.5, 0.75, 1].forEach(r => {
+            const y = PLOT.y1 - r * (PLOT.y1 - PLOT.y0);
+            const val = minY + r * (maxY - minY);
+            svg += `<line x1="${PLOT.x0}" y1="${y.toFixed(1)}" x2="${PLOT.x1}" y2="${y.toFixed(1)}" stroke="#42493d" stroke-width="1" stroke-opacity="0.6" />`;
+            svg += `<text x="${(PLOT.x0 - 5).toFixed(1)}" y="${y.toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="#c2c9b9">${format(val)}</text>`;
+        });
+
+        svg += `<path d="${areaPath}" fill="url(#${gradId})" />`;
+        svg += `<path d="${linePath}" fill="none" stroke="#b6f09c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`;
+
+        scaled.forEach(p => {
+            svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#1c1b1b" />`;
+            svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2" fill="#b6f09c" />`;
+        });
+
+        // Time axis: tick count and spacing come from the caller (spec §2, "Time
+        // Axis (X)") - 8 for Hour style, 7 for Week style, 5 for Month/Year style.
+        const ratios = timeTickRatios(timeLabels.length, tickMode);
+        ratios.forEach((r, i) => {
+            const x = PLOT.x0 + r * (PLOT.x1 - PLOT.x0);
+            const isLast = i === timeLabels.length - 1;
+            // 'divisions' ticks are all centred within their own slice (see
+            // timeTickRatios above), so none sit at the plot's exact edge and
+            // all stay middle-anchored - only 'endpoints' pins its first/last
+            // tick to the true start/end and needs edge anchoring for them.
+            const anchor = tickMode === 'divisions' ? 'middle' : (i === 0 ? 'start' : isLast ? 'end' : 'middle');
+            svg += `<text x="${x.toFixed(1)}" y="${(PLOT.y1 + 12).toFixed(1)}" text-anchor="${anchor}" font-size="9" fill="#c2c9b9">${timeLabels[i] || ''}</text>`;
+        });
+
+        if (annotate) svg += renderAnatomyOverlay();
+
+        svgEl.innerHTML = svg;
+    }
+
+    function renderAnatomyOverlay() {
+        const a = '#f9fff0';
+        let s = `<g opacity="0.85">`;
+        s += `<rect x="${PLOT.x0}" y="${PLOT.y0}" width="${PLOT.x1 - PLOT.x0}" height="${PLOT.y1 - PLOT.y0}" fill="none" stroke="${a}" stroke-width="0.75" stroke-dasharray="3,2" opacity="0.6" />`;
+
+        // Left and bottom gutter brackets (value-axis / time-axis label bands) -
+        // labeled in the caption below rather than inline, since both gutters are
+        // too thin to hold a second line of text without overlapping the real
+        // axis labels they contain.
+        s += `<line x1="2" y1="${PLOT.y0}" x2="2" y2="${PLOT.y1}" stroke="${a}" stroke-width="0.75" opacity="0.6"/>`;
+        s += `<line x1="${PLOT.x0}" y1="${CHART_H - 2}" x2="${PLOT.x1}" y2="${CHART_H - 2}" stroke="${a}" stroke-width="0.75" opacity="0.6"/>`;
+
+        // Callout: plotting rectangle - offset clear of the top value tick (x0-5, y0)
+        // rather than placed above the box, since y0's small margin leaves no room there.
+        s += `<text x="${PLOT.x0 + 50}" y="${PLOT.y0 + 9}" font-size="8" fill="${a}">plotting rectangle (curve, fill, markers, hit-testing)</text>`;
+
+        s += `</g>`;
+        return s;
+    }
+
+    // Each preset's window/format/count, keyed identically to the real
+    // TimeRangePreset union plus 'custom' for the interactive tab. tickMode
+    // follows the rule in timeTickRatios above.
+    const DURATION = {
+        '1D': {
+            points: [[0, 6.8], [0.125, 7.4], [0.25, 6.5], [0.375, 7.9], [0.5, 7.1], [0.625, 6.3], [0.75, 7.6], [0.875, 7.0]],
+            time: ['0', '3', '6', '9', '12', '15', '18', '21'], tickMode: 'divisions',
+        },
+        '1W': {
+            points: [[0, 6.9], [1 / 7, 6.2], [2 / 7, 7.4], [3 / 7, 7.9], [4 / 7, 6.6], [5 / 7, 7.1], [6 / 7, 6.0]],
+            time: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], tickMode: 'divisions',
+        },
+        '1M': {
+            points: [[0, 5.8], [0.12, 6.1], [0.25, 5.6], [0.37, 6.9], [0.5, 6.3], [0.62, 7.4], [0.75, 7.0], [0.87, 8.1], [1, 7.6]],
+            time: ['Jun 19', 'Jun 27', 'Jul 4', 'Jul 12', 'Jul 19'], tickMode: 'endpoints',
+        },
+        '1Y': {
+            points: [[0, 6.0], [0.14, 4.9], [0.28, 6.5], [0.42, 8.3], [0.57, 7.0], [0.71, 5.5], [0.85, 7.8], [1, 6.8]],
+            time: ["Jul '25", "Oct '25", "Jan '26", "Apr '26", "Jul '26"], tickMode: 'endpoints',
+        },
+        'custom': {
+            points: [[0, 6.4], [0.2, 7.8], [0.4, 6.0], [0.6, 7.2], [0.8, 6.9]],
+            time: ['M', 'T', 'W', 'T', 'F'], tickMode: 'divisions',
+        },
+    };
+
+    const QUALITY = {
+        '1D': {points: [[0, 72], [0.125, 80], [0.25, 65], [0.375, 90], [0.5, 78], [0.625, 68], [0.75, 85], [0.875, 74]]},
+        '1W': {points: [[0, 70], [1 / 7, 60], [2 / 7, 85], [3 / 7, 92], [4 / 7, 75], [5 / 7, 80], [6 / 7, 66]]},
+        '1M': {points: [[0, 58], [0.12, 64], [0.25, 60], [0.37, 78], [0.5, 70], [0.62, 88], [0.75, 82], [0.87, 95], [1, 90]]},
+        '1Y': {points: [[0, 65], [0.14, 55], [0.28, 72], [0.42, 98], [0.57, 80], [0.71, 60], [0.85, 90], [1, 76]]},
+        'custom': {points: [[0, 70], [0.2, 88], [0.4, 65], [0.6, 80], [0.8, 77]]},
+    };
+
+    // Panel 3: three Custom ranges picked to land in each span tier, proving the
+    // format/count follow the span rather than being fixed for "Custom".
+    const CUSTOM_TIERS = {
+        short: {
+            points: DURATION.custom.points, time: DURATION.custom.time, tickMode: 'divisions',
+        },
+        medium: {
+            points: [[0, 6.1], [0.15, 6.8], [0.3, 5.9], [0.45, 7.3], [0.6, 6.5], [0.75, 7.6], [0.9, 7.0], [1, 7.8]],
+            time: ['Jun 5', 'Jun 16', 'Jun 27', 'Jul 8', 'Jul 19'], tickMode: 'endpoints',
+        },
+        long: {
+            points: [[0, 6.5], [0.15, 5.2], [0.3, 7.0], [0.45, 8.4], [0.6, 6.8], [0.75, 5.6], [0.9, 7.9], [1, 7.1]],
+            time: ["Sep '25", "Nov '25", "Feb '26", "Apr '26", "Jul '26"], tickMode: 'endpoints',
+        },
+    };
+
+    const CUSTOM_RANGE_LABEL = 'Jul 14 – Jul 18';
+
+    function toPts(arr) {
+        return arr.map(([x, y]) => ({x, y}));
+    }
+
+    const fmtHrs = v => v.toFixed(1);
+    const fmtPct = v => Math.round(v).toString();
+
+    function selectPreset(key) {
+        document.querySelectorAll('#selectorRow .seg').forEach(btn => {
+            const isSelected = btn.dataset.preset === key;
+            const label = btn.querySelector('.seg-label');
+            btn.classList.toggle('border-primary-container', isSelected);
+            btn.classList.toggle('bg-primary-container', isSelected);
+            btn.classList.toggle('border-outline-variant', !isSelected);
+            btn.classList.toggle('bg-surface-container-low', !isSelected);
+            label.classList.toggle('text-on-primary', isSelected);
+            label.classList.toggle('text-on-surface-variant', !isSelected);
+            if (btn.dataset.preset === 'custom') {
+                label.textContent = isSelected ? CUSTOM_RANGE_LABEL : 'Custom';
+            }
+        });
+
+        renderChart(document.getElementById('chart-duration'), {
+            points: toPts(DURATION[key].points), timeLabels: DURATION[key].time, tickMode: DURATION[key].tickMode,
+            gradId: 'grad-duration-live', format: fmtHrs,
+        });
+        renderChart(document.getElementById('chart-quality'), {
+            points: toPts(QUALITY[key].points), timeLabels: DURATION[key].time, tickMode: DURATION[key].tickMode,
+            gradId: 'grad-quality-live', format: fmtPct,
+        });
+    }
+
+    // Panel 1 initial state: "1M", matching the app's own default selection.
+    selectPreset('1M');
+
+    // Panel 2: all five states rendered once, side by side.
+    ['1D', '1W', '1M', '1Y', 'custom'].forEach(key => {
+        renderChart(document.getElementById(`grid-${key}`), {
+            points: toPts(DURATION[key].points), timeLabels: DURATION[key].time, tickMode: DURATION[key].tickMode,
+            gradId: `grad-grid-${key}`, format: fmtHrs,
+        });
+    });
+
+    // Panel 3: the same Custom range at three spans, one per tier.
+    ['short', 'medium', 'long'].forEach(tier => {
+        renderChart(document.getElementById(`tier-${tier}`), {
+            points: toPts(CUSTOM_TIERS[tier].points), timeLabels: CUSTOM_TIERS[tier].time,
+            tickMode: CUSTOM_TIERS[tier].tickMode, gradId: `grad-tier-${tier}`, format: fmtHrs,
+        });
+    });
+
+    // Panel 4: 1M Duration, annotated.
+    renderChart(document.getElementById('chart-anatomy'), {
+        points: toPts(DURATION['1M'].points), timeLabels: DURATION['1M'].time, tickMode: DURATION['1M'].tickMode,
+        gradId: 'grad-anatomy', format: fmtHrs, annotate: true,
+    });
+</script>
+
+</body>
+</html>
