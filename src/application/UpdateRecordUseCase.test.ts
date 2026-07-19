@@ -41,6 +41,7 @@ describe('UpdateRecordUseCase', () => {
     const command: UpdateRecordCommand = {
       recordId: 'record-1',
       observationId: 'obs-1',
+      timestamp: existingRecord.timestamp,
       values: [{metricId: 'metric-1', value: 8}],
     };
 
@@ -50,6 +51,39 @@ describe('UpdateRecordUseCase', () => {
     expect(result.id).toBe('record-1');
     expect(result.getValue('metric-1')).toBe(8);
     expect(mockRecordRepo.update).toHaveBeenCalledWith(existingRecord);
+  });
+
+  it('sets the loaded record\'s timestamp to the command\'s timestamp', async () => {
+    const metric = new Metric('metric-1', 'Duration', 'Numeric');
+    const observation = new Observation('obs-1', 'Sleep', [metric]);
+    const existingRecord = new Record('record-1', 'obs-1', new Date('2026-01-01'), new Map([['metric-1', 7]]));
+    const newTimestamp = new Date('2026-02-15T08:30:00');
+
+    const mockObservationRepo: ObservationRepository = {
+      save: vi.fn(),
+      findAll: vi.fn().mockResolvedValue([observation]),
+      delete: vi.fn(),
+    };
+
+    const mockRecordRepo = createMockRecordRepo({
+      getById: vi.fn().mockResolvedValue(existingRecord),
+    });
+
+    const useCase = new UpdateRecordUseCase(mockRecordRepo, mockObservationRepo);
+
+    const command: UpdateRecordCommand = {
+      recordId: 'record-1',
+      observationId: 'obs-1',
+      timestamp: newTimestamp,
+      values: [{metricId: 'metric-1', value: 8}],
+    };
+
+    const result = await useCase.execute(command);
+
+    expect(result.timestamp).toBe(newTimestamp);
+    expect(mockRecordRepo.update).toHaveBeenCalledWith(
+      expect.objectContaining({timestamp: newTimestamp}),
+    );
   });
 
   it('throws an error if observation is not found', async () => {
@@ -65,6 +99,7 @@ describe('UpdateRecordUseCase', () => {
     const command: UpdateRecordCommand = {
       recordId: 'record-1',
       observationId: 'obs-2',
+      timestamp: new Date(),
       values: [],
     };
 
@@ -88,6 +123,7 @@ describe('UpdateRecordUseCase', () => {
     const command: UpdateRecordCommand = {
       recordId: 'record-404',
       observationId: 'obs-1',
+      timestamp: new Date(),
       values: [],
     };
 
@@ -113,6 +149,7 @@ describe('UpdateRecordUseCase', () => {
     const command: UpdateRecordCommand = {
       recordId: 'record-1',
       observationId: 'obs-1',
+      timestamp: new Date(),
       values: [{metricId: 'metric-1', value: 'eight'}],
     };
 
@@ -138,6 +175,7 @@ describe('UpdateRecordUseCase', () => {
     const command: UpdateRecordCommand = {
       recordId: 'record-1',
       observationId: 'obs-1',
+      timestamp: new Date(),
       values: [],
     };
 

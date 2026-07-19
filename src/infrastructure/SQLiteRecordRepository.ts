@@ -144,6 +144,11 @@ export class SQLiteRecordRepository implements RecordRepository {
 
     await db.withTransactionAsync(async () => {
       await db.runAsync(
+        'UPDATE records SET timestamp = ? WHERE id = ?',
+        [record.timestamp.getTime(), record.id]
+      );
+
+      await db.runAsync(
         'DELETE FROM record_values WHERE recordId = ?',
         [record.id]
       );

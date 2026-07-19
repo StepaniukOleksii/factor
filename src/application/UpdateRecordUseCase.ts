@@ -5,6 +5,7 @@ import {Record} from '../domain/Record';
 export interface UpdateRecordCommand {
   recordId: string;
   observationId: string;
+  timestamp: Date;
   values: { metricId: string; value: any }[];
 }
 
@@ -27,6 +28,8 @@ export class UpdateRecordUseCase {
     if (!record) {
       throw new Error(`Record with id ${command.recordId} not found`);
     }
+
+    record.timestamp = command.timestamp;
 
     const valueMap = new Map<string, any>();
     for (const v of command.values) {

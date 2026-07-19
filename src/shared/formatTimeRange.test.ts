@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {formatShortDate, formatTimeRange} from './formatTimeRange';
+import {formatShortDate, formatShortTime, formatTimeRange} from './formatTimeRange';
 
 // Both formatters follow the device locale, exactly as `formatRelativeTime`
 // does, so these assert what the output is made of rather than pinning one
@@ -26,6 +26,23 @@ describe('formatShortDate', () => {
     expect(formatted).not.toContain('2026');
     expect(formatted).not.toContain('13');
     expect(formatted).not.toContain('45');
+  });
+});
+
+describe('formatShortTime', () => {
+  it('names the hour and the minute', () => {
+    const formatted = formatShortTime(new Date(2026, 6, 15, 8, 15));
+
+    expect(formatted).toContain('8');
+    expect(formatted).toContain('15');
+  });
+
+  it('leaves out the date', () => {
+    const date = new Date(2026, 6, 15, 8, 15);
+    const formatted = formatShortTime(date);
+
+    expect(formatted).not.toContain('2026');
+    expect(formatted).not.toContain(date.toLocaleDateString([], {month: 'short'}));
   });
 });
 

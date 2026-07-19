@@ -1,6 +1,8 @@
+import {formatShortTime} from './formatTimeRange';
+
 export function formatRelativeTime(date: Date): string {
     const now = new Date();
-    const timeStr = date.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+    const timeStr = formatShortTime(date);
 
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());

@@ -9,6 +9,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import DateTimePicker, {type DateTimePickerEvent} from '@react-native-community/datetimepicker';
 import {MaterialIcons} from '@expo/vector-icons';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
@@ -29,8 +30,29 @@ import {
     ScreenHeader
 } from "@presentation/components";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
-import {formatRelativeTime} from '@shared/formatRelativeTime';
+import {formatShortDate, formatShortTime} from '@shared/formatTimeRange';
 import type {RootStackParamList} from '../navigation/routes';
+
+/** The calendar day `date` falls on, as local midnight. Used to cap the Date
+ * field's picker at today with day (not millisecond) precision, so the cap
+ * stays stable within a render instead of drifting by the clock. */
+function floorToDay(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/** `base` with `picked`'s year/month/day; `base`'s time-of-day is unchanged. */
+function withDate(base: Date, picked: Date): Date {
+    const next = new Date(base);
+    next.setFullYear(picked.getFullYear(), picked.getMonth(), picked.getDate());
+    return next;
+}
+
+/** `base` with `picked`'s hours/minutes; `base`'s date is unchanged. */
+function withTime(base: Date, picked: Date): Date {
+    const next = new Date(base);
+    next.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
+    return next;
+}
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
@@ -66,6 +88,8 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
     const [saving, setSaving] = useState(false);
     const [values, setValues] = useState<Record<string, any>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [timestamp, setTimestamp] = useState<Date | null>(null);
+    const [openPicker, setOpenPicker] = useState<'date' | 'time' | null>(null);
 
     useEffect(() => {
         loadData();
@@ -86,6 +110,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                         initialValues[metricId] = value;
                     }
                     setValues(initialValues);
+                    setTimestamp(rec.timestamp);
                 }
             }
         } catch (error) {
@@ -106,9 +131,23 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
         }
     };
 
+    const handleDatePicked = (event: DateTimePickerEvent, picked?: Date) => {
+        setOpenPicker(null);
+        if (event.type === 'set' && picked && timestamp) {
+            setTimestamp(withDate(timestamp, picked));
+        }
+    };
+
+    const handleTimePicked = (event: DateTimePickerEvent, picked?: Date) => {
+        setOpenPicker(null);
+        if (event.type === 'set' && picked && timestamp) {
+            setTimestamp(withTime(timestamp, picked));
+        }
+    };
+
     const handleSave = async () => {
         if (!observation) return;
-        if (isEditMode && !record) return;
+        if (isEditMode && (!record || !timestamp)) return;
 
         // Validate all metrics
         const newErrors: Record<string, string> = {};
@@ -134,10 +173,11 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                 value: values[key]
             }));
 
-            if (isEditMode && record) {
+            if (isEditMode && record && timestamp) {
                 await updateRecordUseCase.execute({
                     recordId: record.id,
                     observationId: observation.id,
+                    timestamp,
                     values: commandValues
                 });
             } else {
@@ -243,10 +283,41 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                 }
             />
 
-            {isEditMode && record && (
-                <View style={styles.timestampContainer}>
-                    <Text style={styles.timestampText}>{formatRelativeTime(record.timestamp)}</Text>
+            {isEditMode && record && timestamp && (
+                <View style={styles.timestampRow}>
+                    <TimestampField
+                        testID="record-date-field"
+                        label="Date"
+                        value={formatShortDate(timestamp)}
+                        iconName="calendar-month"
+                        onPress={() => setOpenPicker('date')}
+                    />
+                    <TimestampField
+                        testID="record-time-field"
+                        label="Time"
+                        value={formatShortTime(timestamp)}
+                        iconName="schedule"
+                        onPress={() => setOpenPicker('time')}
+                    />
                 </View>
+            )}
+
+            {openPicker === 'date' && timestamp && (
+                <DateTimePicker
+                    testID="record-date-picker"
+                    value={timestamp}
+                    mode="date"
+                    maximumDate={floorToDay(new Date())}
+                    onChange={handleDatePicked}
+                />
+            )}
+            {openPicker === 'time' && timestamp && (
+                <DateTimePicker
+                    testID="record-time-picker"
+                    value={timestamp}
+                    mode="time"
+                    onChange={handleTimePicked}
+                />
             )}
 
             <KeyboardAvoidingView
@@ -270,18 +341,69 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
     );
 }
 
+interface TimestampFieldProps {
+    testID: string;
+    label: string;
+    value: string;
+    iconName: 'calendar-month' | 'schedule';
+    onPress: () => void;
+}
+
+/**
+ * A labeled timestamp component, opening its picker on tap. Styled after
+ * `CustomTimeRangeModal`'s `DayField` - deliberately not a `LabeledTextField`,
+ * since the value is picked, never typed.
+ */
+function TimestampField({testID, label, value, iconName, onPress}: TimestampFieldProps) {
+    return (
+        <View style={styles.timestampField}>
+            <Text style={styles.timestampFieldLabel}>{label}</Text>
+            <TouchableOpacity
+                testID={testID}
+                style={styles.timestampFieldValue}
+                onPress={onPress}
+                accessibilityRole="button"
+                accessibilityLabel={`${label}: ${value}. Change.`}
+            >
+                <Text style={styles.timestampFieldValueText}>{value}</Text>
+                <MaterialIcons name={iconName} size={18} color={COLORS.onSurfaceVariant}/>
+            </TouchableOpacity>
+        </View>
+    );
+}
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    timestampContainer: {
-        paddingVertical: 8,
-        alignItems: 'center',
+    timestampRow: {
+        flexDirection: 'row',
+        gap: 12,
+        paddingHorizontal: 16,
+        paddingTop: 8,
+        paddingBottom: 4,
     },
-    timestampText: {
-        color: COLORS.onSurfaceVariant,
-        fontSize: 13,
-        fontWeight: '500',
+    timestampField: {
+        flex: 1,
+        gap: 8,
+    },
+    timestampFieldLabel: {
+        ...TYPOGRAPHY.fieldLabel,
+    },
+    timestampFieldValue: {
+        height: 44,
+        paddingHorizontal: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: COLORS.surfaceContainerLowest,
+        borderWidth: 1,
+        borderColor: COLORS.outlineVariant,
+        borderRadius: RADIUS.sm,
+    },
+    timestampFieldValueText: {
+        color: COLORS.onSurface,
+        fontSize: 14,
     },
     scrollContent: {
         padding: 16,

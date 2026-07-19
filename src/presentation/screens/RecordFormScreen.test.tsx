@@ -5,6 +5,7 @@ import {RecordFormScreen} from './RecordFormScreen';
 import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
 import {Record as DomainRecord} from '../../domain/Record';
+import {formatShortDate, formatShortTime} from '@shared/formatTimeRange';
 
 const {
     mockGetObservationByIdExecute,
@@ -31,6 +32,9 @@ vi.mock('react-native', () => {
 });
 vi.mock('@expo/vector-icons', () => ({
     MaterialIcons: 'MaterialIcons',
+}));
+vi.mock('@react-native-community/datetimepicker', () => ({
+    default: 'DateTimePicker',
 }));
 
 vi.mock('../../infrastructure/SQLiteObservationRepository', () => ({
@@ -104,6 +108,28 @@ function findTouchableWithIconName(root: any, iconName: string) {
     return null;
 }
 
+function dateField(root: any) {
+    return root.findAllByProps({testID: 'record-date-field'})[0];
+}
+
+function timeField(root: any) {
+    return root.findAllByProps({testID: 'record-time-field'})[0];
+}
+
+async function openDatePicker(root: any) {
+    await act(async () => {
+        dateField(root).props.onPress();
+    });
+    return root.findAllByProps({testID: 'record-date-picker'})[0];
+}
+
+async function openTimePicker(root: any) {
+    await act(async () => {
+        timeField(root).props.onPress();
+    });
+    return root.findAllByProps({testID: 'record-time-picker'})[0];
+}
+
 const durationMetric = new Metric('metric-1', 'Duration', 'Numeric');
 const restedMetric = new Metric('metric-2', 'Well Rested', 'Boolean');
 const observation = new Observation('obs-1', 'Sleep Quality', [durationMetric, restedMetric]);
@@ -143,7 +169,7 @@ describe('RecordFormScreen', () => {
     });
 
     describe('create mode', () => {
-        it('renders with empty inputs and the "Add Record" label, with no timestamp or cross button', async () => {
+        it('renders with empty inputs and the "Add Record" label, with no timestamp, Date/Time fields, or cross button', async () => {
             const {root} = await renderScreen();
 
             const durationInput = root.root.findByProps({keyboardType: 'numeric'});
@@ -152,6 +178,8 @@ describe('RecordFormScreen', () => {
             expect(findAllByText(root.root, 'Add Record').length).toBeGreaterThan(0);
             expect(findAllByText(root.root, 'Save Record').length).toBe(0);
             expect(root.root.findAllByProps({name: 'close'}).length).toBe(0);
+            expect(root.root.findAllByProps({testID: 'record-date-field'}).length).toBe(0);
+            expect(root.root.findAllByProps({testID: 'record-time-field'}).length).toBe(0);
 
             expect(mockGetRecordByIdExecute).not.toHaveBeenCalled();
         });
@@ -221,16 +249,83 @@ describe('RecordFormScreen', () => {
             expect(durationInput.props.value).toBe('7.2');
         });
 
-        it('displays the observation title, metrics, and a read-only timestamp', async () => {
+        it('displays the observation title, metrics, and Date/Time fields pre-filled from the record', async () => {
             const {root} = await renderScreen({recordId: 'record-1'});
 
             expect(findAllByText(root.root, 'Sleep Quality').length).toBeGreaterThan(0);
             expect(findAllByText(root.root, 'Duration').length).toBeGreaterThan(0);
             expect(findAllByText(root.root, 'Well Rested').length).toBeGreaterThan(0);
 
-            expect(findTextContaining(root.root, 'Jan').length).toBeGreaterThan(0);
+            expect(findAllByText(root.root, 'Date').length).toBeGreaterThan(0);
+            expect(findAllByText(root.root, formatShortDate(timestamp)).length).toBeGreaterThan(0);
+            expect(findAllByText(root.root, 'Time').length).toBeGreaterThan(0);
+            expect(findAllByText(root.root, formatShortTime(timestamp)).length).toBeGreaterThan(0);
 
             expect(findAllByText(root.root, 'Save Record').length).toBeGreaterThan(0);
+        });
+
+        it('opens a date picker pre-filled with the record\'s date, capped at today, and a time picker pre-filled with its time', async () => {
+            const {root} = await renderScreen({recordId: 'record-1'});
+
+            const datePicker = await openDatePicker(root.root);
+            expect(datePicker.props.mode).toBe('date');
+            expect(datePicker.props.value).toEqual(timestamp);
+            const today = new Date();
+            expect(datePicker.props.maximumDate).toEqual(
+                new Date(today.getFullYear(), today.getMonth(), today.getDate()),
+            );
+
+            const timePicker = await openTimePicker(root.root);
+            expect(timePicker.props.mode).toBe('time');
+            expect(timePicker.props.value).toEqual(timestamp);
+        });
+
+        it('only shows one picker open at a time', async () => {
+            const {root} = await renderScreen({recordId: 'record-1'});
+
+            await openDatePicker(root.root);
+            expect(root.root.findAllByProps({testID: 'record-date-picker'}).length).toBe(1);
+
+            await openTimePicker(root.root);
+            expect(root.root.findAllByProps({testID: 'record-date-picker'}).length).toBe(0);
+            expect(root.root.findAllByProps({testID: 'record-time-picker'}).length).toBe(1);
+        });
+
+        it('picking a new date updates only the date portion, leaving the time-of-day unchanged', async () => {
+            const {root} = await renderScreen({recordId: 'record-1'});
+            const pickedDate = new Date(2024, 1, 20, 13, 45);
+
+            const picker = await openDatePicker(root.root);
+            await act(async () => {
+                picker.props.onChange({type: 'set'}, pickedDate);
+            });
+
+            expect(findAllByText(root.root, formatShortDate(new Date(2024, 1, 20))).length).toBeGreaterThan(0);
+            expect(findAllByText(root.root, formatShortTime(timestamp)).length).toBeGreaterThan(0);
+        });
+
+        it('picking a new time updates only the time-of-day, leaving the date unchanged', async () => {
+            const {root} = await renderScreen({recordId: 'record-1'});
+            const pickedTime = new Date(2000, 0, 1, 23, 50);
+
+            const picker = await openTimePicker(root.root);
+            await act(async () => {
+                picker.props.onChange({type: 'set'}, pickedTime);
+            });
+
+            expect(findAllByText(root.root, formatShortDate(timestamp)).length).toBeGreaterThan(0);
+            expect(findAllByText(root.root, formatShortTime(pickedTime)).length).toBeGreaterThan(0);
+        });
+
+        it('leaves the timestamp unchanged when a picker is dismissed', async () => {
+            const {root} = await renderScreen({recordId: 'record-1'});
+
+            const picker = await openDatePicker(root.root);
+            await act(async () => {
+                picker.props.onChange({type: 'dismissed'}, undefined);
+            });
+
+            expect(findAllByText(root.root, formatShortDate(timestamp)).length).toBeGreaterThan(0);
         });
 
         it('enforces validation and does not call UpdateRecordUseCase on invalid input', async () => {
@@ -250,7 +345,7 @@ describe('RecordFormScreen', () => {
             expect(findAllByText(root.root, 'Invalid value').length).toBeGreaterThan(0);
         });
 
-        it('saves changes via UpdateRecordUseCase, preserving the record id, then calls onCreated', async () => {
+        it('saves changes via UpdateRecordUseCase, preserving the record id and unedited timestamp, then calls onCreated', async () => {
             const {root, onCreated} = await renderScreen({recordId: 'record-1'});
 
             const durationInput = root.root.findByProps({keyboardType: 'numeric'});
@@ -266,6 +361,7 @@ describe('RecordFormScreen', () => {
             expect(mockUpdateRecordExecute).toHaveBeenCalledWith({
                 recordId: 'record-1',
                 observationId: 'obs-1',
+                timestamp,
                 values: [
                     {metricId: 'metric-1', value: 8},
                     {metricId: 'metric-2', value: true},
@@ -273,6 +369,47 @@ describe('RecordFormScreen', () => {
             });
             expect(mockCreateRecordExecute).not.toHaveBeenCalled();
             expect(onCreated).toHaveBeenCalledTimes(1);
+        });
+
+        it('saves the edited timestamp alongside edited values', async () => {
+            const {root, onCreated} = await renderScreen({recordId: 'record-1'});
+            const pickedDate = new Date(2024, 1, 20);
+
+            const picker = await openDatePicker(root.root);
+            await act(async () => {
+                picker.props.onChange({type: 'set'}, pickedDate);
+            });
+
+            const saveButton = findTouchableWithText(root.root, 'Save Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+
+            const [command] = mockUpdateRecordExecute.mock.calls[0];
+            expect(command.timestamp.getFullYear()).toBe(2024);
+            expect(command.timestamp.getMonth()).toBe(1);
+            expect(command.timestamp.getDate()).toBe(20);
+            // Time-of-day carried over from the loaded record, untouched by the date edit.
+            expect(command.timestamp.getHours()).toBe(timestamp.getHours());
+            expect(command.timestamp.getMinutes()).toBe(timestamp.getMinutes());
+            expect(onCreated).toHaveBeenCalledTimes(1);
+        });
+
+        it('discards an edited timestamp when leaving without saving', async () => {
+            const {root, onBack} = await renderScreen({recordId: 'record-1'});
+
+            const picker = await openDatePicker(root.root);
+            await act(async () => {
+                picker.props.onChange({type: 'set'}, new Date(2024, 1, 20));
+            });
+
+            const closeButton = findTouchableWithIconName(root.root, 'close');
+            await act(async () => {
+                closeButton!.props.onPress();
+            });
+
+            expect(onBack).toHaveBeenCalledTimes(1);
+            expect(mockUpdateRecordExecute).not.toHaveBeenCalled();
         });
 
         it('calls onBack when the back arrow is pressed, without persisting anything', async () => {

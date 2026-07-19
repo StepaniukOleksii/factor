@@ -172,21 +172,40 @@ describe('SQLiteRecordRepository', () => {
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       1,
+      'UPDATE records SET timestamp = ? WHERE id = ?',
+      [record.timestamp.getTime(), 'record-1']
+    );
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      2,
       'DELETE FROM record_values WHERE recordId = ?',
       ['record-1']
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      2,
+      3,
       'INSERT INTO record_values (recordId, metricId, valueJson) VALUES (?, ?, ?)',
       ['record-1', 'metric-1', '43']
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      3,
+      4,
       'INSERT INTO record_values (recordId, metricId, valueJson) VALUES (?, ?, ?)',
       ['record-1', 'metric-2', '"Great"']
     );
 
-    expect(mockRunAsync).toHaveBeenCalledTimes(3);
+    expect(mockRunAsync).toHaveBeenCalledTimes(4);
+  });
+
+  it('should persist a changed timestamp to the records table', async () => {
+    const originalTimestamp = new Date('2026-01-01T00:00:00.000Z');
+    const changedTimestamp = new Date('2026-02-15T08:30:00.000Z');
+    const record = new Record('record-1', 'obs-1', originalTimestamp, new Map());
+    record.timestamp = changedTimestamp;
+
+    await repository.update(record);
+
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      'UPDATE records SET timestamp = ? WHERE id = ?',
+      [changedTimestamp.getTime(), 'record-1']
+    );
   });
 });
 

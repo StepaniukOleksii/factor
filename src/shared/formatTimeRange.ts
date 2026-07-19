@@ -10,6 +10,14 @@ export function formatShortDate(date: Date): string {
 }
 
 /**
+ * A time-of-day as a short, locale-formatted label (e.g. "8:15 AM"), mirroring
+ * how `formatRelativeTime` renders the time portion of a timestamp.
+ */
+export function formatShortTime(date: Date): string {
+  return date.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+}
+
+/**
  * A time range as the two calendar days it covers (e.g. "Jul 15 – Jul 18").
  *
  * `range.end` is the exclusive half-open boundary — the start of the day *after*
