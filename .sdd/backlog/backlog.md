@@ -27,11 +27,10 @@ bugs, and refactor notes until they're ready to become a real spec.
    already used in CreateRecordScreen), with a deletingRecord loading state disabling the buttons meanwhile.
 3. When a user is editing existing Record and cancels the action by clicking the cancel or back buttons, and he already
    adjusted some metrics, a confirmation modal window should be displayed
-4. A user should be able to edit the Record's timestamp
-5. implement record notes
-6. on the ObservationListScreen should an observation be removed/edited via long press button like it is done on the
+4. implement record notes
+5. on the ObservationListScreen should an observation be removed/edited via long press button like it is done on the
    ObservationDetailsScreen for the Records?
-7. Metric units. An attribute set by user that contains unit information. Limit to three chars. Should be displayed in
+6. Metric units. An attribute set by user that contains unit information. Limit to three chars. Should be displayed in
    paratheses above the chart after the metric name.
 
 [BUG]
