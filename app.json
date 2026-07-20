@@ -23,9 +23,6 @@
       },
       "package": "com.anonymous.factor"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "plugins": [
       "@react-native-community/datetimepicker"
     ]
