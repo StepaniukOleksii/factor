@@ -2,7 +2,7 @@
 name: spec-implementer
 description: Implements a specific feature specification. ONLY use this skill when the user explicitly asks to implement a spec (e.g., "Implement .sdd/epics/..."). Do NOT use this skill for general fixes, bugs, or minor adjustments.
 metadata:
-  version: "1.5.0"
+  version: "1.6.0"
 ---
 
 # Spec Implementer
@@ -54,6 +54,15 @@ When the user asks you to implement a specification, follow these steps:
   verification scenarios before describing new manual data entry.
 * Reference the specific seeded observation/metric in the spec's Verification Plan section for each
   scenario it covers. Only propose new seed data if nothing existing covers the scenario.
+
+## 7. Verify
+
+* Run `npm run test` and `npm run typecheck`. Both must pass before you report the implementation done.
+* **Never attempt `expo start --web` or any browser preview.** This app has no working web target —
+  `expo-sqlite` hangs at startup on web, and `@react-native-community/datetimepicker` has no web build —
+  so it cannot demonstrate the change. Don't try it and then report the failure; just skip it.
+* On-device Android verification (`testing-android.md`) is the user's own reference — don't read or
+  run it yourself.
 
 ## Important Note
 
