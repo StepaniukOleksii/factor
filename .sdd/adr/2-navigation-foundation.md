@@ -91,7 +91,7 @@ Costs:
 
 ## Consequences
 
-* A dev-client rebuild is required, as with ADR-1's native dependencies. See `testing-android.md`.
+* A dev-client rebuild is required, as with ADR-1's native dependencies. See `testing-android-manually.md`.
 * **ADR-1 no longer proposes a Zustand store for shared time-range/view state; that seam has been
   removed from it.** Its intent — one window shared across an Observation's chart cards rather than
   duplicated per card — is satisfied by screen-local state once screens survive navigation, so the seam

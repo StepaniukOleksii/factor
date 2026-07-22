@@ -116,6 +116,16 @@ Rationale:
 * Strong TypeScript support
 * Large community adoption
 
+### Maestro
+
+Maestro is used for end-to-end (E2E) testing — driving the running app on an Android emulator.
+
+Rationale:
+
+* Declarative YAML flows: readable, low-maintenance, tolerant of minor UI timing without hand-written waits
+* Selects by visible text and accessibility labels, so no app-side test harness or code changes are needed
+* Single self-contained CLI (installed outside npm)
+
 ---
 
 ## Data Visualization

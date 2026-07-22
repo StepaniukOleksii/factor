@@ -1,8 +1,8 @@
 ---
 name: emulator-verifier
-description: Boots the Android emulator and visually verifies a Factor app change by building, installing, and screenshotting it. Use when the user explicitly asks for emulator or visual verification of a change. Not for automated test frameworks (none wired in yet) and not for day-to-day physical-device testing (see testing-android.md for that).
+description: Boots the Android emulator and visually verifies a Factor app change by building, installing, and screenshotting it. Use when the user explicitly asks for emulator or visual verification of a change. Not for automated test frameworks and not for day-to-day physical-device testing (see testing-android-manually.md for that).
 metadata:
-  version: "1.1.0"
+  version: "1.1.1"
 ---
 
 # Emulator Verifier

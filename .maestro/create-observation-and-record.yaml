@@ -1,0 +1,55 @@
+appId: com.anonymous.factor
+---
+# Golden path: create an Observation with one Numeric metric, add a Record to
+# it, and confirm it shows up. Touches real navigation, real SQLite, and real
+# Skia chart rendering together - the one combination every Vitest test mocks
+# out piece by piece (see testing-android-manually.md).
+- launchApp:
+    clearState: true
+# Clearing app state also clears the dev-client's memory of which Metro
+# server to connect to, so a cleared launch lands on Expo's native launcher
+# picker screen instead of the JS app. `10.0.2.2` is the Android emulator's
+# fixed host-loopback alias, so this address is stable across machines as
+# long as this runs against the emulator (not a physical device). Optional
+# because a non-cleared relaunch
+# skips this screen entirely.
+- tapOn:
+    text: "http://10.0.2.2:8081"
+    optional: true
+# First-ever connect on a cleared install also opens the dev menu itself,
+# with a one-time "this is the developer menu" tip on top of it. "Continue"
+# dismisses the tip, leaving the dev menu open underneath; the Android back
+# button is what closes the dev menu overlay and reveals the running app
+# underneath it ("Go home" would instead exit back to the launcher).
+- tapOn:
+    text: "Continue"
+    optional: true
+- runFlow:
+    when:
+      visible: "CUSTOM MENU ITEMS"
+    commands:
+      - back
+- assertVisible: "Observations"
+
+- tapOn: "Create observation"
+- assertVisible: "New Observation"
+- tapOn: "e.g., Sleep Quality, Mood"
+- inputText: "Sleep"
+- tapOn: "e.g., Duration"
+- inputText: "Hours"
+- hideKeyboard
+- tapOn: "Create Observation"
+
+- assertVisible: "Sleep"
+- tapOn: "Sleep"
+- assertVisible: "No records yet."
+
+- tapOn: "Add Record"
+- assertVisible: "Hours"
+- tapOn: "Hours value"
+- inputText: "8"
+- hideKeyboard
+- tapOn: "Add Record"
+
+- assertVisible: "Today.*"
+- assertNotVisible: "No records yet."

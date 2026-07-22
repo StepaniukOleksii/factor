@@ -13,7 +13,7 @@ wipes the database and inserts a fixed dataset built by
 [`src/infrastructure/devSeedData.ts`](src/infrastructure/devSeedData.ts), covering the scenarios below.
 It's dev-only — wired to a **"Reseed test data"** item in the dev-client menu, gated by `__DEV__` (see
 `App.tsx`), so it never runs in a release build. See
-[testing-android.md](testing-android.md#loading-test-data) for how to open the dev menu on-device.
+[testing-android-manually.md](testing-android-manually.md#loading-test-data) for how to open the dev menu on-device.
 
 **This is destructive.** Reseeding deletes every existing observation (and its metrics/records) before
 inserting the fixture set — don't run it if you have manually-entered data on the device you want to

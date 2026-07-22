@@ -21,7 +21,7 @@ export default function App() {
         // Uses expo-dev-menu's custom-item API (not React Native's built-in
         // DevSettings.addMenuItem) since this project's dev client renders
         // its own dev menu, which doesn't read from DevSettings.
-        // See testing-data.md and testing-android.md > "Loading test data".
+        // See testing-data.md and testing-android-manually.md > "Loading test data".
         if (__DEV__) {
           registerDevMenuItems([
             {

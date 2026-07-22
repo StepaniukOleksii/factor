@@ -40,7 +40,8 @@
     "ios": "expo run:ios",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "e2e": "maestro test .maestro/"
   },
   "private": true
 }

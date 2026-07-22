@@ -225,6 +225,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
             <View key={metric.id} style={styles.inputContainer}>
                 <LabeledTextField
                     label={metric.name}
+                    accessibilityLabel={`${metric.name} value`}
                     error={error}
                     keyboardType={isNumeric ? 'numeric' : undefined}
                     value={values[metric.id] !== undefined ? String(values[metric.id]) : ''}

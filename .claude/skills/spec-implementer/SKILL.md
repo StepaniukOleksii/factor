@@ -2,7 +2,7 @@
 name: spec-implementer
 description: Implements a specific feature specification. ONLY use this skill when the user explicitly asks to implement a spec (e.g., "Implement .sdd/epics/..."). Do NOT use this skill for general fixes, bugs, or minor adjustments.
 metadata:
-  version: "1.7.0"
+  version: "1.7.1"
 ---
 
 # Spec Implementer
@@ -61,7 +61,7 @@ When the user asks you to implement a specification, follow these steps:
 * **Never attempt `expo start --web` or any browser preview.** This app has no working web target —
   `expo-sqlite` hangs at startup on web, and `@react-native-community/datetimepicker` has no web build —
   so it cannot demonstrate the change. Don't try it and then report the failure; just skip it.
-* On-device Android verification (`testing-android.md`) is the user's own reference — don't read or
+* On-device Android verification (`testing-android-manually.md`) is the user's own reference — don't read or
   run it yourself.
 * **Emulator/visual verification is not this skill's job.** It's a separate concern, covered by the
   `emulator-verifier` skill — invoke that one if the user explicitly asks for it.

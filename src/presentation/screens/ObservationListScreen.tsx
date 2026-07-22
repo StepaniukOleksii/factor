@@ -113,7 +113,11 @@ export function ObservationListScreen({navigation}: ObservationListScreenProps) 
             )}
 
             {/* FAB */}
-            <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('CreateObservation')}>
+            <TouchableOpacity
+                style={styles.fab}
+                onPress={() => navigation.navigate('CreateObservation')}
+                accessibilityLabel="Create observation"
+            >
                 <MaterialIcons name="add" size={24} color={COLORS.onPrimaryContainer}/>
             </TouchableOpacity>
         </ScreenContainer>
