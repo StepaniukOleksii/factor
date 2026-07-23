@@ -2,7 +2,7 @@
 name: emulator-verifier
 description: Boots the Android emulator and visually verifies a Factor app change by building, installing, and screenshotting it. Use when the user explicitly asks for emulator or visual verification of a change. Not for automated test frameworks and not for day-to-day physical-device testing (see testing-android-manually.md for that).
 metadata:
-  version: "1.1.1"
+  version: "1.1.2"
 ---
 
 # Emulator Verifier
@@ -38,5 +38,5 @@ scripts only ever resolve `emulator-*` serials, so they're safe even if a physic
 3. **Reload without rebuilding**: `adb -s <serial> shell am start -a android.intent.action.VIEW -d
    "exp+factor://expo-development-client/?url=http://10.0.2.2:8081"`. `10.0.2.2` is the emulator's alias for
    the host's loopback — doesn't apply to a physical device.
-4. **Teardown**: `bash scripts/emulator-teardown.sh`. Always run this, even after a setup failure — it's
-   idempotent.
+4. **Teardown**: `bash scripts/emulator-teardown.sh`. Always run this, even after a setup or screenshot
+   failure — it's idempotent.
