@@ -1,5 +1,15 @@
 import React, {useCallback, useState} from 'react';
-import {Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
+import {
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StatusBar as RNStatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
 import {useFocusEffect} from '@react-navigation/native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -40,6 +50,12 @@ const deleteRecordUseCase = new DeleteRecordUseCase(recordRepository);
 // Tall enough that the plotted curve keeps roughly the room it had before the
 // chart started reserving a strip along its bottom edge for time labels.
 const TREND_CHART_HEIGHT = 108;
+
+// The overflow menu lives in a full-screen Modal window, so it anchors from the
+// very top of the screen: below the Android status bar (which ScreenContainer
+// pads for) plus the ScreenHeader's own 64px height, landing it just under the
+// header where the inline dropdown used to sit.
+const MENU_TOP = (Platform.OS === 'android' ? RNStatusBar.currentHeight ?? 0 : 0) + 64;
 
 export type ObservationDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'ObservationDetails'>;
 
@@ -232,36 +248,45 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                 title={observation.name}
                 onBack={onBack}
                 rightAction={
-                    <View>
-                        {/* Kebab Menu */}
-                        <View style={styles.menuContainer}>
-                            <TouchableOpacity
-                                onPress={handleMenuPress}
-                                style={styles.menuButton}
-                                accessibilityLabel="More options"
-                            >
-                                <MaterialIcons name="more-vert" size={24} color={COLORS.onSurface}/>
-                            </TouchableOpacity>
-
-                            {menuVisible && (
-                                <>
-                                    {/* Backdrop to close the menu on outside tap */}
-                                    <Pressable style={styles.menuBackdrop} onPress={() => setMenuVisible(false)}/>
-                                    <View style={styles.menuDropdown}>
-                                        <TouchableOpacity
-                                            style={styles.menuItem}
-                                            onPress={handleDeleteMenuItemPress}
-                                            accessibilityLabel="Delete observation"
-                                        >
-                                            <MaterialIcons name="delete" size={20} color={COLORS.error}/>
-                                            <Text style={styles.menuItemTextDestructive}>Delete</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </>
-                            )}
-                        </View>
-                    </View>
+                    <TouchableOpacity
+                        onPress={handleMenuPress}
+                        style={styles.menuButton}
+                        accessibilityLabel="More options"
+                    >
+                        <MaterialIcons name="more-vert" size={24} color={COLORS.onSurface}/>
+                    </TouchableOpacity>
                 }/>
+
+            {/* Overflow menu in its own Modal window rather than an inline
+                absolutely-positioned dropdown. The inline version layered on top
+                via zIndex but sat outside its header parent's bounds, so Android
+                left it out of the accessibility tree entirely - unreachable by
+                TalkBack and by UI tests alike. A Modal renders in its own window,
+                which is captured normally. */}
+            <Modal
+                visible={menuVisible}
+                transparent
+                animationType="fade"
+                statusBarTranslucent
+                navigationBarTranslucent
+                onRequestClose={() => setMenuVisible(false)}
+            >
+                <Pressable style={styles.menuModalOverlay} onPress={() => setMenuVisible(false)}>
+                    <Pressable
+                        style={[styles.menuDropdown, {top: MENU_TOP, right: 8}]}
+                        onPress={(e) => e.stopPropagation()}
+                    >
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={handleDeleteMenuItemPress}
+                            accessibilityLabel="Delete observation"
+                        >
+                            <MaterialIcons name="delete" size={20} color={COLORS.error}/>
+                            <Text style={styles.menuItemTextDestructive}>Delete</Text>
+                        </TouchableOpacity>
+                    </Pressable>
+                </Pressable>
+            </Modal>
 
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -584,12 +609,6 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
 }
 
 const styles = StyleSheet.create({
-    menuContainer: {
-        width: 48,
-        alignItems: 'flex-end',
-        position: 'relative',
-        zIndex: 50,
-    },
     menuButton: {
         padding: 8,
         justifyContent: 'center',
@@ -598,18 +617,11 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 20,
     },
-    menuBackdrop: {
-        position: 'absolute',
-        top: -1000,
-        left: -1000,
-        right: -1000,
-        bottom: -1000,
-        zIndex: 49,
+    menuModalOverlay: {
+        flex: 1,
     },
     menuDropdown: {
         position: 'absolute',
-        top: 44,
-        right: 0,
         width: 192,
         backgroundColor: COLORS.surfaceContainerHigh,
         borderWidth: 1,
@@ -617,7 +629,6 @@ const styles = StyleSheet.create({
         borderRadius: RADIUS.lg,
         ...ELEVATION.dropdown,
         overflow: 'hidden',
-        zIndex: 50,
     },
     menuItem: {
         flexDirection: 'row',

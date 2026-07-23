@@ -1,0 +1,58 @@
+appId: com.anonymous.factor
+---
+# Deletion golden path - the destructive counterpart to
+# create-observation-and-record.yaml. Create an Observation, cancel a delete
+# once to confirm Cancel is safe, then delete it for real and confirm it's gone
+# from the list. Exercises surface the create flow never touches: the header
+# kebab menu, the confirmation modal, and the pop-to-list navigation reset.
+- launchApp:
+    clearState: true
+# Dev-client launcher preamble - a cleared launch lands on Expo's dev-server
+# launcher. Wait for it to detect the local Metro server, then connect via
+# 10.0.2.2 (the emulator's stable host-loopback alias); see
+# create-observation-and-record.yaml for the full rationale.
+- extendedWaitUntil:
+    visible: "http://10.0.2.2:8081"
+    timeout: 30000
+- tapOn: "http://10.0.2.2:8081"
+- tapOn:
+    text: "Continue"
+    optional: true
+- runFlow:
+    when:
+      visible: "CUSTOM MENU ITEMS"
+    commands:
+      - back
+- assertVisible: "Observations"
+
+# clearState left the list empty, so create the Observation to delete.
+- tapOn: "Create observation"
+- assertVisible: "New Observation"
+- tapOn: "e.g., Sleep Quality, Mood"
+- inputText: "Mood"
+- tapOn: "e.g., Duration"
+- inputText: "Score"
+- hideKeyboard
+- tapOn: "Create Observation"
+
+- assertVisible: "Mood"
+- tapOn: "Mood"
+
+# Cancel path: open the delete confirmation, then back out. Nothing is removed
+# and we stay on the Observation Details screen.
+- tapOn: "More options"
+- tapOn: "Delete observation"
+- assertVisible: "Delete Observation?"
+- tapOn: "Cancel deletion"
+- assertNotVisible: "Delete Observation?"
+- assertVisible: "Mood"
+
+# Confirm path: this time go through with it.
+- tapOn: "More options"
+- tapOn: "Delete observation"
+- assertVisible: "Delete Observation?"
+- tapOn: "Confirm deletion"
+
+# Deletion pops back to the Observation list, now empty and without "Mood".
+- assertVisible: "No observations created yet."
+- assertNotVisible: "Mood"

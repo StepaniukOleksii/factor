@@ -10,12 +10,13 @@ appId: com.anonymous.factor
 # server to connect to, so a cleared launch lands on Expo's native launcher
 # picker screen instead of the JS app. `10.0.2.2` is the Android emulator's
 # fixed host-loopback alias, so this address is stable across machines as
-# long as this runs against the emulator (not a physical device). Optional
-# because a non-cleared relaunch
-# skips this screen entirely.
-- tapOn:
-    text: "http://10.0.2.2:8081"
-    optional: true
+# long as this runs against the emulator (not a physical device). The launcher
+# detects the local Metro server a beat after the screen itself renders, so wait
+# for that row before tapping - otherwise the tap races ahead and misses it.
+- extendedWaitUntil:
+    visible: "http://10.0.2.2:8081"
+    timeout: 30000
+- tapOn: "http://10.0.2.2:8081"
 # First-ever connect on a cleared install also opens the dev menu itself,
 # with a one-time "this is the developer menu" tip on top of it. "Continue"
 # dismisses the tip, leaving the dev menu open underneath; the Android back
