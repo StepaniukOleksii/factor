@@ -34,31 +34,49 @@ maestro --version
 
 ## Prerequisites
 
-E2E runs against the **dev-client build connecting to Metro**, so the manual-testing setup is the
-prerequisite. Before running a flow:
+E2E runs against the **dev-client build connecting to Metro** on the `Pixel_7` emulator. The `npm run
+e2e` runner (below) handles booting the emulator, building/installing the dev client, and starting
+Metro for you — so the only standing prerequisites are:
 
-1. **Emulator running.** Start the `Pixel_7` AVD — see
-   [testing-android-manually.md](testing-android-manually.md#1-confirm-your-device-is-visible-to-adb).
-   The emulator is required: the flow reaches Metro at `10.0.2.2:8081`, the emulator's fixed
-   host-loopback alias, which does **not** resolve on a physical device.
-2. **Dev client installed and Metro up.** `npm run android` builds/installs the Factor dev client and
-   starts Metro (or `npm start` if the dev client is already installed). See
-   [testing-android-manually.md](testing-android-manually.md#day-to-day-workflow).
+* **The `Pixel_7` AVD and the Android SDK/JDK are set up** — the same one-time setup as manual testing
+  ([testing-android-manually.md](testing-android-manually.md#one-time-setup)).
+* **The Maestro CLI is installed** and on `PATH` (see above).
+
+The emulator (not a physical device) is required: flows reach Metro at `10.0.2.2:8081`, the emulator's
+fixed host-loopback alias, which does not resolve on a physical device.
 
 ## Running the tests
 
 ```bash
-npm run e2e          # = maestro test .maestro/
+npm run e2e                                        # = bash scripts/e2e.sh — all flows
+npm run e2e -- .maestro/create-observation-and-record.yaml   # a single flow
 ```
 
-This runs every flow in [`.maestro/`](.maestro/). To run a single flow while iterating:
+`npm run e2e` runs [`scripts/e2e.sh`](scripts/e2e.sh), which wraps the run end to end:
+
+1. [`scripts/emulator-setup.sh`](scripts/emulator-setup.sh) — boots (or reuses) the emulator, frees a
+   stale Metro on port 8081, resets the on-device database, then builds, installs, and launches the
+   app, **blocking until it's actually running** (Metro serving → window displayed → JS runtime up). It
+   prints `READY device=<serial> …`, and the serial is passed to Maestro as `--device` so a physical
+   device connected alongside the emulator is never picked.
+2. `maestro test --device <serial> <flow>` — the actual flows.
+3. [`scripts/emulator-teardown.sh`](scripts/emulator-teardown.sh) — kills Metro and shuts the emulator
+   down. Runs even if setup or Maestro failed (idempotent).
+
+The runner exits with Maestro's own exit code, so it gates a script or CI step. Maestro writes
+per-flow screenshots and view hierarchies (including on failure) under `~/.maestro/tests/<timestamp>/`.
+
+### Iterating on a flow
+
+Booting and rebuilding on every run is wasteful while authoring. Keep the emulator up between runs:
 
 ```bash
-maestro test .maestro/create-observation-and-record.yaml
+E2E_KEEP_EMULATOR=1 npm run e2e     # leaves the emulator + Metro running at the end
+maestro test .maestro/foo.yaml      # re-run directly against the still-running app
+maestro studio                      # interactive inspector for discovering selectors
 ```
 
-`maestro studio` opens an interactive inspector against the running app — useful for discovering the
-right selector for a new element without guessing.
+Tear down manually when done: `bash scripts/emulator-teardown.sh`.
 
 ## How flows are written
 
@@ -85,11 +103,6 @@ Conventions this project follows:
   menu). `optional` steps are skipped silently on a non-cleared relaunch where those screens don't
   appear.
 
-## Current flows
-
-* **`create-observation-and-record.yaml`** — the golden path: create an Observation with one Numeric
-  metric, add a Record to it, and confirm the Record shows up and the empty state is gone.
-
 ## Gotchas
 
 * **Emulator + Metro only.** The `10.0.2.2` launcher step ties these flows to the emulator running a
@@ -103,8 +116,3 @@ Conventions this project follows:
   E2E — a dev client built before the change loads the new JS bundle and then crashes when the missing
   native module is first touched (see
   [testing-android-manually.md](testing-android-manually.md#day-to-day-workflow)).
-
-## CI
-
-Not wired into CI yet — E2E is run manually via `npm run e2e`. Automating it would require a CI job
-that boots an emulator, installs the dev build, starts Metro, and then runs Maestro.
