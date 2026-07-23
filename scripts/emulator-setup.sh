@@ -131,7 +131,18 @@ until adb -s "$DEVICE" logcat -d 2>/dev/null | grep -q "Displayed ${PACKAGE}/"; 
   [ "$waited" -ge "$DISPLAY_TIMEOUT" ] && fail "app did not display within ${DISPLAY_TIMEOUT}s of the dev server coming up — see $LOG_FILE"
 done
 
-log "App window displayed — waiting for the JS app to start running"
+log "App window displayed — reconnecting via 10.0.2.2 before the JS wait"
+
+# `expo run:android` launches the app pointing at the host's LAN IP, which the
+# emulator cannot reliably reach - the app then hangs on a "Bundling" banner and
+# never starts JS, so the wait below would time out. Relaunch explicitly against
+# 10.0.2.2 (the emulator's stable host-loopback alias, as the reload step in the
+# emulator-verifier skill uses) so the bundle loads deterministically. Clear
+# logcat first so the "Running main" wait matches only this relaunch.
+adb -s "$DEVICE" shell am force-stop "$PACKAGE" >/dev/null 2>&1
+adb -s "$DEVICE" logcat -c
+adb -s "$DEVICE" shell am start -a android.intent.action.VIEW \
+  -d "exp+factor://expo-development-client/?url=http://10.0.2.2:${PORT}" >/dev/null 2>&1
 
 # "Displayed" only means the native window was composited — for a fresh
 # React Native app that's typically still a blank root view. The JS bundle
