@@ -42,3 +42,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Maestro E2E artifacts (screenshots, hierarchies, logs)
+/.maestro/tests

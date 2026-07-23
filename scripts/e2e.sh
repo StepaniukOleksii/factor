@@ -47,7 +47,7 @@ fi
 teardown() {
   if [ -n "${E2E_KEEP_EMULATOR:-}" ]; then
     log "E2E_KEEP_EMULATOR set — leaving the emulator and Metro running"
-    log "Re-run flows without a rebuild:  maestro test $FLOW"
+    log "Re-run flows without a rebuild:  maestro test --debug-output . $FLOW"
     return
   fi
   bash "$SCRIPT_DIR/emulator-teardown.sh"
@@ -72,13 +72,16 @@ fi
 log "Running Maestro against $device: $FLOW"
 # --device targets the emulator serial explicitly, so a physical device
 # connected alongside it is never picked (matching the setup/teardown scripts,
-# which only ever resolve emulator-* serials).
-maestro test --device "$device" "$FLOW"
+# which only ever resolve emulator-* serials). --debug-output keeps artifacts in
+# the project: Maestro appends `.maestro/tests/<timestamp>/` to the base it's
+# given (default $HOME), so pointing the base at the repo root lands them in the
+# project's own .maestro/tests/ instead of the user's home directory.
+maestro test --device "$device" --debug-output "$REPO_ROOT" "$FLOW"
 status=$?
 
 if [ "$status" -eq 0 ]; then
   log "Maestro: all flows passed"
 else
-  log "Maestro: failures (exit $status) — artifacts under ~/.maestro/tests/"
+  log "Maestro: failures (exit $status) — artifacts under .maestro/tests/"
 fi
 exit "$status"

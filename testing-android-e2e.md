@@ -64,7 +64,8 @@ npm run e2e -- .maestro/create-observation-and-record.yaml   # a single flow
    down. Runs even if setup or Maestro failed (idempotent).
 
 The runner exits with Maestro's own exit code, so it gates a script or CI step. Maestro writes
-per-flow screenshots and view hierarchies (including on failure) under `~/.maestro/tests/<timestamp>/`.
+per-flow screenshots and view hierarchies (including on failure) under `.maestro/tests/<timestamp>/`
+(gitignored).
 
 ### Iterating on a flow
 
