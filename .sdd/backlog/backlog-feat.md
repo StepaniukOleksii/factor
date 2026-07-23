@@ -1,9 +1,7 @@
-# Backlog
+# Backlog — Features
 
-This is an informal idea/issue capture list — not a specification. It exists to hold loose feature ideas, known
-bugs, and refactor notes until they're ready to become a real spec.
-
-[FEAT]
+This is an informal idea/issue capture list — not a specification. It exists to hold loose feature ideas
+until they're ready to become a real spec.
 
 1. Observation Visualization (3-observation-visualization epic), planned slices after 3-1 (foundation, already
    speced), 3-2 (numeric metric trend chart, already speced), and 3-3 (tap chart point to open Record detail,
@@ -32,19 +30,3 @@ bugs, and refactor notes until they're ready to become a real spec.
    ObservationDetailsScreen for the Records?
 6. Metric units. An attribute set by user that contains unit information. Limit to three chars. Should be displayed in
    paratheses above the chart after the metric name.
-
-[BUG]
-
-1. long press action on a Record tile on the Observation Details screen only works at the top of the tile, but should be
-   applicable for the whole tile
-2. do not use dismiss animation for modals
-
-[REF]
-
-1. make a reusable component for modals
-
-[DOC]
-
-1. Create git commit conventions. Describe labels and commit content.
-2. How make the skill to read only relevant documents. For example no need reading domain model if implementing UI
-   changes
