@@ -26,6 +26,10 @@ introduces no new screens, data models, or use cases.
 * [ ] **Aggregated Points Open Their Earliest Record:** When a chart point represents more than one Record
   aggregated into the same bucket (e.g. two same-day Records averaged together), tapping it opens the earliest
   Record in that bucket, consistent with the `recordId` already assigned by `GetMetricSeriesUseCase`.
+  * **Superseded by [Tap an Aggregated Chart Point to Zoom](../3-7-tap-aggregated-point-to-zoom/spec.md).**
+    Opening an arbitrary Record from an aggregated point was always a placeholder for this. An aggregated
+    point now narrows the chart to its own bucket's span at finer aggregation instead of navigating anywhere;
+    a tap on a point representing exactly one Record still opens it exactly as described above.
 * [ ] **Return Navigation Is Unchanged:** Leaving the opened Record form (via Save, Cancel, or back) returns the
   user to the Observation Details screen, using the existing Record-editing navigation unchanged. Because that
   screen fully reloads on return, both the Records list and the trend charts reflect any saved change.
