@@ -72,6 +72,11 @@ modal — and, for now, never narrows past a single day (see the Requirements be
   style to tell a zoomable point from a navigable one before it's tapped. Axes already recompute from
   whatever window and points a chart is given, so a zoomed chart's axes update the same way they would after
   any other window change.
+  * **Superseded by [Aggregated Point Record Count](../3-8-aggregated-point-record-count/spec.md).** The "no
+    new marker style" half of this was always going to be revisited once it mattered whether a user could
+    tell how large an aggregation was; an aggregated point's dot is still exactly this dot, but now carries a
+    small muted number above it showing its count. Everything else this requirement covers — the curve,
+    gradient fill, and axes staying unaffected by a zoom itself — still holds.
 
 ## 3. Technical Design
 
