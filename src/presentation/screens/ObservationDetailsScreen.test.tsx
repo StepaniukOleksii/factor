@@ -5,9 +5,11 @@ import {Text} from 'react-native';
 import {ObservationDetailsScreen} from './ObservationDetailsScreen';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
+import {type SkFont, Text as SkiaText, useFont} from '@shopify/react-native-skia';
 import {NUMERIC_TREND_INSUFFICIENT_MESSAGE, type TimeRangePreset,} from '../charts/chartDefaults';
 import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {formatShortDate, formatTimeRange} from '@shared/formatTimeRange';
+import {COLORS, withAlpha} from '@presentation/theme';
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -204,6 +206,34 @@ function chartRecord(id: string, daysAgo: number, values: [string, number][]): D
 
 function chartRecordHoursAgo(id: string, hoursAgo: number, values: [string, number][]): DomainRecord {
     return recordAgo(id, hoursAgo * HOUR_MS, values);
+}
+
+/** A local date-time in 2026, month written the way a person says it. */
+function on(month: number, day: number, hour = 12, minute = 0): Date {
+    return new Date(2026, month - 1, day, hour, minute);
+}
+
+/**
+ * A Record at a given instant. One value throughout unless a test says
+ * otherwise, so the series is flat and every point sits on the chart's
+ * mid-line - keeping a tap's vertical hit-test independent of the width the
+ * test renderer never measures.
+ */
+function recordAt(id: string, at: Date, values: [string, number][] = [['m1', 5]]): DomainRecord {
+    return new DomainRecord(id, 'obs-1', at, new Map(values));
+}
+
+/**
+ * Taps the leftmost point of a chart. An unmeasured chart collapses every
+ * point onto the plotting rectangle's left edge, so the nearest-by-x
+ * hit-test always resolves there; 50 is where a flat series sits within the
+ * 108px chart's plot.
+ */
+async function pressChartPoint(root: any, chartIndex = 0) {
+    const pressable = root.root.findAllByProps({testID: 'numeric-trend-chart-pressable'})[chartIndex];
+    await act(async () => {
+        pressable.props.onPress({nativeEvent: {locationX: 0, locationY: 50}});
+    });
 }
 
 /** The outermost match is the touchable itself, carrying its press and a11y props. */
@@ -864,21 +894,6 @@ describe('ObservationDetailsScreen Chart Zoom', () => {
     // otherwise depend on the hour the suite happened to run at.
     const NOW = new Date(2026, 6, 15, 10, 30);
 
-    /** A local date-time in 2026, month written the way a person says it. */
-    function on(month: number, day: number, hour = 12): Date {
-        return new Date(2026, month - 1, day, hour);
-    }
-
-    /**
-     * A Record at a given instant. One value throughout unless a test says
-     * otherwise, so the series is flat and every point sits on the chart's
-     * mid-line - keeping a tap's vertical hit-test independent of the width the
-     * test renderer never measures.
-     */
-    function recordAt(id: string, at: Date, values: [string, number][] = [['m1', 5]]): DomainRecord {
-        return new DomainRecord(id, 'obs-1', at, new Map(values));
-    }
-
     /** The whole calendar days a tap on the point covering these Records zooms to. */
     function daysCovering(first: DomainRecord, last: DomainRecord): TimeRange {
         return {start: dayOf(first.timestamp), end: endOfDay(last.timestamp)};
@@ -904,19 +919,6 @@ describe('ObservationDetailsScreen Chart Zoom', () => {
     afterEach(() => {
         vi.useRealTimers();
     });
-
-    /**
-     * Taps the leftmost point of a chart. An unmeasured chart collapses every
-     * point onto the plotting rectangle's left edge, so the nearest-by-x
-     * hit-test always resolves there; 50 is where a flat series sits within the
-     * 108px chart's plot.
-     */
-    async function pressChartPoint(root: any, chartIndex = 0) {
-        const pressable = root.root.findAllByProps({testID: 'numeric-trend-chart-pressable'})[chartIndex];
-        await act(async () => {
-            pressable.props.onPress({nativeEvent: {locationX: 0, locationY: 50}});
-        });
-    }
 
     it('zooms to the calendar days its Records cover, not the bucket holding them', async () => {
         const navigate = vi.fn();
@@ -1233,5 +1235,100 @@ describe('ObservationDetailsScreen Focus Refresh', () => {
         // A window switch is not a refresh - it re-scopes the charts only.
         expect(mockGetObservationByIdExecute).toHaveBeenCalledTimes(1);
         expect(mockGetRecentRecordsExecute).toHaveBeenCalledTimes(1);
+    });
+});
+
+/**
+ * A chart point drawn as a bare dot says nothing about whether tapping it opens
+ * a Record or zooms in. Reproduces the one shape the seeded `hourly` metric
+ * comes to rest on - the day three back, holding two Records inside one clock
+ * hour and a third that afternoon - to check the counts a user reads before
+ * tapping match what a tap there actually does.
+ */
+describe('ObservationDetailsScreen Aggregated Point Labels', () => {
+    // Which hour a Record lands in decides everything here, so the clock is
+    // pinned rather than worked in "days ago". Late enough in the day that 1M's
+    // day-wide buckets, anchored at the window's end, hold whole mornings.
+    const NOW = new Date(2026, 6, 15, 22, 0);
+
+    // The seeded `hourly` shape: a day carrying a 09:00 Record, a second half an
+    // hour later sharing its clock hour, and a third in the afternoon - plus one
+    // on a later day, so the un-zoomed chart has a second point to draw.
+    const morning = recordAt('morning', on(7, 12, 9));
+    const halfPast = recordAt('half-past', on(7, 12, 9, 30));
+    const afternoon = recordAt('afternoon', on(7, 12, 15));
+    const laterDay = recordAt('later-day', on(7, 14, 9));
+
+    // The muted colour a count label is drawn in; the axis labels beside it use
+    // the solid token, which is what tells the two apart here.
+    const POINT_COUNT_LABEL_COLOR = withAlpha(COLORS.onSurfaceVariant, 0.65);
+
+    // Every glyph a fixed width, since only the labels' text matters here.
+    const fontStub = {
+        measureText: (text: string) => ({x: 0, y: 0, width: text.length * 5, height: 9}),
+        getMetrics: () => ({ascent: -7, descent: 2, leading: 0}),
+    } as unknown as SkFont;
+
+    function countLabels(root: any): string[] {
+        return root.root
+            .findAllByType(SkiaText)
+            .map((label: any) => label.props)
+            .filter((label: any) => label.color === POINT_COUNT_LABEL_COLOR)
+            .map((label: any) => label.text);
+    }
+
+    beforeEach(() => {
+        vi.useFakeTimers({shouldAdvanceTime: true});
+        vi.setSystemTime(NOW);
+        vi.clearAllMocks();
+        // On device the typeface resolves a render or two in; these assertions are
+        // about what is drawn once it has.
+        vi.mocked(useFont).mockReturnValue(fontStub);
+        mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'hourly'}));
+        mockGetRecentRecordsExecute.mockResolvedValue([]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([morning, halfPast, afternoon, laterDay]);
+        vi.stubGlobal('alert', vi.fn());
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.mocked(useFont).mockReturnValue(null);
+    });
+
+    it('labels the point folding a whole day of Records with how many it holds', async () => {
+        const root = await renderScreen();
+
+        // 1M buckets by the day, so all three of that day's Records fold into one
+        // point - and it says so, while the lone Record two days later does not.
+        expect(countLabels(root)).toEqual(['3']);
+    });
+
+    it('relabels to the new aggregation after a tap zooms in', async () => {
+        const root = await renderScreen();
+
+        await pressChartPoint(root);
+
+        // The zoomed day is bucketed by the hour: the 09:00 pair stays folded
+        // together and still says so, while the afternoon Record now stands alone
+        // and drops its label.
+        expect(lastRequestedRange()).toEqual({start: on(7, 12, 0), end: on(7, 13, 0)});
+        expect(countLabels(root)).toEqual(['2']);
+    });
+
+    it('keeps a labelled point tapping exactly as it did', async () => {
+        const navigate = vi.fn();
+        const root = await renderScreen(navigate);
+
+        await pressChartPoint(root);
+        const atTheLimit = mockGetRecordsByTimeRangeExecute.mock.calls.length;
+
+        // Tapping the labelled 09:00 point again: an hour inside a day is as far
+        // as zoom goes, so the label is all it offers - it opens no Record and
+        // narrows no further.
+        await pressChartPoint(root);
+
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(atTheLimit);
+        expect(navigate).not.toHaveBeenCalled();
+        expect(countLabels(root)).toEqual(['2']);
     });
 });

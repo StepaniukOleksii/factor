@@ -18,7 +18,7 @@ import {
 // system, so every device labels its axes identically.
 import AXIS_TYPEFACE from '../../../assets/fonts/Roboto-Regular.ttf';
 import {MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
-import {NUMERIC_TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
+import {formatPointCount, NUMERIC_TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
 import {type AxisTick, getTimeAxisTicks, getValueAxisTicks} from './axisTicks';
 import type {ChartRendererProps} from './rendererRegistry';
 import {COLORS, withAlpha} from '@presentation/theme';
@@ -46,6 +46,14 @@ const POINT_RADIUS = 2.5;
 const POINT_HALO_RADIUS = 4;
 const POINT_COLOR = LINE_COLOR;
 const POINT_HALO_COLOR = COLORS.surfaceContainerLow;
+// An identical dot for every point says nothing about how many Records stand
+// behind one, so a point folding several names its count above itself. Muted to
+// the axis labels' own colour and faded further: an annotation on the curve, not
+// a second accent competing with it.
+const POINT_COUNT_LABEL_COLOR = withAlpha(COLORS.onSurfaceVariant, 0.65);
+// How far above a point's centre the label's baseline sits — clear of the halo,
+// close enough to still read as belonging to that point.
+const POINT_COUNT_LABEL_OFFSET = 9;
 
 // Gutters carved out of the chart's `{width, height}` box to make room for the
 // axis labels. What is left over is the plotting rectangle — everything the
@@ -84,11 +92,14 @@ const GRIDLINE_WIDTH = 1;
  * no vertical gridlines and no legend — the curve stays the dominant element.
  *
  * Each aggregated point is marked with a small dot so the underlying Records are
- * visible. Tapping a dot (or the curve near it) selects the point nearest the
- * tap's horizontal position and reports it through `onPointPress`, provided the
- * tap is also close enough to the curve vertically; taps in the empty space above
- * or below miss silently. What a tap *means* — opening a Record, or zooming into
- * the bucket a point aggregates — is the screen's decision, not the chart's.
+ * visible, and a point standing for several of them carries their count above it,
+ * so an aggregate can be told from a lone Record before tapping either.
+ *
+ * Tapping a dot (or the curve near it) selects the point nearest the tap's
+ * horizontal position and reports it through `onPointPress`, provided the tap is
+ * also close enough to the curve vertically; taps in the empty space above or
+ * below miss silently. What a tap *means* — opening a Record, or zooming into the
+ * bucket a point aggregates — is the screen's decision, not the chart's.
  */
 export const NumericTrendChart = ({points, timeRange, width, height, onPointPress}: ChartRendererProps) => {
   // Ahead of the insufficient-data return so the hook order never varies. The
@@ -167,12 +178,25 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
           strokeCap="round"
           color={LINE_COLOR}
         />
-        {screenPoints.map((point, index) => (
-          <React.Fragment key={points[index].recordId}>
-            <Circle cx={point.x} cy={point.y} r={POINT_HALO_RADIUS} color={POINT_HALO_COLOR} />
-            <Circle cx={point.x} cy={point.y} r={POINT_RADIUS} color={POINT_COLOR} />
-          </React.Fragment>
-        ))}
+        {screenPoints.map((point, index) => {
+          const {recordId, recordCount} = points[index];
+          const countLabel = recordCount > 1 ? formatPointCount(recordCount) : null;
+          return (
+            <React.Fragment key={recordId}>
+              <Circle cx={point.x} cy={point.y} r={POINT_HALO_RADIUS} color={POINT_HALO_COLOR} />
+              <Circle cx={point.x} cy={point.y} r={POINT_RADIUS} color={POINT_COLOR} />
+              {font && countLabel && (
+                <SkiaText
+                  font={font}
+                  text={countLabel}
+                  x={point.x - measureWidth(font, countLabel) / 2}
+                  y={point.y - POINT_COUNT_LABEL_OFFSET}
+                  color={POINT_COUNT_LABEL_COLOR}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
         {font &&
           timeTicks.map(tick => (
             <SkiaText

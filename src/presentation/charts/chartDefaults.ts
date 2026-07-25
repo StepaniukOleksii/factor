@@ -3,6 +3,24 @@ import {AggregationStrategy, TimeRange} from '../../application/GetMetricSeriesU
 /** Message shown when a Numeric metric has fewer than two aggregated points. */
 export const NUMERIC_TREND_INSUFFICIENT_MESSAGE = 'Not enough data yet';
 
+/**
+ * The largest count an aggregated point spells out. Past it the exact number
+ * stops being worth the width — "a lot" is the whole message — so the label
+ * stays three characters wide however many Records a bucket folds.
+ */
+export const AGGREGATION_COUNT_DISPLAY_CAP = 99;
+
+/**
+ * How an aggregated chart point's Record count is labelled: the count itself
+ * while it fits, `"99+"` beyond the cap. Only points standing for more than one
+ * Record are labelled, so this is never called with `1`.
+ */
+export function formatPointCount(recordCount: number): string {
+  return recordCount > AGGREGATION_COUNT_DISPLAY_CAP
+    ? `${AGGREGATION_COUNT_DISPLAY_CAP}+`
+    : String(recordCount);
+}
+
 /** The time windows a user can choose between for an Observation's trend charts. */
 export type TimeRangePreset = '1D' | '1W' | '1M' | '1Y';
 

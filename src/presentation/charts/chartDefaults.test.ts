@@ -1,14 +1,16 @@
 import {describe, expect, it} from 'vitest';
 import {
-    DEFAULT_TIME_RANGE_PRESET,
-    DEFAULT_TIME_RANGE_SELECTION,
-    getAggregationForCustomRange,
-    getAggregationForPreset,
-    getAggregationForSelection,
-    getTimeRangeForPreset,
-    getTimeRangeForSelection,
-    TIME_RANGE_PRESETS,
-    type TimeRangePreset,
+  AGGREGATION_COUNT_DISPLAY_CAP,
+  DEFAULT_TIME_RANGE_PRESET,
+  DEFAULT_TIME_RANGE_SELECTION,
+  formatPointCount,
+  getAggregationForCustomRange,
+  getAggregationForPreset,
+  getAggregationForSelection,
+  getTimeRangeForPreset,
+  getTimeRangeForSelection,
+  TIME_RANGE_PRESETS,
+  type TimeRangePreset,
 } from './chartDefaults';
 import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
 
@@ -67,6 +69,30 @@ describe('DEFAULT_TIME_RANGE_PRESET', () => {
 
     expect(windowMs).toBe(PREVIOUS_FIXED_WINDOW_MS);
     expect(bucketSizeMs).toBe(PREVIOUS_FIXED_BUCKET_SIZE_MS);
+  });
+});
+
+describe('formatPointCount', () => {
+  it.each([2, 3, 15, 42, AGGREGATION_COUNT_DISPLAY_CAP])(
+    'spells out %d exactly',
+    recordCount => {
+      expect(formatPointCount(recordCount)).toBe(String(recordCount));
+    },
+  );
+
+  it.each([AGGREGATION_COUNT_DISPLAY_CAP + 1, 150, 4000])(
+    'caps %d at three characters',
+    recordCount => {
+      expect(formatPointCount(recordCount)).toBe('99+');
+    },
+  );
+
+  // A label never widens past three characters, however many Records a single
+  // bucket ends up folding — nothing repositions or resizes one to make room.
+  it('never exceeds three characters', () => {
+    [2, 9, 10, 99, 100, 1_000_000].forEach(recordCount => {
+      expect(formatPointCount(recordCount).length).toBeLessThanOrEqual(3);
+    });
   });
 });
 

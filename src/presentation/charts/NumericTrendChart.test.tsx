@@ -6,7 +6,7 @@ import {NumericTrendChart} from './NumericTrendChart';
 import {NUMERIC_TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
 import {MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {Metric} from '../../domain/Metric';
-import {COLORS} from '@presentation/theme';
+import {COLORS, withAlpha} from '@presentation/theme';
 
 vi.mock('react-native', () => require('react-native-web'));
 
@@ -69,9 +69,8 @@ function loadFont() {
   vi.mocked(useFont).mockReturnValue(fontStub);
 }
 
-// One Record behind each point unless a test says otherwise: how many a point
-// aggregates, and when those Records were taken, change nothing about how the
-// chart draws or hit-tests it.
+// One Record behind each point unless a test says otherwise: when those Records
+// were taken changes nothing about how the chart draws or hit-tests a point.
 function points(...values: number[]): MetricSeriesPoint[] {
   return values.map((y, index) => ({
     x: index * 1000,
@@ -80,6 +79,15 @@ function points(...values: number[]): MetricSeriesPoint[] {
     recordCount: 1,
     firstRecordAt: index * 1000,
     lastRecordAt: index * 1000,
+  }));
+}
+
+/** The same series, with each point folding the given number of Records. */
+function pointsAggregating(...recordCounts: number[]): MetricSeriesPoint[] {
+  const values = recordCounts.map((_, index) => 10 + index * 5);
+  return points(...values).map((point, index) => ({
+    ...point,
+    recordCount: recordCounts[index],
   }));
 }
 
@@ -133,8 +141,22 @@ function gridlines(root: any) {
   return root.root.findAllByType(Line).map((line: any) => line.props);
 }
 
-function axisLabels(root: any) {
+function skiaLabels(root: any) {
   return root.root.findAllByType(SkiaText).map((text: any) => text.props);
+}
+
+/**
+ * The two kinds of text a chart draws, told apart by their colour: the axis uses
+ * the solid muted token, an aggregated point's count the faded variant of it.
+ */
+const POINT_COUNT_LABEL_COLOR = withAlpha(COLORS.onSurfaceVariant, 0.65);
+
+function axisLabels(root: any) {
+  return skiaLabels(root).filter((label: any) => label.color === COLORS.onSurfaceVariant);
+}
+
+function countLabels(root: any) {
+  return skiaLabels(root).filter((label: any) => label.color === POINT_COUNT_LABEL_COLOR);
 }
 
 function valueLabels(root: any) {
@@ -536,5 +558,113 @@ describe('NumericTrendChart axes', () => {
     // scale becomes a month one, with no separate refresh.
     expect(timeLabels(root).map((label: any) => label.text)).toHaveLength(5);
     expect(timeLabels(root).every((label: any) => /\d/.test(label.text))).toBe(true);
+  });
+});
+
+/**
+ * Every point is drawn as the same dot, so nothing on the chart says whether one
+ * stands for a single Record or for a bucket of them — nor, since a tap on each
+ * does something different, what tapping it will do. A count above the dot is
+ * what answers both, without touching the dot or the tap.
+ */
+describe('NumericTrendChart aggregated point labels', () => {
+  /** The halo ringing a dot; a label clears it rather than resting on it. */
+  const HALO_RADIUS = 4;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.mocked(useFont).mockReturnValue(null);
+    vi.spyOn(Skia.Path, 'Make').mockImplementation(() => {
+      linePath = makePathStub();
+      return linePath as any;
+    });
+  });
+
+  it('leaves a point standing for a single Record unlabelled', () => {
+    loadFont();
+
+    const root = render(points(10, 20, 15, 25));
+
+    expect(countLabels(root).length).toBe(0);
+    expect(recordDots(root).length).toBe(4);
+  });
+
+  it('labels a point that folds several Records with how many', () => {
+    loadFont();
+
+    const root = render(pointsAggregating(1, 3, 1, 12));
+
+    expect(countLabels(root).map((label: any) => label.text)).toEqual(['3', '12']);
+  });
+
+  it('caps a count past ninety-nine rather than widening the label', () => {
+    loadFont();
+
+    const root = render(pointsAggregating(1, 150));
+
+    expect(countLabels(root).map((label: any) => label.text)).toEqual(['99+']);
+  });
+
+  it('centres each label on its own point, above the dot', () => {
+    loadFont();
+
+    const root = render(pointsAggregating(1, 4, 1, 1));
+    const [label] = countLabels(root);
+    const labelledDot = recordDots(root)[1];
+
+    expect(labelCentre(label)).toBeCloseTo(labelledDot.props.cx);
+    expect(label.y).toBeLessThan(labelledDot.props.cy - HALO_RADIUS);
+  });
+
+  it('draws it in the axis colour faded, not in a second accent', () => {
+    loadFont();
+
+    const root = render(pointsAggregating(1, 4));
+
+    expect(countLabels(root)[0].color).toBe(withAlpha(COLORS.onSurfaceVariant, 0.65));
+  });
+
+  it('leaves a label centred on a point at the plot edge, overflowing it', () => {
+    loadFont();
+
+    // The first point sits exactly on the plot's left edge, so a label centred on
+    // it necessarily starts left of that edge. Nothing nudges it back inside —
+    // unlike the time labels, which do align inwards at the range's endpoints.
+    const root = render(pointsAggregating(15, 1));
+    const [label] = countLabels(root);
+
+    expect(labelCentre(label)).toBe(PLOT.left);
+    expect(label.x).toBeLessThan(PLOT.left);
+  });
+
+  it('draws the dots but no label while the font is still loading', () => {
+    const root = render(pointsAggregating(3, 12, 1, 45));
+
+    expect(countLabels(root).length).toBe(0);
+    // The markers never wait on a typeface, so an aggregated point is still
+    // drawn and still tappable while its count is on its way.
+    expect(recordDots(root).length).toBe(4);
+  });
+
+  it('draws the same dots and halos whether its points are labelled or not', () => {
+    loadFont();
+
+    const circleProps = (root: any) =>
+      root.root.findAllByType(Circle).map((circle: any) => circle.props);
+
+    expect(circleProps(render(pointsAggregating(3, 7, 1, 150)))).toEqual(
+      circleProps(render(points(10, 15, 20, 25))),
+    );
+  });
+
+  it('reports a labelled point on a tap exactly as an unlabelled one', () => {
+    loadFont();
+    const onPointPress = vi.fn();
+    const chartPoints = pointsAggregating(1, 1, 1, 8);
+    const root = render(chartPoints, onPointPress);
+
+    press(root, PLOT.right, PLOT.top);
+
+    expect(onPointPress).toHaveBeenCalledWith(chartPoints[3]);
   });
 });
