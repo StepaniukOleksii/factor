@@ -27,6 +27,9 @@ separate, later slice in the backlog.
   aggregation buckets (mean of Numeric values per day).
 * [ ] **Insufficient Data State:** If a Numeric Metric has fewer than two aggregated points within the window,
   its chart is replaced with an "insufficient data" message instead of an empty or broken canvas.
+  * **Superseded by [Single-Point Trend Chart](../3-9-single-point-trend-chart/spec.md).** The threshold
+    narrows to zero aggregated points; a Metric with exactly one now renders a chart (a single dot, no
+    line) instead of this message.
 * [ ] **No Numeric Metrics:** If the Observation has no Numeric Metrics, the Trends section is not rendered at
   all.
 * [ ] **Non-Interactive:** Chart points are not tappable in this slice. Tapping a chart point does nothing; no

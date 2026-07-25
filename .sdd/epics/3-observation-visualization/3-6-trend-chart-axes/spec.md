@@ -75,6 +75,9 @@ nothing yet for this feature to add axes to.
 * [ ] **Insufficient-Data State Unaffected:** A Metric shown in its "Not enough data yet" placeholder
   state (fewer than two aggregated points) still renders no canvas at all, and therefore no axis of any
   kind.
+  * **Superseded by [Single-Point Trend Chart](../3-9-single-point-trend-chart/spec.md).** The
+    placeholder narrows to zero aggregated points; a Metric with exactly one now renders a canvas — a
+    single dot on these same axes — rather than "no canvas at all."
 * [ ] **Only Numeric Charts Affected:** Boolean, Enum, and Text Metrics still render no chart at all,
   unchanged.
 * [ ] **Axes Recompute With the Chart:** Switching the selected preset or applying a custom range
