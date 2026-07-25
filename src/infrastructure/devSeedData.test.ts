@@ -61,6 +61,31 @@ describe('seeded chart coverage', () => {
     expect(pointCount('mixed metrics', 'hourly', '1D')).toBeGreaterThanOrEqual(7);
   });
 
+  // Zoom narrows onto the days a tapped point's Records fall on, so it comes to
+  // rest on a single day - bucketed by the hour, the finest a day-wide window
+  // gets. Reaching that resting point by hand needs a day holding both an hour
+  // with several Records and something else to draw alongside it, which no
+  // metric offered until `hourly` gained its cluster.
+  it('gives a zoomed-in day an hour holding several Records, and a second point beside it', () => {
+    const {observation, records} = entry('mixed metrics');
+    const hourly = observation.metrics.find(metric => metric.name === 'hourly')!;
+    const clusterDay = new Date();
+    clusterDay.setHours(0, 0, 0, 0);
+    clusterDay.setDate(clusterDay.getDate() - 3);
+    const nextDay = new Date(clusterDay);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const points = getMetricSeries.execute(
+      records,
+      hourly,
+      {start: clusterDay, end: nextDay},
+      {bucketSizeMs: 60 * 60 * 1000},
+    );
+
+    expect(points.length).toBeGreaterThanOrEqual(2);
+    expect(points.some(point => point.recordCount > 1)).toBe(true);
+  });
+
   it('fills the 30-day-bucketed 1Y window from the yearly Metric', () => {
     expect(pointCount('mixed metrics', 'yearly', '1Y')).toBeGreaterThanOrEqual(10);
   });

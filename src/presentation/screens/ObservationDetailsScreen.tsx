@@ -20,7 +20,7 @@ import {GetRecentRecordsUseCase} from '../../application/GetRecentRecordsUseCase
 import {GetRecordsByTimeRangeUseCase} from '../../application/GetRecordsByTimeRangeUseCase';
 import {DeleteObservationUseCase} from '../../application/DeleteObservationUseCase';
 import {DeleteRecordUseCase} from '../../application/DeleteRecordUseCase';
-import {GetMetricSeriesUseCase, TimeRange} from '../../application/GetMetricSeriesUseCase';
+import {GetMetricSeriesUseCase, MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
 import {CenteredState, FooterBar, PrimaryActionButton, ScreenContainer, ScreenHeader} from "@presentation/components";
@@ -30,6 +30,7 @@ import {rendererRegistry} from '../charts/rendererRegistry';
 import {
     DEFAULT_TIME_RANGE_SELECTION,
     getAggregationForSelection,
+    getDayAlignedRange,
     getTimeRangeForSelection,
     NUMERIC_TREND_INSUFFICIENT_MESSAGE,
     type TimeRangeSelection,
@@ -56,6 +57,11 @@ const TREND_CHART_HEIGHT = 108;
 // pads for) plus the ScreenHeader's own 64px height, landing it just under the
 // header where the inline dropdown used to sit.
 const MENU_TOP = (Platform.OS === 'android' ? RNStatusBar.currentHeight ?? 0 : 0) + 64;
+
+/** How long a window is, for comparing one against another. */
+function spanOf(range: TimeRange): number {
+    return range.end.getTime() - range.start.getTime();
+}
 
 export type ObservationDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'ObservationDetails'>;
 
@@ -150,6 +156,37 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
         } finally {
             setLoading(false);
         }
+    };
+
+    // What a tap on a chart point means. A point standing for a single Record
+    // opens it; one that folds several together narrows the section onto the
+    // days those Records fall on, so they become points of their own. Not onto
+    // the bucket that held them: a bucket is a grid laid over the window, and
+    // zooming to one leaves the curve stranded in whatever part of it the
+    // Records don't reach.
+    const handleChartPointPress = (point: MetricSeriesPoint) => {
+        // The guard the selector's own segments already carry, applied to the
+        // other way into a window switch: a tap landing mid-fetch would stack a
+        // second, overlapping reload on the one in flight.
+        if (loadingTrends) {
+            return;
+        }
+        if (point.recordCount === 1) {
+            onEditRecord(point.recordId);
+            return;
+        }
+        const zoomed = getDayAlignedRange(
+            new Date(point.firstRecordAt),
+            new Date(point.lastRecordAt),
+        );
+        // Only worth following if it actually closes in on the Records. Once the
+        // window is a single day this stops being true - a day is as narrow as
+        // day alignment goes - so zoom settles there instead of needing its own
+        // floor to say when to stop.
+        if (!chartRange || spanOf(zoomed) >= spanOf(chartRange)) {
+            return;
+        }
+        setTimeRangeSelection({kind: 'custom', range: zoomed});
     };
 
     const toggleExpand = (recordId: string) => {
@@ -344,7 +381,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                                         timeRange={chartRange!}
                                                         width={trendChartWidth}
                                                         height={TREND_CHART_HEIGHT}
-                                                        onPointPress={onEditRecord}
+                                                        onPointPress={handleChartPointPress}
                                                     />
                                                 </View>
                                             ) : (

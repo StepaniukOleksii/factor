@@ -25,12 +25,24 @@ export interface AggregationStrategy {
 /**
  * A single point on a metric's chart series. `recordId` links the point back to
  * a representative Record for tap-to-detail — the earliest Record in the bucket
- * when several are aggregated.
+ * when several are aggregated — and `recordCount` reports how many were folded
+ * into the point, so a caller can tell a point standing for one Record from one
+ * standing for several.
+ *
+ * `firstRecordAt` and `lastRecordAt` are when the earliest and latest of those
+ * Records were actually taken, which is not something `x` can answer: `x` is the
+ * bucket's start, a point on a fixed grid laid over the range, so a bucket's
+ * edges rarely coincide with any Record and its far edge may lie beyond the last
+ * one entirely. A caller wanting the span the Records themselves occupy needs
+ * these two.
  */
 export interface MetricSeriesPoint {
   x: number;
   y: number;
   recordId: string;
+  recordCount: number;
+  firstRecordAt: number;
+  lastRecordAt: number;
 }
 
 /**
@@ -86,10 +98,16 @@ export class GetMetricSeriesUseCase {
       .sort((a, b) => a - b)
       .map(index => {
         const bucketRecords = buckets.get(index)!;
+        // Sorted by timestamp above, so the ends of the bucket's own list are
+        // the earliest and latest Records in it.
+        const lastRecord = bucketRecords[bucketRecords.length - 1];
         return {
           x: startMs + index * bucketSizeMs,
           y: this.reduce(bucketRecords, metric),
           recordId: bucketRecords[0].id,
+          recordCount: bucketRecords.length,
+          firstRecordAt: bucketRecords[0].timestamp.getTime(),
+          lastRecordAt: lastRecord.timestamp.getTime(),
         };
       });
   }

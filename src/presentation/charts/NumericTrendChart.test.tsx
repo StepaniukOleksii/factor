@@ -69,8 +69,18 @@ function loadFont() {
   vi.mocked(useFont).mockReturnValue(fontStub);
 }
 
+// One Record behind each point unless a test says otherwise: how many a point
+// aggregates, and when those Records were taken, change nothing about how the
+// chart draws or hit-tests it.
 function points(...values: number[]): MetricSeriesPoint[] {
-  return values.map((y, index) => ({x: index * 1000, y, recordId: `r${index}`}));
+  return values.map((y, index) => ({
+    x: index * 1000,
+    y,
+    recordId: `r${index}`,
+    recordCount: 1,
+    firstRecordAt: index * 1000,
+    lastRecordAt: index * 1000,
+  }));
 }
 
 function findAllByText(root: any, text: string) {
@@ -216,6 +226,9 @@ describe('NumericTrendChart', () => {
       x: day * DAY_MS,
       y: 10 + day,
       recordId: `r${day}`,
+      recordCount: 1,
+      firstRecordAt: day * DAY_MS,
+      lastRecordAt: day * DAY_MS,
     }));
 
     const root = render(chartPoints, vi.fn(), timeRange);
@@ -250,35 +263,62 @@ describe('NumericTrendChart', () => {
     expect(axisLabels(root).length).toBe(0);
   });
 
-  it('opens the record nearest a tap in the middle of the chart', () => {
+  it('reports the point nearest a tap in the middle of the chart', () => {
     const onPointPress = vi.fn();
-    const root = render(points(10, 20, 15, 25), onPointPress);
+    const chartPoints = points(10, 20, 15, 25);
+    const root = render(chartPoints, onPointPress);
 
     // Nearest the third point at screen (205.3, 64.7).
     press(root, 205, 65);
 
-    expect(onPointPress).toHaveBeenCalledWith('r2');
+    expect(onPointPress).toHaveBeenCalledWith(chartPoints[2]);
   });
 
-  it('resolves a tap near the start of the curve to the first record', () => {
+  it('resolves a tap near the start of the curve to the first point', () => {
     const onPointPress = vi.fn();
-    const root = render(points(10, 20, 15, 25), onPointPress);
+    const chartPoints = points(10, 20, 15, 25);
+    const root = render(chartPoints, onPointPress);
 
     // Nearest the first point at screen (24, 94) — inside the plot, not at the
     // chart box's own left edge.
     press(root, PLOT.left, PLOT.bottom);
 
-    expect(onPointPress).toHaveBeenCalledWith('r0');
+    expect(onPointPress).toHaveBeenCalledWith(chartPoints[0]);
   });
 
-  it('resolves a tap near the end of the curve to the last record', () => {
+  it('resolves a tap near the end of the curve to the last point', () => {
     const onPointPress = vi.fn();
-    const root = render(points(10, 20, 15, 25), onPointPress);
+    const chartPoints = points(10, 20, 15, 25);
+    const root = render(chartPoints, onPointPress);
 
     // Nearest the last point at screen (296, 6).
     press(root, PLOT.right, PLOT.top);
 
-    expect(onPointPress).toHaveBeenCalledWith('r3');
+    expect(onPointPress).toHaveBeenCalledWith(chartPoints[3]);
+  });
+
+  it('reports the whole tapped point, not just the record behind it', () => {
+    const onPointPress = vi.fn();
+    // How many Records a point aggregates decides whether the screen opens one
+    // or zooms into the bucket, so the chart hands over the point itself rather
+    // than the one field a navigating screen used to need.
+    const aggregated: MetricSeriesPoint = {
+      x: 1000,
+      y: 20,
+      recordId: 'r1',
+      recordCount: 4,
+      firstRecordAt: 1200,
+      lastRecordAt: 1800,
+    };
+    const chartPoints: MetricSeriesPoint[] = [
+      {x: 0, y: 10, recordId: 'r0', recordCount: 1, firstRecordAt: 0, lastRecordAt: 0},
+      aggregated,
+    ];
+    const root = render(chartPoints, onPointPress);
+
+    press(root, PLOT.right, PLOT.top);
+
+    expect(onPointPress).toHaveBeenCalledWith(aggregated);
   });
 
   it('ignores a tap that falls outside the vertical tolerance of its nearest point', () => {
@@ -295,13 +335,14 @@ describe('NumericTrendChart', () => {
   it('keeps hit-testing against the plotting rectangle once the axis labels are drawn', () => {
     loadFont();
     const onPointPress = vi.fn();
-    const root = render(points(10, 20, 15, 25), onPointPress);
+    const chartPoints = points(10, 20, 15, 25);
+    const root = render(chartPoints, onPointPress);
 
     press(root, PLOT.left, PLOT.bottom);
     press(root, PLOT.right, PLOT.top);
 
-    expect(onPointPress).toHaveBeenNthCalledWith(1, 'r0');
-    expect(onPointPress).toHaveBeenNthCalledWith(2, 'r3');
+    expect(onPointPress).toHaveBeenNthCalledWith(1, chartPoints[0]);
+    expect(onPointPress).toHaveBeenNthCalledWith(2, chartPoints[3]);
   });
 
   it('renders no pressable for a single point and never opens a record', () => {

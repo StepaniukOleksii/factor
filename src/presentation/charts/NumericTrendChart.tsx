@@ -1,17 +1,17 @@
 import React from 'react';
 import {type GestureResponderEvent, Pressable, StyleSheet, Text, View} from 'react-native';
 import {
-    Canvas,
-    Circle,
-    Line,
-    LinearGradient,
-    Path,
-    type SkFont,
-    Skia,
-    type SkPath,
-    Text as SkiaText,
-    useFont,
-    vec,
+  Canvas,
+  Circle,
+  Line,
+  LinearGradient,
+  Path,
+  type SkFont,
+  Skia,
+  type SkPath,
+  Text as SkiaText,
+  useFont,
+  vec,
 } from '@shopify/react-native-skia';
 // A `Canvas` cannot composite a platform `Text` element, so drawing glyphs needs
 // a typeface Skia itself owns. Bundled with the app rather than matched from the
@@ -85,9 +85,10 @@ const GRIDLINE_WIDTH = 1;
  *
  * Each aggregated point is marked with a small dot so the underlying Records are
  * visible. Tapping a dot (or the curve near it) selects the point nearest the
- * tap's horizontal position and opens its Record via `onPointPress`, provided the
+ * tap's horizontal position and reports it through `onPointPress`, provided the
  * tap is also close enough to the curve vertically; taps in the empty space above
- * or below miss silently.
+ * or below miss silently. What a tap *means* — opening a Record, or zooming into
+ * the bucket a point aggregates — is the screen's decision, not the chart's.
  */
 export const NumericTrendChart = ({points, timeRange, width, height, onPointPress}: ChartRendererProps) => {
   // Ahead of the insufficient-data return so the hook order never varies. The
@@ -123,7 +124,7 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
     const {locationX, locationY} = event.nativeEvent;
     const nearestIndex = nearestPointIndex(screenPoints, locationX);
     if (Math.abs(screenPoints[nearestIndex].y - locationY) <= VERTICAL_TOLERANCE) {
-      onPointPress(points[nearestIndex].recordId);
+      onPointPress(points[nearestIndex]);
     }
   };
 

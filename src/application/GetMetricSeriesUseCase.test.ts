@@ -38,8 +38,104 @@ describe('GetMetricSeriesUseCase', () => {
     const series = useCase.execute(records, metric, timeRange, aggregation);
 
     expect(series).toEqual([
-      {x: startMs, y: 15, recordId: 'a'},
-      {x: startMs + DAY_MS, y: 5, recordId: 'c'},
+      {
+        x: startMs,
+        y: 15,
+        recordId: 'a',
+        recordCount: 2,
+        firstRecordAt: startMs + 1 * 60 * 60 * 1000,
+        lastRecordAt: startMs + 5 * 60 * 60 * 1000,
+      },
+      {
+        x: startMs + DAY_MS,
+        y: 5,
+        recordId: 'c',
+        recordCount: 1,
+        firstRecordAt: startMs + DAY_MS + 60 * 1000,
+        lastRecordAt: startMs + DAY_MS + 60 * 1000,
+      },
+    ]);
+  });
+
+  it('reports when each bucket’s earliest and latest Records were actually taken', () => {
+    const metric = numericMetric();
+    const start = new Date('2026-01-01T00:00:00.000Z');
+    const startMs = start.getTime();
+    const timeRange: TimeRange = {start, end: new Date('2026-01-04T00:00:00.000Z')};
+    const aggregation: AggregationStrategy = {bucketSizeMs: DAY_MS};
+
+    const earliest = new Date(startMs + 3 * 60 * 60 * 1000);
+    const latest = new Date(startMs + 20 * 60 * 60 * 1000);
+    const records = [
+      // Deliberately out of order, and nowhere near the bucket's own edges: the
+      // point reports the Records' own times, not the grid's.
+      record('middle', new Date(startMs + 11 * 60 * 60 * 1000), metric.id, 20),
+      record('latest', latest, metric.id, 30),
+      record('earliest', earliest, metric.id, 10),
+    ];
+
+    const [point] = useCase.execute(records, metric, timeRange, aggregation);
+
+    expect(point.firstRecordAt).toBe(earliest.getTime());
+    expect(point.lastRecordAt).toBe(latest.getTime());
+    expect(point.x).toBe(startMs);
+  });
+
+  it('collapses a single-Record bucket’s first and last onto the same instant', () => {
+    const metric = numericMetric();
+    const taken = new Date(500);
+
+    const [point] = useCase.execute(
+      [record('only', taken, metric.id, 42)],
+      metric,
+      {start: new Date(0), end: new Date(1000)},
+      {bucketSizeMs: 1000}
+    );
+
+    expect(point.firstRecordAt).toBe(taken.getTime());
+    expect(point.lastRecordAt).toBe(taken.getTime());
+  });
+
+  it('counts the Records folded into each bucket', () => {
+    const metric = numericMetric();
+    const start = new Date('2026-01-01T00:00:00.000Z');
+    const startMs = start.getTime();
+    const timeRange: TimeRange = {start, end: new Date('2026-01-04T00:00:00.000Z')};
+    const aggregation: AggregationStrategy = {bucketSizeMs: DAY_MS};
+
+    const records = [
+      record('a', new Date(startMs + 1 * 60 * 60 * 1000), metric.id, 10), // day 0
+      record('b', new Date(startMs + 5 * 60 * 60 * 1000), metric.id, 20), // day 0
+      record('c', new Date(startMs + 9 * 60 * 60 * 1000), metric.id, 30), // day 0
+      record('d', new Date(startMs + DAY_MS + 60 * 1000), metric.id, 5), //  day 1
+    ];
+
+    const series = useCase.execute(records, metric, timeRange, aggregation);
+
+    // Three Records behind the first point and one behind the second, so a
+    // caller can tell which points hide detail and which already are the detail.
+    expect(series.map(point => point.recordCount)).toEqual([3, 1]);
+  });
+
+  it('counts only the Records that contribute a value to the bucket', () => {
+    const metric = numericMetric();
+    const records = [
+      record('has-value', new Date(100), metric.id, 42),
+      record('also-has-value', new Date(200), metric.id, 44),
+      // Same bucket, but contributes nothing to the point's value, so it is not
+      // one of the Records the point stands for either.
+      new Record('no-value', 'obs1', new Date(300), new Map([['other-metric', 7]])),
+    ];
+
+    const series = useCase.execute(
+      records,
+      metric,
+      {start: new Date(0), end: new Date(1000)},
+      {bucketSizeMs: 1000}
+    );
+
+    expect(series).toEqual([
+      {x: 0, y: 43, recordId: 'has-value', recordCount: 2, firstRecordAt: 100, lastRecordAt: 200},
     ]);
   });
 
@@ -58,8 +154,8 @@ describe('GetMetricSeriesUseCase', () => {
     const series = useCase.execute(records, metric, timeRange, aggregation);
 
     expect(series).toEqual([
-      {x: 0, y: 2, recordId: 'start-edge'},
-      {x: 1000, y: 10, recordId: 'bucket1'},
+      {x: 0, y: 2, recordId: 'start-edge', recordCount: 2, firstRecordAt: 0, lastRecordAt: 999},
+      {x: 1000, y: 10, recordId: 'bucket1', recordCount: 1, firstRecordAt: 1000, lastRecordAt: 1000},
     ]);
   });
 
@@ -105,7 +201,9 @@ describe('GetMetricSeriesUseCase', () => {
       {bucketSizeMs: 1000}
     );
 
-    expect(series).toEqual([{x: 0, y: 42, recordId: 'has-value'}]);
+    expect(series).toEqual([
+      {x: 0, y: 42, recordId: 'has-value', recordCount: 1, firstRecordAt: 100, lastRecordAt: 100},
+    ]);
   });
 
   it('throws for value types whose reduction is not implemented yet', () => {

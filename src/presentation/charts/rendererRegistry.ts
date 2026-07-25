@@ -13,9 +13,11 @@ import {NumericTrendChart} from './NumericTrendChart';
  * rather than across the span of the data, so a series whose last point is in the
  * middle of the window ends in the middle of the chart rather than at the edge.
  *
- * `onPointPress` is invoked with the `recordId` of a tapped series point so the
- * screen can open that Record's detail view; renderers with no tappable state
- * (e.g. an insufficient-data placeholder) simply never call it.
+ * `onPointPress` is invoked with the whole tapped series point, so the screen can
+ * decide what the tap means — opening the point's Record, or narrowing the window
+ * onto the bucket it aggregates. Renderers report which point was hit and nothing
+ * more; those with no tappable state (e.g. an insufficient-data placeholder)
+ * simply never call it.
  */
 export interface ChartRendererProps {
   metric: Metric;
@@ -23,7 +25,7 @@ export interface ChartRendererProps {
   timeRange: TimeRange;
   width: number;
   height: number;
-  onPointPress: (recordId: string) => void;
+  onPointPress: (point: MetricSeriesPoint) => void;
 }
 
 /**

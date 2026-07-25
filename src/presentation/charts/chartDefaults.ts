@@ -17,6 +17,36 @@ const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
 /**
+ * The calendar day `date` falls on, as local midnight. Every window the user can
+ * land on is built from whole days, so this and `startOfNextDay` are what pin
+ * them to that grid — whether the days were picked in the range modal or taken
+ * from the Records behind a zoomed chart point.
+ */
+export function floorToDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/** Local midnight of the day after `date`'s — the exclusive end of that day. */
+export function startOfNextDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+}
+
+/**
+ * The whole calendar days that `from` and `to` fall within, as a half-open range.
+ * Both instants are inside it, so a range built from the first and last Record of
+ * an aggregated chart point always still contains them — the alignment grows the
+ * window outwards at both ends, it never clips it.
+ *
+ * A day is therefore the narrowest window this can produce, which is what stops
+ * zoom from going further: a one-day window is already bucketed by the hour (see
+ * `getAggregationForCustomRange`), and every Record inside one of those buckets
+ * shares a day, so aligning them again just returns the same window.
+ */
+export function getDayAlignedRange(from: Date, to: Date): TimeRange {
+  return {start: floorToDay(from), end: startOfNextDay(to)};
+}
+
+/**
  * Each preset's window paired with the bucket size it is aggregated into, so that
  * a year of Records reads as clearly as a day of them rather than collapsing into
  * an unreadable smear of points. Declared shortest window first — the order the

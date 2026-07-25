@@ -26,6 +26,13 @@ import {Record} from '../domain/Record';
  */
 const SEED = 42;
 
+/**
+ * Which of `hourly`'s daily days carries its extra sub-day cluster. Any day but
+ * today would do — today's own Records are hour-spaced already, and a cluster
+ * there would change what the shortest window shows.
+ */
+const CLUSTER_DAY = 3;
+
 function mulberry32(seed: number): () => number {
   let a = seed;
   return function random() {
@@ -43,9 +50,9 @@ function randRange(min: number, max: number): number {
   return min + rand() * (max - min);
 }
 
-function daysAgo(n: number, hour = 9): Date {
+function daysAgo(n: number, hour = 9, minute = 0): Date {
   const d = new Date();
-  d.setHours(hour, 0, 0, 0);
+  d.setHours(hour, minute, 0, 0);
   d.setDate(d.getDate() - n);
   return d;
 }
@@ -142,6 +149,15 @@ export function buildSeedData(): SeedEntry[] {
     for (let i = 1; i <= 12; i++) {
       setValueAt(recordValues, daysAgo(i), hourlyMetric.id, bounded(60 + Math.cos(i / 3) * 18 + randRange(-5, 5)));
     }
+    // One of those days carries a cluster of its own: a second Record half an hour
+    // after that day's, sharing its clock hour, and a third in the afternoon. A
+    // chart zoomed down to this day is bucketed by the hour, so the first two stay
+    // folded into one aggregated point while the third gives the chart a second
+    // point to draw - the one shape zoom cannot resolve any further, since an hour
+    // is as fine as a day-wide window is ever bucketed. Both extra Records share
+    // the day of an existing one, so every window's point count is what it was.
+    setValueAt(recordValues, daysAgo(CLUSTER_DAY, 9, 30), hourlyMetric.id, bounded(60 + randRange(-5, 5)));
+    setValueAt(recordValues, daysAgo(CLUSTER_DAY, 15), hourlyMetric.id, bounded(70 + randRange(-5, 5)));
 
     // yearly: a point every two weeks for most of a year => the longest window's 30-day
     // buckets have ~12 points to draw instead of one clump against its right edge.

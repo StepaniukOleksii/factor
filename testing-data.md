@@ -51,7 +51,7 @@ are covered without manual data entry.
 |-----------------|------------------------------------------------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | `mixed metrics` | Numeric `dense` (0-100)                              | one point per day, 45 days                         | A densely-populated trend chart                                                                                               |
 |                 | Numeric `sparse` (min 0)                             | one point every ~3 days, 60 days                   | A trend chart with visible gaps between points                                                                                |
-|                 | Numeric `hourly` (0-100)                             | every 3h over the last 21h, then daily for 12 days | The only metric dense enough to fill the hour-bucketed `1D` window                                                            |
+|                 | Numeric `hourly` (0-100)                             | every 3h over the last 21h, then daily for 12 days — of which the day 3 back also carries a 09:30 and a 15:00 | The only metric dense enough to fill the hour-bucketed `1D` window; its extra day-3 pair is the only hour anywhere holding two Records |
 |                 | Numeric `yearly` (min 0)                             | one point every 14 days, 350 days                  | Fills the 30-day-bucketed `1Y` window instead of clumping at its right edge                                                   |
 |                 | Numeric `insufficient` (0-100)                       | exactly 1 point, 5 days ago                        | "Not enough data yet" chart state despite a recent last-record time                                                           |
 |                 | Boolean `flag`, Enum `category` (a/b/c), Text `note` | shared records, every other day, 20 days           | Non-numeric metrics never chart; one record carrying several value types at once                                              |
@@ -75,6 +75,11 @@ look like before you tap it (these are asserted by `devSeedData.test.ts`, so the
 
 Every preset has at least one metric that charts and at least one that doesn't, so a single screen shows
 both states side by side at any selection.
+
+`hourly`'s extra day-3 Records share a day with one it already had, so they change none of these counts —
+they only show up once a chart is zoomed down to that day, where the two inside 09:00-10:00 stay folded
+into one aggregated point while the 15:00 one gives the chart a second point beside it. That is the shape
+zoom comes to rest on, and the only place in the dataset it can be reached by hand.
 
 ## Manual verification checklist
 

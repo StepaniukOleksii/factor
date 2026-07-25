@@ -5,6 +5,7 @@ import {MaterialIcons} from '@expo/vector-icons';
 import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from '@presentation/theme';
 import {formatShortDate} from '@shared/formatTimeRange';
 import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
+import {floorToDay, startOfNextDay} from './chartDefaults';
 
 export interface CustomTimeRangeModalProps {
   visible: boolean;
@@ -14,20 +15,6 @@ export interface CustomTimeRangeModalProps {
 }
 
 const END_BEFORE_START_MESSAGE = "End can't be before start";
-
-/**
- * The calendar day `date` falls on, as local midnight. Every value the pickers
- * report goes through here, so day-only precision is guaranteed by this
- * component regardless of what a given platform's native picker returns.
- */
-function floorToDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-/** Local midnight of the day after `date`'s - the exclusive end of that day. */
-function startOfNextDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
-}
 
 /**
  * The last day a half-open range actually covers. `range.end` is the exclusive

@@ -1,5 +1,5 @@
 import React from 'react';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
 import {Text} from 'react-native';
 import {ObservationDetailsScreen} from './ObservationDetailsScreen';
@@ -226,10 +226,14 @@ function lastRequestedRange(): TimeRange {
     return calls[calls.length - 1][1] as TimeRange;
 }
 
+/** Local midnight of the day `date` falls on. */
+function dayOf(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 /** Local midnight `daysAgo` days back - a day the range modal can be set to. */
 function dayAt(daysAgo: number): Date {
-    const date = new Date(Date.now() - daysAgo * DAY_MS);
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return dayOf(new Date(Date.now() - daysAgo * DAY_MS));
 }
 
 /** Local midnight of the day after `day` - the exclusive end of that day. */
@@ -839,6 +843,316 @@ describe('ObservationDetailsScreen Custom Time Range', () => {
         expect(countRecordCards(root.root)).toBe(1);
     });
 
+});
+
+/**
+ * A point standing for several Records drills into them rather than opening one
+ * of them arbitrarily: the section's window narrows onto the Records themselves,
+ * as an ordinary Custom selection.
+ *
+ * Most of these work from `1Y`. A zoom needs a point whose earliest and latest
+ * Records are a day or more apart, and only a bucket wider than a day can hold
+ * one - which among the presets means `1Y`'s 30-day buckets alone.
+ */
+describe('ObservationDetailsScreen Chart Zoom', () => {
+    const ALL_PRESETS: TimeRangePreset[] = ['1D', '1W', '1M', '1Y'];
+
+    // Calendar days decide every window a zoom produces, so this suite pins the
+    // clock instead of working in "days ago". Both things these tests turn on -
+    // whether two Records share a day, and which bucket they land in, buckets
+    // being anchored at the window's end rather than at midnight - would
+    // otherwise depend on the hour the suite happened to run at.
+    const NOW = new Date(2026, 6, 15, 10, 30);
+
+    /** A local date-time in 2026, month written the way a person says it. */
+    function on(month: number, day: number, hour = 12): Date {
+        return new Date(2026, month - 1, day, hour);
+    }
+
+    /**
+     * A Record at a given instant. One value throughout unless a test says
+     * otherwise, so the series is flat and every point sits on the chart's
+     * mid-line - keeping a tap's vertical hit-test independent of the width the
+     * test renderer never measures.
+     */
+    function recordAt(id: string, at: Date, values: [string, number][] = [['m1', 5]]): DomainRecord {
+        return new DomainRecord(id, 'obs-1', at, new Map(values));
+    }
+
+    /** The whole calendar days a tap on the point covering these Records zooms to. */
+    function daysCovering(first: DomainRecord, last: DomainRecord): TimeRange {
+        return {start: dayOf(first.timestamp), end: endOfDay(last.timestamp)};
+    }
+
+    // Two Records five days apart sharing one of `1Y`'s 30-day buckets - that
+    // bucket runs May 11 to Jun 10 - plus a third in the next bucket along so
+    // the chart has a second point to draw.
+    const spanStart = recordAt('span-start', on(5, 26));
+    const spanEnd = recordAt('span-end', on(5, 31));
+    const nextBucket = recordAt('next-bucket', on(6, 25));
+
+    beforeEach(() => {
+        vi.useFakeTimers({shouldAdvanceTime: true});
+        vi.setSystemTime(NOW);
+        vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
+        mockGetRecentRecordsExecute.mockResolvedValue([]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([spanStart, spanEnd, nextBucket]);
+        vi.stubGlobal('alert', vi.fn());
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    /**
+     * Taps the leftmost point of a chart. An unmeasured chart collapses every
+     * point onto the plotting rectangle's left edge, so the nearest-by-x
+     * hit-test always resolves there; 50 is where a flat series sits within the
+     * 108px chart's plot.
+     */
+    async function pressChartPoint(root: any, chartIndex = 0) {
+        const pressable = root.root.findAllByProps({testID: 'numeric-trend-chart-pressable'})[chartIndex];
+        await act(async () => {
+            pressable.props.onPress({nativeEvent: {locationX: 0, locationY: 50}});
+        });
+    }
+
+    it('zooms to the calendar days its Records cover, not the bucket holding them', async () => {
+        const navigate = vi.fn();
+        const root = await renderScreen(navigate);
+        await selectPreset(root, '1Y');
+
+        await pressChartPoint(root);
+
+        expect(navigate).not.toHaveBeenCalled();
+        // May 26 through May 31, whole days: the six the two Records fall across.
+        // Not the 30-day bucket behind the point, which starts back on May 11 and
+        // runs ten days past the later Record.
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenLastCalledWith('obs-1', {
+            start: on(5, 26, 0),
+            end: on(6, 1, 0),
+        });
+    });
+
+    it('shows the zoomed window as the active Custom selection', async () => {
+        const root = await renderScreen();
+        await selectPreset(root, '1Y');
+
+        await pressChartPoint(root);
+
+        expect(customSegment(root).props.accessibilityState.selected).toBe(true);
+        expect(
+            ALL_PRESETS.map(preset => presetSegment(root, preset).props.accessibilityState.selected),
+        ).toEqual([false, false, false, false]);
+        expect(
+            findAllByText(root.root, formatTimeRange(daysCovering(spanStart, spanEnd))).length,
+        ).toBeGreaterThan(0);
+    });
+
+    it('pre-fills the custom range modal from the zoomed window, and applying it changes nothing', async () => {
+        const root = await renderScreen();
+        await selectPreset(root, '1Y');
+
+        await pressChartPoint(root);
+        const zoomed = lastRequestedRange();
+        await openCustomModal(root);
+
+        // A zoom is a custom range like any other, so the modal shows the days it
+        // covers...
+        expect(customRangeFieldValue(root, 'start')).toBe(formatShortDate(spanStart.timestamp));
+        expect(customRangeFieldValue(root, 'end')).toBe(formatShortDate(spanEnd.timestamp));
+
+        await pressCustomModalButton(root, 'Apply');
+
+        // ...and re-applying those days reproduces the very same window. Only a
+        // window already aligned to whole days survives that round trip, which is
+        // why a zoom aligns rather than stopping at its Records' own instants.
+        expect(lastRequestedRange()).toEqual(zoomed);
+    });
+
+    it('re-scopes every Numeric chart in the section, not just the tapped one', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            numericObservation({id: 'm1', name: 'Duration'}, {id: 'm2', name: 'Quality'}),
+        );
+        const paired: [string, number][] = [['m1', 5], ['m2', 50]];
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            recordAt('span-start', on(5, 26), paired),
+            recordAt('span-end', on(5, 31), paired),
+            recordAt('next-bucket', on(6, 25), paired),
+        ]);
+
+        const root = await renderScreen();
+        await selectPreset(root, '1Y');
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(2);
+        const beforeZoom = mockGetRecordsByTimeRangeExecute.mock.calls.length;
+
+        await pressChartPoint(root);
+
+        // One fetch for the zoom, not one per chart, and both charts follow it
+        // into the narrower window - where the Records folded together sit five
+        // days apart instead of averaged into one point.
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(beforeZoom + 1);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(2);
+        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(0);
+    });
+
+    it('still opens the Record behind a point that stands for exactly one', async () => {
+        // Two days apart at the default 1M window, so each keeps its own bucket.
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            recordAt('earliest', on(7, 10)),
+            recordAt('latest', on(7, 12)),
+        ]);
+        const navigate = vi.fn();
+
+        const root = await renderScreen(navigate);
+
+        await pressChartPoint(root);
+
+        expect(navigate).toHaveBeenCalledWith('EditRecord', {
+            observationId: 'obs-1',
+            recordId: 'earliest',
+        });
+        // Navigating is not zooming: the window is left exactly as it was.
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(1);
+        expect(presetSegment(root, '1M').props.accessibilityState.selected).toBe(true);
+        expect(customSegment(root).props.accessibilityState.selected).toBe(false);
+    });
+
+    it('zooms to the single day its Records share', async () => {
+        // Both inside one of 1M's day-wide buckets and on the same calendar day.
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            recordAt('midday', on(7, 3, 12)),
+            recordAt('afternoon', on(7, 3, 14)),
+            recordAt('later-day', on(7, 8)),
+        ]);
+        const root = await renderScreen();
+
+        await pressChartPoint(root);
+
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenLastCalledWith('obs-1', {
+            start: on(7, 3, 0),
+            end: on(7, 4, 0),
+        });
+    });
+
+    it('covers both days when the tapped Records straddle midnight', async () => {
+        // 1M's buckets are day-wide but anchored at the window's end, not at
+        // midnight, so one of them spans the evening of a day and the morning of
+        // the next. A point folding two such Records covers two calendar days.
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            recordAt('evening', on(7, 3, 20)),
+            recordAt('next-morning', on(7, 4, 9)),
+            recordAt('later-day', on(7, 8)),
+        ]);
+        const root = await renderScreen();
+
+        await pressChartPoint(root);
+
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenLastCalledWith('obs-1', {
+            start: on(7, 3, 0),
+            end: on(7, 5, 0),
+        });
+    });
+
+    /**
+     * Zoom is a ladder, not a single step: each tap narrows onto the days its
+     * Records occupy, and a day is as narrow as whole days go, so the ladder ends
+     * there rather than needing a floor of its own to say when to stop.
+     */
+    it('keeps zooming until a day is displayed, then stops', async () => {
+        // One cluster within an hour, a second later the same day, and two more
+        // Records spread out beyond - enough that every window along the way
+        // still has two points to draw and an aggregated one to tap.
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            recordAt('cluster-a', on(5, 26, 12)),
+            recordAt('cluster-b', new Date(2026, 4, 26, 12, 30)),
+            recordAt('same-day-evening', on(5, 26, 18)),
+            spanEnd,
+            nextBucket,
+        ]);
+        const navigate = vi.fn();
+        const root = await renderScreen(navigate);
+        await selectPreset(root, '1Y');
+
+        // A year, down to the six days its 30-day bucket's Records cover...
+        await pressChartPoint(root);
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenLastCalledWith('obs-1', {
+            start: on(5, 26, 0),
+            end: on(6, 1, 0),
+        });
+
+        // ...down again to the one day the next point's Records share.
+        await pressChartPoint(root);
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenLastCalledWith('obs-1', {
+            start: on(5, 26, 0),
+            end: on(5, 27, 0),
+        });
+        const atTheLimit = mockGetRecordsByTimeRangeExecute.mock.calls.length;
+
+        // The day is bucketed by the hour, and the two Records sharing an hour
+        // share a day too, so there is no narrower window left to ask for.
+        await pressChartPoint(root);
+
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(atTheLimit);
+        expect(navigate).not.toHaveBeenCalled();
+        expect(customSegment(root).props.accessibilityState.selected).toBe(true);
+    });
+
+    it('does nothing at 1D, whose window is already a single day', async () => {
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            recordAt('same-hour-a', on(7, 15, 5)),
+            recordAt('same-hour-b', new Date(2026, 6, 15, 5, 20)),
+            recordAt('later-hour', on(7, 15, 8)),
+        ]);
+        const navigate = vi.fn();
+        const root = await renderScreen(navigate);
+
+        await selectPreset(root, '1D');
+        const beforeTap = mockGetRecordsByTimeRangeExecute.mock.calls.length;
+
+        await pressChartPoint(root);
+
+        // Its hour-wide buckets can only ever hold Records of one day, which is
+        // the width the window already has.
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(beforeTap);
+        expect(navigate).not.toHaveBeenCalled();
+        expect(presetSegment(root, '1D').props.accessibilityState.selected).toBe(true);
+        expect(customSegment(root).props.accessibilityState.selected).toBe(false);
+    });
+
+    it('ignores a second tap while the first one is still loading', async () => {
+        const navigate = vi.fn();
+        const root = await renderScreen(navigate);
+        await selectPreset(root, '1Y');
+
+        let releaseFetch: (records: DomainRecord[]) => void = () => {};
+        mockGetRecordsByTimeRangeExecute.mockReturnValueOnce(
+            new Promise(resolve => {
+                releaseFetch = resolve;
+            }),
+        );
+
+        await pressChartPoint(root);
+        const inFlight = mockGetRecordsByTimeRangeExecute.mock.calls.length;
+
+        await pressChartPoint(root);
+
+        // The second tap is dropped rather than stacking a reload on the one in
+        // flight, so the section settles on the first tap's window.
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(inFlight);
+        expect(navigate).not.toHaveBeenCalled();
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenLastCalledWith(
+            'obs-1',
+            daysCovering(spanStart, spanEnd),
+        );
+
+        await act(async () => {
+            releaseFetch([]);
+        });
+
+        expect(customSegment(root).props.accessibilityState.selected).toBe(true);
+    });
 });
 
 /**
