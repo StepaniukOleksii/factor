@@ -103,7 +103,7 @@ export function buildSeedData(): SeedEntry[] {
 
   // "mixed metrics" — one observation carrying every chart/metric scenario that isn't
   // observation-level (see testing-data.md): trends at each time range's resolution, a
-  // gappy trend, a trend with too few points, and non-numeric metrics (which never
+  // gappy trend, a trend with too few points to draw a line, and non-numeric metrics (which never
   // chart) sharing records with the numeric ones to prove multi-type records render
   // correctly.
   {
@@ -167,7 +167,8 @@ export function buildSeedData(): SeedEntry[] {
       setValueAt(recordValues, daysAgo(i), yearlyMetric.id, bounded(yearlyValue, 0, Infinity));
     }
 
-    // insufficient: exactly one point => "not enough data yet" despite a recent last record.
+    // insufficient: exactly one point => "not enough data yet" at the shortest window,
+    // which this point falls outside of, and a lone dot at every wider one.
     setValueAt(recordValues, daysAgo(5), insufficientMetric.id, bounded(randRange(10, 90)));
 
     // flag/category/note: every other day over 20 days, sharing a record => non-numeric

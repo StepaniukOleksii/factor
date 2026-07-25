@@ -365,7 +365,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                     const points = chartRange
                                         ? getMetricSeriesUseCase.execute(chartRecords, metric, chartRange, aggregation)
                                         : [];
-                                    const hasEnoughData = points.length >= 2;
+                                    const hasEnoughData = points.length >= 1;
                                     return (
                                         <View key={metric.id} style={styles.trendCard}>
                                             <Text style={styles.trendCardTitle}>{metric.name}</Text>

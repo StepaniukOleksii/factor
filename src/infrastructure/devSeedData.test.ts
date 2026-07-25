@@ -36,10 +36,10 @@ function pointCount(observationName: string, metricName: string, preset: TimeRan
 }
 
 describe('seeded chart coverage', () => {
-  // The details screen needs two aggregated points to draw a line rather than the
-  // "not enough data yet" placeholder. Manual verification of the time range
-  // selector depends on some metric clearing that bar at every preset - otherwise
-  // a preset can only ever be eyeballed in its empty state.
+  // The details screen needs two aggregated points to draw a line rather than a
+  // lone dot. Manual verification of the time range selector depends on some
+  // metric clearing that bar at every preset - otherwise a preset can only ever
+  // be eyeballed on a chart with nothing joined up.
   it.each(PRESETS)('gives %s at least one chartable Metric', preset => {
     const {observation, records} = entry('mixed metrics');
     const chartable = observation.metrics
@@ -95,13 +95,18 @@ describe('seeded chart coverage', () => {
     expect(pointCount('mixed metrics', 'dense', '1M')).toBeGreaterThanOrEqual(30);
   });
 
-  it('leaves the dense Metric short of a chart at 1D, where it records once a day', () => {
-    expect(pointCount('mixed metrics', 'dense', '1D')).toBeLessThan(2);
+  it('leaves the dense Metric a single point at 1D, where it records once a day', () => {
+    expect(pointCount('mixed metrics', 'dense', '1D')).toBe(1);
   });
 
-  it('never charts the insufficient Metric, at any preset', () => {
-    for (const preset of PRESETS) {
-      expect(pointCount('mixed metrics', 'insufficient', preset)).toBeLessThan(2);
+  // The insufficient Metric is what the placeholder-vs-dot boundary is eyeballed
+  // on: its one Record, five days old, falls outside the shortest window and
+  // inside every wider one, so the same Metric shows nothing at 1D and a single
+  // dot everywhere else.
+  it('puts the insufficient Metric on both sides of the placeholder-vs-dot boundary', () => {
+    expect(pointCount('mixed metrics', 'insufficient', '1D')).toBe(0);
+    for (const preset of PRESETS.filter(preset => preset !== '1D')) {
+      expect(pointCount('mixed metrics', 'insufficient', preset)).toBe(1);
     }
   });
 });

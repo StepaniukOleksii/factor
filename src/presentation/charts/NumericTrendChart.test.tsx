@@ -262,11 +262,47 @@ describe('NumericTrendChart', () => {
     expect(dots[dots.length - 1].props.cx).toBeCloseTo(PLOT.left + (7 / 30) * PLOT_WIDTH);
   });
 
-  it('renders the insufficient-data message and no path for a single point', () => {
+  it('draws a single point as its own dot instead of the insufficient-data message', () => {
+    loadFont();
+
     const root = render(points(10));
 
+    expect(findAllByText(root.root, NUMERIC_TREND_INSUFFICIENT_MESSAGE).length).toBe(0);
+    expect(recordDots(root).length).toBe(1);
+    // A lone point has nothing to connect to, so neither the curve nor the fill
+    // beneath it is built - and with no path made, neither is drawn.
     expect(Skia.Path.Make).not.toHaveBeenCalled();
-    expect(findAllByText(root.root, NUMERIC_TREND_INSUFFICIENT_MESSAGE).length).toBeGreaterThan(0);
+  });
+
+  it('centres a single point vertically, its value range being flat', () => {
+    const [dot] = recordDots(render(points(10)));
+
+    expect(dot.props.cy).toBe(PLOT.top + PLOT_HEIGHT / 2);
+  });
+
+  it('draws both axes for a single point, every gridline naming its one value', () => {
+    loadFont();
+    const timeRange: TimeRange = {start: new Date(0), end: new Date(30 * DAY_MS)};
+
+    const root = render(points(10), vi.fn(), timeRange);
+
+    expect(gridlines(root).length).toBe(5);
+    expect(valueLabels(root).map((label: any) => label.text)).toEqual([
+      '10',
+      '10',
+      '10',
+      '10',
+      '10',
+    ]);
+    expect(timeLabels(root).length).toBe(5);
+  });
+
+  it('labels a single point folding several Records with their count', () => {
+    loadFont();
+
+    const root = render(pointsAggregating(4));
+
+    expect(countLabels(root).map((label: any) => label.text)).toEqual(['4']);
   });
 
   it('renders the insufficient-data message and no path for zero points', () => {
@@ -279,7 +315,7 @@ describe('NumericTrendChart', () => {
   it('draws no axis at all in the insufficient-data state', () => {
     loadFont();
 
-    const root = render(points(10));
+    const root = render(points());
 
     expect(gridlines(root).length).toBe(0);
     expect(axisLabels(root).length).toBe(0);
@@ -367,12 +403,16 @@ describe('NumericTrendChart', () => {
     expect(onPointPress).toHaveBeenNthCalledWith(2, chartPoints[3]);
   });
 
-  it('renders no pressable for a single point and never opens a record', () => {
+  it('reports the sole point of a single-point chart on a tap', () => {
     const onPointPress = vi.fn();
-    const root = render(points(10), onPointPress);
+    const chartPoints = points(10);
+    const root = render(chartPoints, onPointPress);
 
-    expect(root.root.findAllByProps({testID: 'numeric-trend-chart-pressable'}).length).toBe(0);
-    expect(onPointPress).not.toHaveBeenCalled();
+    // Hit-testing does not change for a chart with one point to hit: the only
+    // point is trivially the nearest one to any tap close enough to it.
+    press(root, PLOT.left, PLOT.top + PLOT_HEIGHT / 2);
+
+    expect(onPointPress).toHaveBeenCalledWith(chartPoints[0]);
   });
 
   it('renders no pressable for zero points and never opens a record', () => {

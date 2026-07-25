@@ -1,6 +1,6 @@
 import {AggregationStrategy, TimeRange} from '../../application/GetMetricSeriesUseCase';
 
-/** Message shown when a Numeric metric has fewer than two aggregated points. */
+/** Message shown when a Numeric metric has no aggregated points at all. */
 export const NUMERIC_TREND_INSUFFICIENT_MESSAGE = 'Not enough data yet';
 
 /**

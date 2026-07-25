@@ -53,17 +53,18 @@ are covered without manual data entry.
 |                 | Numeric `sparse` (min 0)                             | one point every ~3 days, 60 days                   | A trend chart with visible gaps between points                                                                                |
 |                 | Numeric `hourly` (0-100)                             | every 3h over the last 21h, then daily for 12 days — of which the day 3 back also carries a 09:30 and a 15:00 | The only metric dense enough to fill the hour-bucketed `1D` window; its extra day-3 pair is the only hour anywhere holding two Records |
 |                 | Numeric `yearly` (min 0)                             | one point every 14 days, 350 days                  | Fills the 30-day-bucketed `1Y` window instead of clumping at its right edge                                                   |
-|                 | Numeric `insufficient` (0-100)                       | exactly 1 point, 5 days ago                        | "Not enough data yet" chart state despite a recent last-record time                                                           |
+|                 | Numeric `insufficient` (0-100)                       | exactly 1 point, 5 days ago                        | Both sides of the placeholder-vs-dot boundary: "Not enough data yet" at `1D`, a single dot at every wider preset             |
 |                 | Boolean `flag`, Enum `category` (a/b/c), Text `note` | shared records, every other day, 20 days           | Non-numeric metrics never chart; one record carrying several value types at once                                              |
 | `no numeric`    | Enum `mood` (low/ok/high), Boolean `done`            | shared records, every other day, 8 days            | No Numeric metric at all, so neither the TRENDS section nor the time range selector renders                                   |
-| `stale records` | Numeric `value` (min 0)                              | 3 points, all 40-60 days ago                       | "Not enough data yet" at *every* time range (the 3 points share one bucket even at `1Y`) alongside a *stale* last-record time |
+| `stale records` | Numeric `value` (min 0)                              | 3 points, all 40-60 days ago                       | "Not enough data yet" at `1D`/`1W`/`1M`, and a single dot labelled "3" at `1Y` (where the 3 points share one bucket), alongside a *stale* last-record time |
 | `no records`    | Numeric `value` (min 0)                              | none                                               | "No records yet" everywhere — the true empty state                                                                            |
 
 ### Which metric charts at which time range
 
-A trend card needs **two** aggregated points to draw a line; below that it shows "Not enough data yet".
-Aggregated point counts per metric on `mixed metrics`, so you know what each time range preset should
-look like before you tap it (these are asserted by `devSeedData.test.ts`, so they stay true):
+A trend card draws a line from **two** aggregated points upwards, a single dot (no line, no gradient
+fill) at exactly **one**, and "Not enough data yet" only at **zero**. Aggregated point counts per metric
+on `mixed metrics`, so you know what each time range preset should look like before you tap it (these
+are asserted by `devSeedData.test.ts`, so they stay true):
 
 | Metric         | `1D`  | `1W` | `1M` | `1Y`   |
 |----------------|-------|------|------|--------|
@@ -96,13 +97,15 @@ Open **`mixed metrics`** details screen (time range selector defaults to `1M`):
 - `sparse` — trend chart renders with visible gaps between points (not one point per day).
 - `hourly` — trend chart renders; the only metric still populated after switching to `1D`.
 - `yearly` — trend chart renders from just 3 points at `1M`, and fills out after switching to `1Y`.
-- `insufficient` — trend chart shows the `Not enough data yet` empty state.
+- `insufficient` — trend chart shows a single dot, vertically centred on the axes, with no line and no
+  gradient fill (its one record falls inside the 30-day window).
 - `flag`/`category`/`note` — none get a trend card (non-numeric); RECENT RECORDS shows entries with a
   boolean, an enum value, and a note together on the same record.
 
 Still on **`mixed metrics`**, tap through the time range selector and check against the table above:
 
-- `1D` — only `hourly` charts; `dense` and `sparse` drop to `Not enough data yet`.
+- `1D` — only `hourly` draws a line; `dense` and `sparse` drop to a single dot each, and `insufficient`
+  (its one record is 5 days old, outside this window) is the only `Not enough data yet` on the screen.
 - `1W` / `1M` — `dense`, `sparse` and `hourly` all chart, at progressively more points.
 - `1Y` — `yearly` fills out across the window; `dense` and `sparse` shrink to 3 points bunched at the
   right-hand edge, since all their records fall in the last two months.
@@ -116,9 +119,10 @@ Open **`no numeric`** details screen:
 Open **`stale records`** details screen:
 
 - description — small muted text appears under the title, above the METRICS section.
-- `value` — trend chart shows `Not enough data yet` at every time range, including `1Y` (its 3 records
-  are close enough together to share a single 30-day bucket); RECENT RECORDS shows entries dated well
-  outside the last 30 days.
+- `value` — trend chart shows `Not enough data yet` at `1D`, `1W` and `1M` (all 3 records fall outside
+  those windows), and a single dot carrying a `3` count label at `1Y`, where those records are close
+  enough together to share a single 30-day bucket; RECENT RECORDS shows entries dated well outside the
+  last 30 days.
 
 Open **`no records`** details screen:
 

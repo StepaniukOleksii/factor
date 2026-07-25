@@ -83,8 +83,9 @@ const GRIDLINE_WIDTH = 1;
  * of the window ends in the middle of the chart rather than being stretched to the
  * right edge. The y axis is scaled across the points' min/max value, per chart:
  * two metrics side by side keep their own value scales rather than sharing one.
- * Fewer than two points cannot form a line, so an "insufficient data" message is
- * shown instead of a broken canvas.
+ * A single point has nothing to connect to, so it is drawn as its marker alone on
+ * the axes, without a curve or a fill; only a genuinely empty series shows an
+ * "insufficient data" message instead of a canvas.
  *
  * Both scales are labelled: a row of time labels along the bottom, whose format
  * and count follow the window's span (see `axisTicks`), and a column of value
@@ -108,7 +109,7 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
   // chart is never blank while a font loads.
   const font = useFont(AXIS_TYPEFACE, AXIS_FONT_SIZE);
 
-  if (points.length < 2) {
+  if (points.length === 0) {
     return (
       <View style={[styles.insufficient, {height}]}>
         <Text style={styles.insufficientText}>{NUMERIC_TREND_INSUFFICIENT_MESSAGE}</Text>
@@ -122,8 +123,11 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
   const maxY = Math.max(...ys);
 
   const screenPoints = toScreenPoints(points, timeRange, plot, minY, maxY);
-  const linePath = buildSmoothPath(screenPoints);
-  const areaPath = buildAreaPath(linePath, screenPoints, plot.bottom);
+  // A curve joins points to each other, and the gradient fills the region under
+  // that curve — neither means anything with a single point, so a lone point is
+  // left as its own marker on the axes rather than given a line to nowhere.
+  const linePath = screenPoints.length > 1 ? buildSmoothPath(screenPoints) : null;
+  const areaPath = linePath ? buildAreaPath(linePath, screenPoints, plot.bottom) : null;
 
   // Both axes come from what the chart is already drawing — this series' value
   // range and this chart's window — so they follow the curve automatically
@@ -163,21 +167,25 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
               </React.Fragment>
             );
           })}
-        <Path path={areaPath}>
-          <LinearGradient
-            start={vec(0, plot.top)}
-            end={vec(0, plot.bottom)}
-            colors={[FILL_COLOR_TOP, FILL_COLOR_BOTTOM]}
+        {areaPath && (
+          <Path path={areaPath}>
+            <LinearGradient
+              start={vec(0, plot.top)}
+              end={vec(0, plot.bottom)}
+              colors={[FILL_COLOR_TOP, FILL_COLOR_BOTTOM]}
+            />
+          </Path>
+        )}
+        {linePath && (
+          <Path
+            path={linePath}
+            style="stroke"
+            strokeWidth={STROKE_WIDTH}
+            strokeJoin="round"
+            strokeCap="round"
+            color={LINE_COLOR}
           />
-        </Path>
-        <Path
-          path={linePath}
-          style="stroke"
-          strokeWidth={STROKE_WIDTH}
-          strokeJoin="round"
-          strokeCap="round"
-          color={LINE_COLOR}
-        />
+        )}
         {screenPoints.map((point, index) => {
           const {recordId, recordCount} = points[index];
           const countLabel = recordCount > 1 ? formatPointCount(recordCount) : null;

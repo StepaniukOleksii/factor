@@ -5,7 +5,7 @@ import {Text} from 'react-native';
 import {ObservationDetailsScreen} from './ObservationDetailsScreen';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
-import {type SkFont, Text as SkiaText, useFont} from '@shopify/react-native-skia';
+import {Circle, type SkFont, Text as SkiaText, useFont} from '@shopify/react-native-skia';
 import {NUMERIC_TREND_INSUFFICIENT_MESSAGE, type TimeRangePreset,} from '../charts/chartDefaults';
 import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {formatShortDate, formatTimeRange} from '@shared/formatTimeRange';
@@ -234,6 +234,17 @@ async function pressChartPoint(root: any, chartIndex = 0) {
     await act(async () => {
         pressable.props.onPress({nativeEvent: {locationX: 0, locationY: 50}});
     });
+}
+
+/**
+ * The line-coloured marker dots the charts draw, one per aggregated point - what
+ * says how a window's Records were bucketed, now that any point count from one
+ * upwards draws a chart.
+ */
+function recordDots(root: any) {
+    return root.root
+        .findAllByType(Circle)
+        .filter((circle: any) => circle.props.color === COLORS.primaryContainer);
 }
 
 /** The outermost match is the touchable itself, carrying its press and a11y props. */
@@ -543,17 +554,32 @@ describe('ObservationDetailsScreen Trends', () => {
         expect(root.root.findAllByProps({testID: 'time-range-custom'}).length).toBe(0);
     });
 
-    it('shows the insufficient-data message for a Metric with fewer than two points', async () => {
+    it('shows the insufficient-data message for a Metric with no points in the window', async () => {
         mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
-        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
-            chartRecord('a', 1, [['m1', 5]]),
-        ]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
 
         const root = await renderScreen();
 
         expect(findAllByText(root.root, NUMERIC_TREND_INSUFFICIENT_MESSAGE).length).toBeGreaterThan(0);
         expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(0);
         expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
+    });
+
+    it('charts a Metric with a single point, and opens its Record on tap', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 1, [['m1', 5]]),
+        ]);
+        const navigate = vi.fn();
+
+        const root = await renderScreen(navigate);
+
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
+        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(0);
+
+        await pressChartPoint(root);
+
+        expect(navigate).toHaveBeenCalledWith('EditRecord', {observationId: 'obs-1', recordId: 'a'});
     });
 
     it('opens the record behind a tapped chart point', async () => {
@@ -646,8 +672,8 @@ describe('ObservationDetailsScreen Time Range Selector', () => {
     });
 
     it('re-buckets the charts at the selected preset resolution', async () => {
-        // Three Records a couple of hours apart: one day-bucket under "1M" (too
-        // few points to draw), three hour-buckets under "1D".
+        // Three Records a couple of hours apart: one day-bucket under "1M", three
+        // hour-buckets under "1D".
         mockGetRecordsByTimeRangeExecute.mockResolvedValue([
             chartRecordHoursAgo('a', 6, [['m1', 5]]),
             chartRecordHoursAgo('b', 4, [['m1', 7]]),
@@ -656,11 +682,11 @@ describe('ObservationDetailsScreen Time Range Selector', () => {
 
         const root = await renderScreen();
 
-        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
-        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(0);
+        expect(recordDots(root).length).toBe(1);
 
         await selectPreset(root, '1D');
 
+        expect(recordDots(root).length).toBe(3);
         expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
         expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(0);
     });
@@ -800,9 +826,9 @@ describe('ObservationDetailsScreen Custom Time Range', () => {
     });
 
     it('re-buckets the charts at the applied window resolution', async () => {
-        // Three Records a couple of hours apart: one day-bucket under "1M" (too
-        // few points to draw), separate four-hour buckets over a five-day custom
-        // window, which targets ~30 buckets rather than a preset's fixed size.
+        // Three Records a couple of hours apart: one day-bucket under "1M",
+        // separate four-hour buckets over a five-day custom window, which targets
+        // ~30 buckets rather than a preset's fixed size.
         mockGetRecordsByTimeRangeExecute.mockResolvedValue([
             chartRecordHoursAgo('a', 6, [['m1', 5]]),
             chartRecordHoursAgo('b', 4, [['m1', 7]]),
@@ -810,10 +836,11 @@ describe('ObservationDetailsScreen Custom Time Range', () => {
         ]);
 
         const root = await renderScreen();
-        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
+        expect(recordDots(root).length).toBe(1);
 
         await applyCustomRange(root, 4);
 
+        expect(recordDots(root).length).toBeGreaterThan(1);
         expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
         expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(0);
     });
