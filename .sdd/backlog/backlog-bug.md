@@ -18,3 +18,15 @@ they're ready to become a real spec.
    set the same way, so the presets likely have the same gap (not driven on-device, inferred from the code).
    Guarding on `loadingTrends` alone cannot close it; the tap handler would need to notice that the rendered
    window no longer matches the active selection, or the flag would have to be set before the render commits.
+4. A Boolean Metric on the Record form cannot express `false` without toggling twice, and an untouched Switch
+   is indistinguishable from one deliberately left off. `RecordFormScreen` renders `<Switch value={!!values[metric.id]}>`,
+   so the control collapses three distinct states — not entered, `false`, `true` — onto two positions, and
+   `undefined` and `false` both render as off. Consequences today: to record a `false` the user has to toggle
+   on and then off again, since leaving the Switch alone stores nothing and `handleSave`'s required check
+   rejects the Record with "This field is required" on a field that visibly reads "no"; and in edit mode a
+   `true` can be changed to `false` but neither can be cleared back to no-value, because the Switch has no
+   third position to return to. The fix needs a control with an explicit unset state — a tri-state
+   (`Yes` / `No` / `—`) rather than a Switch — so that "no value" is something the user can both see and
+   choose. Worth resolving before Metric values become optional: once a Record may carry a value for only
+   some of its Metrics, "not entered" stops being a transient form state and becomes a stored one, and a
+   control that cannot show it will misreport the data rather than just the form.
