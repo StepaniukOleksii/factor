@@ -16,16 +16,18 @@
 
 ---
 
-# Title: Book Rating
+# Book Rating
 
-* Date: 2026-01-15
+* 2026-01-15
 
 ## 1. Goal
+
 A finished Book keeps no record of what the reader made of it, so a shelf of a hundred titles gives no way to
 tell one worth pressing on a friend from one endured to the last page. Give each finished Book an optional 1-5
-star rating, set on its Details screen and shown on the list.
+star rating.
 
 ## 2. Requirements
+
 * A `Book` carries an optional whole-star rating of 1 to 5. Never rated and rated 1 star are distinct
   states.
 * The rating control appears on the Book Details screen only for a Book whose status is `finished`; an
@@ -41,6 +43,7 @@ star rating, set on its Details screen and shown on the list.
 ## 3. Technical Design
 
 ### 3.1 Domain
+
 `Book` (`src/domain/Book.ts`) gains `rating: number | null`, defaulting to `null` and declared after `status`
 so existing call sites keep working. `bookLimits.ts` gains `BOOK_RATING_MIN = 1` and `BOOK_RATING_MAX = 5`.
 
@@ -50,30 +53,31 @@ rated is a screen concern, not a domain one: the domain deliberately does not co
 a Book moved back out of `finished` keeps its rating rather than silently losing it.
 
 ### 3.2 Application
+
 `RateBookUseCase` — input `bookId: string` and `rating: number | null`. Loads the Book through
 `BookRepository.findById`, validates, assigns, saves. Throws `Error('Book not found')` for an unknown id,
 matching how `DeleteBookUseCase` reports the same case.
 
 `BookRepository` gains no methods; `findById` and `save` already move whole entities.
 
-### 3.3 Storage
+### 3.3 Infrastructure
+
 Add a nullable `rating INTEGER` column to the `books` table in `BookDatabase.ts` and carry it through
 `SQLiteBookRepository`: the `INSERT`, `BookRow`, the `SELECT`, and the `Book` constructor call.
 
 No migration runner is added, and a database created before this change must be wiped rather than upgraded —
 the same decision, for the same reasons, as [Reading Status](../1-3-reading-status/spec.md) §3.3.
 
-### 3.4 Shared Components
-**New — `StarRatingInput`** (`src/presentation/components`, exported from its `index.ts`): five tappable stars,
-filled up to the applied value and outlined beyond it. Props: `value: number | null`,
+### 3.4 Presentation
+
+**New shared component — `StarRatingInput`** (`src/presentation/components`, exported from its `index.ts`):
+five tappable stars, filled up to the applied value and outlined beyond it. Props: `value: number | null`,
 `onChange(value: number | null)`, and `testID`. Stateless — the screen owns the value, because the screen is
 what persists it.
 
 * Tapping star *n* calls `onChange(n)`, except when `value === n`, which calls `onChange(null)`.
 * Each star is its own touch target, at least 44x44 with `hitSlop`, since the glyph is smaller than that.
-* Accessibility: the row reports the applied rating; each star reports the value it would apply.
 
-### 3.5 Screens
 **`BookDetailsScreen`** — renders `StarRatingInput` under the title, only when the Book's status is `finished`.
 `onChange` runs `RateBookUseCase` and updates local state, so the stars reflect the new value without a reload.
 A failure surfaces through the screen's existing error banner.
@@ -81,18 +85,17 @@ A failure surfaces through the screen's existing error banner.
 **`BookListScreen`** — a rated Book's row shows its stars after the title, read-only and smaller; an unrated one
 renders nothing there. Row height comes from the title line either way, so nothing shifts.
 
-**Unchanged:** the Add Book and Import screens. A rating is a verdict on a book already read; there is nothing
-to say about it at the moment it joins the shelf.
+## 4. Verification
 
-### 3.6 Seed Data
+### Seed Data
+
 `seedBooks.ts`: give `finished-classic` 5 stars and `finished-abandoned` 1, and leave `finished-plain` unrated,
-so one list carries every display state. `reading-now` and `unread-stack` stay unrated and unratable. Record
-which books carry a rating, and what each is for, in `seed-data.md`.
-
-## 4. Verification Plan
+so one list carries every display state. `reading-now` and `unread-stack` stay unrated and unratable.
 
 ### Manual Verification
-Reseed test data first — the seeded shelf carries every display state.
+
+Reseed test data first. If a database predating this change exists on the device, clear the app's storage so it
+is recreated fresh — there is no in-place upgrade.
 
 1. Open the Book List: `finished-classic` shows five filled stars, `finished-abandoned` one, `finished-plain`
    none, and all three rows stand the same height.
@@ -103,10 +106,9 @@ Reseed test data first — the seeded shelf carries every display state.
 5. Reload the app: every rating set above survives.
 6. With a screen reader, focus the control: it announces the applied rating, and each star announces the value
    it would apply.
-7. If a database predating this change exists on the device, clear the app's storage so it is recreated fresh —
-   there is no in-place upgrade.
 
 ### Automated Tests
+
 * **Unit:** `Book` defaults `rating` to `null`; `validateRating` accepts `null` and 1 through 5 and rejects 0,
   6, and a fractional value. `RateBookUseCase` saves a valid rating, clears with `null`, rejects an
   out-of-range one, and throws for an unknown `bookId`.

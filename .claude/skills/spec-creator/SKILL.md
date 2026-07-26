@@ -2,7 +2,7 @@
 name: spec-creator
 description: Creates a new feature specification based on the skill's worked example and the project guidelines. Triggered when the user asks to create or write a spec for a new feature.
 metadata:
-  version: "1.6.0"
+  version: "1.7.0"
 ---
 
 # Spec Creator Skill
@@ -40,7 +40,7 @@ Determine which Epic this feature belongs to (see `development-process.md` for w
   create a new epic for it.
 * Otherwise, the feature belongs in `.sdd/epics/0-unparented/`.
 
-## 2. Follow the Example
+## 2. Writing the Spec
 
 Read `.claude/skills/spec-creator/example-spec.md` and match its structure, depth, and voice. It defines the
 document's format — do not invent another. It is a worked example built for this skill — a fictional feature
@@ -48,7 +48,20 @@ of a fictional app, so nothing in it can be mistaken for a Factor requirement. T
 subject.
 
 Existing specs under `.sdd/epics/` are not the reference. They vary in age and quality, and the older ones
- predate the rules this skill now imposes.
+predate the rules this skill now imposes.
+
+**Each section has one job.** Never let one do another's:
+
+* **Goal** — the problem, then one sentence naming the feature. Not a summary of the requirements.
+* **Requirements** — one statement each of what must be true, phrased so it can be checked. Not why it is
+  wanted, not how it will be built. Merge bullets that are really a single statement.
+* **Technical Design** — the decisions, and the reasoning behind any that isn't obvious.
+* **Verification** — the seed data a check needs, the manual steps, and the automated tests expected.
+
+**Say it once.** The Goal does not summarize the Requirements; the Technical Design does not repeat them back,
+it turns them into decisions. Where a decision is already argued in another spec or a `.sdd/project/`
+document, link to it — `[Feature Name](../relative/path/spec.md) §3.3` — rather than restating its reasoning.
+Copies drift apart; a link cannot.
 
 **Describe, don't implement.** Write the Technical Design in prose and structured bullet lists. Name entities,
 fields, types, methods, and components with inline code formatting (e.g. `observationId: UUID`,
@@ -58,7 +71,16 @@ flow is the implementer's job, not the spec's: embedding it in the spec creates 
 the implementation that silently drifts from the real code as the feature evolves, and forces later specs to
 carry "superseded by" corrections when it does.
 
-The **Verification Plan** section must include both *Manual Verification* steps and expectations for *Automated Tests*.
+**Prefer prose to nested bullets.** A paragraph carries reasoning that a bullet tree flattens away. Use bullets
+for genuine lists — states, props, test cases — not to shard one explanation into fragments.
+
+**Brevity is not vagueness.** Cut restatement, never content. Keep every decision the implementer would
+otherwise have to guess or re-derive: why something lives where it does, what happens at the edge case, which
+existing pattern to follow.
+
+**Reuse the seeded fixtures.** Before writing a manual step that enters data by hand, check `testing-data.md`
+for a seeded Observation or Metric already covering the scenario, and name it in the step. Add seed data only
+when nothing fits; only a complex feature needs that addition written up in `testing-data.md`.
 
 ## 3. Saving the Spec
 

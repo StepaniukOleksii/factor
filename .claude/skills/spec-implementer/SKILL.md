@@ -2,7 +2,7 @@
 name: spec-implementer
 description: Implements a specific feature specification. ONLY use this skill when the user explicitly asks to implement a spec (e.g., "Implement .sdd/epics/..."). Do NOT use this skill for general fixes, bugs, or minor adjustments.
 metadata:
-  version: "1.7.1"
+  version: "1.8.0"
 ---
 
 # Spec Implementer
@@ -47,15 +47,7 @@ When the user asks you to implement a specification, follow these steps:
   the user** whether a special in-place migration is needed to preserve existing data, or the database can just
   be recreated from scratch. Do not assume either approach.
 
-## 6. Reuse Seeded Test Data
-
-* If the repo has a `testing-data.md` (seeded dev/QA fixture data, loaded via a "Reseed test data" dev
-  command), check whether an existing seeded observation or metric already covers the feature's manual
-  verification scenarios before describing new manual data entry.
-* Reference the specific seeded observation/metric in the spec's Verification Plan section for each
-  scenario it covers. Only propose new seed data if nothing existing covers the scenario.
-
-## 7. Verify
+## 6. Verify
 
 * Run `npm run test` and `npm run typecheck`. Both must pass before you report the implementation done.
 * **Never attempt `expo start --web` or any browser preview.** This app has no working web target —
