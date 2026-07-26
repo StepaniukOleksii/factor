@@ -57,4 +57,23 @@ describe('Metric', () => {
       expect(metric.validateValue('Happy')).toBe(false);
     });
   });
+
+  describe('description', () => {
+    it('should default to null', () => {
+      expect(new Metric('m1', 'Duration', 'Numeric').description).toBeNull();
+      expect(new Metric('m1', 'Duration', 'Numeric', { min: 0 }).description).toBeNull();
+    });
+
+    it('should carry the description it is given, newlines included', () => {
+      const metric = new Metric('m1', 'Mood', 'Numeric', { min: 1, max: 5 }, '1 = low\n5 = great');
+      expect(metric.description).toBe('1 = low\n5 = great');
+    });
+
+    // Guidance for whoever enters a value, not a rule about the value itself.
+    it('should not affect value validation', () => {
+      const metric = new Metric('m1', 'Duration', 'Numeric', { min: 0 }, 'Minutes of actual sleep.');
+      expect(metric.validateValue(10)).toBe(true);
+      expect(metric.validateValue(-1)).toBe(false);
+    });
+  });
 });

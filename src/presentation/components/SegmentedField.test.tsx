@@ -5,20 +5,31 @@ import {StyleSheet, Text} from 'react-native';
 import {SegmentedField, type SegmentedFieldOption} from './SegmentedField';
 import {COLORS} from '@presentation/theme';
 
-vi.mock('react-native', () => require('react-native-web'));
+vi.mock('react-native', () => {
+    const RN = require('react-native-web');
+    RN.Modal = ({children, visible}: any) =>
+        visible ? <RN.View testID="modal">{children}</RN.View> : null;
+    return RN;
+});
+vi.mock('@expo/vector-icons', () => ({
+    MaterialIcons: 'MaterialIcons',
+}));
 
 const YES_NO: SegmentedFieldOption<boolean>[] = [
     {value: true, label: 'Yes'},
     {value: false, label: 'No'},
 ];
 
+const HELP = 'Yes if you woke before the alarm and felt ready.';
+
 interface RenderOptions {
     selected?: boolean;
     onSelect?: (value: boolean | undefined) => void;
     error?: string;
+    helpText?: string;
 }
 
-function render({selected = undefined, onSelect = vi.fn(), error}: RenderOptions = {}) {
+function render({selected = undefined, onSelect = vi.fn(), error, helpText}: RenderOptions = {}) {
     let root: any;
     act(() => {
         root = renderer.create(
@@ -29,6 +40,7 @@ function render({selected = undefined, onSelect = vi.fn(), error}: RenderOptions
                 selected={selected}
                 onSelect={onSelect}
                 error={error}
+                helpText={helpText}
             />,
         );
     });
@@ -141,6 +153,57 @@ describe('SegmentedField', () => {
             expect(node.props.accessibilityRole).toBe('button');
             expect(node.props.accessibilityLabel).toBe(option.label);
         }
+    });
+
+    describe('helpText', () => {
+        // The touchable itself - the testID is also on the component it was passed to.
+        const helpButtons = (root: any) =>
+            root.root.findAllByProps({testID: 'field-help', accessibilityRole: 'button'});
+        const label = (root: any) => root.root.findAllByType(Text)[0];
+
+        it('renders no help button without it, and leaves the label unhinted', () => {
+            expect(helpButtons(render())).toHaveLength(0);
+            expect(helpButtons(render({helpText: ''}))).toHaveLength(0);
+            expect(label(render()).props.accessibilityHint).toBeUndefined();
+        });
+
+        it('renders one beside the label with it, titled by the label', () => {
+            const root = render({helpText: HELP});
+
+            expect(helpButtons(root).length).toBeGreaterThan(0);
+
+            act(() => {
+                helpButtons(root)[0].props.onPress();
+            });
+            expect(root.root.findAllByProps({testID: 'field-help-dialog'}).length).toBeGreaterThan(0);
+            expect(renderedText(root)).toContain('Well Rested');
+            expect(renderedText(root)).toContain(HELP);
+        });
+
+        // One focusable element per option, so hinting each would read the whole
+        // description out once per segment.
+        it('hints the label and not the segments', () => {
+            const root = render({helpText: HELP});
+
+            expect(label(root).props.accessibilityHint).toBe(HELP);
+            for (const option of YES_NO) {
+                expect(segment(root, option.value).props.accessibilityHint).toBeUndefined();
+            }
+        });
+
+        it('leaves the selection and the error as they were', () => {
+            const onSelect = vi.fn();
+            const root = render({selected: true, onSelect, error: 'This field is required', helpText: HELP});
+
+            expect(selectedStates(root)).toEqual([true, false]);
+            expect(renderedText(root)).toContain('This field is required');
+            expect(borderColorOf(segment(root, false))).toBe(COLORS.error);
+
+            act(() => {
+                segment(root, false).props.onPress();
+            });
+            expect(onSelect).toHaveBeenCalledWith(false);
+        });
     });
 
     it('is agnostic about what its options mean', () => {

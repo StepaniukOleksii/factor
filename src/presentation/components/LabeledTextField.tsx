@@ -1,6 +1,7 @@
 import React, {ReactNode} from "react";
 import {StyleSheet, Text, TextInput, TextInputProps, View} from "react-native";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
+import {FieldHelpButton} from "./FieldHelpButton";
 
 export interface LabeledTextFieldProps extends Omit<TextInputProps, "style"> {
     /** Caption shown above the input. */
@@ -13,6 +14,13 @@ export interface LabeledTextFieldProps extends Omit<TextInputProps, "style"> {
     showCounter?: boolean;
     /** Node rendered at the right edge of the label row, e.g. a delete button. */
     labelAccessory?: ReactNode;
+    /**
+     * Prose explaining what to enter. When set, an info button beside the label
+     * opens it in a dialog, and it becomes the input's accessibility hint.
+     */
+    helpText?: string;
+    /** The input's testID; the help button and its dialog derive theirs from it. */
+    testID?: string;
 }
 
 /**
@@ -31,15 +39,29 @@ export function LabeledTextField(
         error,
         showCounter = false,
         labelAccessory,
+        helpText,
+        testID,
         placeholderTextColor = COLORS.outline,
         multiline,
         maxLength,
         ...rest
     }: LabeledTextFieldProps) {
+    const help = helpText || undefined;
     return (
         <View>
+            {/* The label and its help button share a left-hand group, so the row's
+                `space-between` keeps pinning the label and `labelAccessory` apart. */}
             <View style={styles.labelRow}>
-                <Text style={styles.label}>{label}</Text>
+                <View style={styles.labelGroup}>
+                    <Text style={styles.label}>{label}</Text>
+                    {help ? (
+                        <FieldHelpButton
+                            title={label}
+                            text={help}
+                            testID={testID ? `${testID}-help` : undefined}
+                        />
+                    ) : null}
+                </View>
                 {labelAccessory}
             </View>
             <TextInput
@@ -53,6 +75,9 @@ export function LabeledTextField(
                 placeholderTextColor={placeholderTextColor}
                 multiline={multiline}
                 maxLength={maxLength}
+                testID={testID}
+                // Before `rest`, so an explicit caller hint still wins.
+                accessibilityHint={help}
                 {...rest}
             />
             {showCounter && maxLength !== undefined && (
@@ -71,6 +96,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
         marginBottom: 8,
+    },
+    labelGroup: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
     },
     label: TYPOGRAPHY.fieldLabel,
     input: {

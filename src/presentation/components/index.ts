@@ -26,6 +26,11 @@ export {SegmentedField} from './SegmentedField';
 /** Props interfaces for SegmentedField component **/
 export {SegmentedFieldProps, SegmentedFieldOption} from './SegmentedField';
 
+/** Info button opening a dialog that explains the field it sits in - used inside a form field's label row **/
+export {FieldHelpButton} from './FieldHelpButton';
+/** Props interface for FieldHelpButton component **/
+export {FieldHelpButtonProps} from './FieldHelpButton';
+
 /** Full-screen safe-area root wrapper (app background + Android status-bar padding) - outermost element of every screen **/
 export {ScreenContainer} from './ScreenContainer';
 /** Props interface for ScreenContainer component **/

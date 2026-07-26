@@ -17,17 +17,25 @@ export class Metric extends Entity<string> {
   public name: string;
   public readonly type: MetricValueType;
   public constraint: MetricConstraint;
+  /**
+   * Optional prose explaining what this Metric means and what its values stand
+   * for — guidance for the person entering a value, so deliberately no part of
+   * `validateValue`: it never constrains the value itself.
+   */
+  public description: string | null;
 
   constructor(
     id: string,
     name: string,
     type: MetricValueType,
-    constraint: MetricConstraint = null
+    constraint: MetricConstraint = null,
+    description: string | null = null
   ) {
     super(id);
     this.name = name;
     this.type = type;
     this.constraint = constraint;
+    this.description = description;
   }
 
   public validateValue(value: any): boolean {

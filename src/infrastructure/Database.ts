@@ -24,6 +24,7 @@ export async function initDatabase(): Promise<void> {
         name TEXT NOT NULL,
         type TEXT NOT NULL,
         constraintJson TEXT,
+        description TEXT,
         FOREIGN KEY (observationId) REFERENCES observations (id) ON DELETE CASCADE
       );
 

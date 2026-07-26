@@ -28,6 +28,8 @@ vi.mock('react-native', () => {
     // available under the node test environment; stub it as a plain host node so
     // its props (value, onChangeText, ...) remain inspectable.
     RN.TextInput = 'TextInput';
+    RN.Modal = ({children, visible}: any) =>
+        visible ? <RN.View testID="modal">{children}</RN.View> : null;
     return RN;
 });
 vi.mock('@expo/vector-icons', () => ({
@@ -601,6 +603,64 @@ describe('RecordFormScreen', () => {
             const {root} = await renderScreen({recordId: 'record-missing'});
 
             expect(findAllByText(root.root, 'Record not found.').length).toBeGreaterThan(0);
+        });
+    });
+
+    // A Metric's description belongs on the form, where a value is chosen - and
+    // nowhere else. Both field components carry it, so both types are covered.
+    describe('metric descriptions', () => {
+        const describedText = new Metric('metric-3', 'Sleep Debt', 'Numeric', null, 'Hours short of your target.');
+        const describedBoolean = new Metric('metric-4', 'Napped', 'Boolean', null, 'Any daytime sleep at all.');
+        const described = new Observation('obs-1', 'Sleep Quality', [
+            describedText,
+            describedBoolean,
+            durationMetric,
+            restedMetric,
+        ]);
+
+        // The touchable itself - the testID is also on the component it was passed to.
+        const helpButtons = (root: any, metricId: string) =>
+            root.root.findAllByProps({
+                testID: `record-metric-${metricId}-help`,
+                accessibilityRole: 'button',
+            });
+
+        beforeEach(() => {
+            mockGetObservationByIdExecute.mockResolvedValue(described);
+            mockGetRecordByIdExecute.mockResolvedValue(new DomainRecord(
+                'record-1',
+                'obs-1',
+                new Date('2024-01-15T08:15:00'),
+                new Map<string, any>([['metric-1', 7.2], ['metric-2', true]]),
+            ));
+        });
+
+        it.each([
+            ['create', undefined],
+            ['edit', 'record-1'],
+        ])('shows a button only for described Metrics on the %s route', async (_route, recordId) => {
+            const {root} = await renderScreen({recordId});
+
+            expect(helpButtons(root, 'metric-3').length).toBeGreaterThan(0);
+            expect(helpButtons(root, 'metric-4').length).toBeGreaterThan(0);
+            expect(helpButtons(root, 'metric-1')).toHaveLength(0);
+            expect(helpButtons(root, 'metric-2')).toHaveLength(0);
+        });
+
+        it.each([
+            ['a text field', 'metric-3', describedText],
+            ['a Boolean', 'metric-4', describedBoolean],
+        ])('opens %s Metric\'s description in a dialog headed by its name', async (_kind, metricId, metric) => {
+            const {root} = await renderScreen();
+
+            await act(async () => {
+                helpButtons(root, metricId)[0].props.onPress();
+            });
+
+            expect(root.root.findAllByProps({testID: `record-metric-${metricId}-help-dialog`}).length)
+                .toBeGreaterThan(0);
+            expect(findAllByText(root.root, metric.description!).length).toBeGreaterThan(0);
+            expect(findAllByText(root.root, metric.name).length).toBeGreaterThan(1);
         });
     });
 });

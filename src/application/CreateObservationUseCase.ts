@@ -2,9 +2,10 @@ import * as Crypto from 'expo-crypto';
 import {Observation} from '../domain/Observation';
 import {Metric, MetricValueType} from '../domain/Metric';
 import {
-  METRIC_NAME_MAX_LENGTH,
-  OBSERVATION_DESCRIPTION_MAX_LENGTH,
-  OBSERVATION_NAME_MAX_LENGTH,
+    METRIC_DESCRIPTION_MAX_LENGTH,
+    METRIC_NAME_MAX_LENGTH,
+    OBSERVATION_DESCRIPTION_MAX_LENGTH,
+    OBSERVATION_NAME_MAX_LENGTH,
 } from '../domain/validationLimits';
 import {ObservationRepository} from './ObservationRepository';
 
@@ -14,6 +15,7 @@ export interface CreateObservationInput {
   metrics: {
     name: string;
     type: string;
+    description?: string;
   }[];
 }
 
@@ -48,10 +50,20 @@ export class CreateObservationUseCase {
       if (trimmedMetricName.length > METRIC_NAME_MAX_LENGTH) {
         throw new Error(`Metric name cannot exceed ${METRIC_NAME_MAX_LENGTH} characters`);
       }
+
+      // `trim()` leaves interior newlines alone, so a per-value legend keeps the
+      // line breaks the user typed.
+      const trimmedMetricDescription = m.description?.trim() ?? '';
+      if (trimmedMetricDescription.length > METRIC_DESCRIPTION_MAX_LENGTH) {
+        throw new Error(`Metric description cannot exceed ${METRIC_DESCRIPTION_MAX_LENGTH} characters`);
+      }
+
       return new Metric(
         Crypto.randomUUID(),
         trimmedMetricName,
-        m.type as MetricValueType
+        m.type as MetricValueType,
+        null,
+        trimmedMetricDescription === '' ? null : trimmedMetricDescription
       );
     });
 

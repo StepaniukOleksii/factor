@@ -2,11 +2,12 @@ import {describe, expect, it, vi} from 'vitest';
 import {buildSeedData} from './devSeedData';
 import {GetMetricSeriesUseCase} from '../application/GetMetricSeriesUseCase';
 import {
-  getAggregationForPreset,
-  getTimeRangeForPreset,
-  TIME_RANGE_PRESETS,
-  type TimeRangePreset,
+    getAggregationForPreset,
+    getTimeRangeForPreset,
+    TIME_RANGE_PRESETS,
+    type TimeRangePreset,
 } from '../presentation/charts/chartDefaults';
+import {METRIC_DESCRIPTION_MAX_LENGTH} from '../domain/validationLimits';
 
 vi.mock('expo-crypto', () => {
   let counter = 0;
@@ -136,6 +137,53 @@ describe('seeded observation-level scenarios', () => {
     const now = Date.now();
     for (const {records} of buildSeedData()) {
       expect(records.every(record => record.timestamp.getTime() <= now)).toBe(true);
+    }
+  });
+});
+
+// One Record form has to carry every state of the Metric-description info button
+// at once, which only holds while exactly these Metrics are described and the
+// rest aren't - the claim testing-data.md makes.
+describe('seeded Metric descriptions', () => {
+  const DESCRIBED = ['dense', 'hourly', 'yearly', 'flag'];
+
+  it('describes exactly the four intended Metrics of mixed metrics', () => {
+    const {observation} = entry('mixed metrics');
+
+    const described = observation.metrics
+      .filter(metric => metric.description !== null)
+      .map(metric => metric.name);
+
+    expect(described.sort()).toEqual([...DESCRIBED].sort());
+  });
+
+  it('leaves every other seeded Metric undescribed', () => {
+    for (const {observation} of buildSeedData()) {
+      for (const metric of observation.metrics) {
+        if (observation.name === 'mixed metrics' && DESCRIBED.includes(metric.name)) continue;
+        expect(metric.description, `"${metric.name}" on "${observation.name}"`).toBeNull();
+      }
+    }
+  });
+
+  it('gives the multi-line one line breaks for the dialog to preserve', () => {
+    const {observation} = entry('mixed metrics');
+    const hourly = observation.metrics.find(metric => metric.name === 'hourly')!;
+
+    expect(hourly.description).toContain('\n');
+  });
+
+  // `reseedDevData()` builds entities and calls the repository directly, so
+  // CreateObservationUseCase never sees this data and nothing else enforces the
+  // limit on it.
+  it('keeps every seeded description within the length limit', () => {
+    for (const {observation} of buildSeedData()) {
+      for (const metric of observation.metrics) {
+        expect(
+          metric.description?.length ?? 0,
+          `"${metric.name}" on "${observation.name}"`,
+        ).toBeLessThanOrEqual(METRIC_DESCRIPTION_MAX_LENGTH);
+      }
     }
   });
 });

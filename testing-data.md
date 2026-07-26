@@ -47,6 +47,10 @@ summarizing what the observation covers and why (`no records` deliberately leave
 "description shown under the title" and the "no description, no empty gap" states on the details screen
 are covered without manual data entry.
 
+Four of `mixed metrics`' metrics carry an optional Metric **description**, each a different length and shape:
+one line on `dense`, several lines on `hourly`, close to the 500-character limit on `yearly`, and one line on
+the Boolean `flag`. Its other four metrics, and every metric on the other observations, carry none.
+
 | Observation     | Metrics                                              | Record pattern                                     | What it's for                                                                                                                 |
 |-----------------|------------------------------------------------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | `mixed metrics` | Numeric `dense` (0-100)                              | one point per day, 45 days                         | A densely-populated trend chart                                                                                               |
@@ -110,6 +114,13 @@ Still on **`mixed metrics`**, tap through the time range selector and check agai
 - `1Y` — `yearly` fills out across the window; `dense` and `sparse` shrink to 3 points bunched at the
   right-hand edge, since all their records fall in the last two months.
 - RECENT RECORDS is identical at every selection.
+
+Still on **`mixed metrics`**, tap **Add Record** (and again via **Edit Record** — identical on both routes):
+
+- `dense`, `hourly`, `yearly` and `flag` show a description info button beside their label; the other four
+  show none, and leave no gap where one would be.
+- Each button opens a dialog headed by its metric's name — `hourly`'s keeps its line breaks, `yearly`'s
+  longest body fits or scrolls without clipping.
 
 Open **`no numeric`** details screen:
 

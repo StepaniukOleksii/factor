@@ -214,6 +214,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                         selected={values[metric.id]}
                         onSelect={(val) => handleValueChange(metric.id, val)}
                         error={error}
+                        helpText={metric.description ?? undefined}
                     />
                 </View>
             );
@@ -227,8 +228,10 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
             <View key={metric.id} style={styles.inputContainer}>
                 <LabeledTextField
                     label={metric.name}
+                    testID={`record-metric-${metric.id}`}
                     accessibilityLabel={`${metric.name} value`}
                     error={error}
+                    helpText={metric.description ?? undefined}
                     keyboardType={isNumeric ? 'numeric' : undefined}
                     value={values[metric.id] !== undefined ? String(values[metric.id]) : ''}
                     onChangeText={(text) => {

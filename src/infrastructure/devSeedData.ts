@@ -107,12 +107,29 @@ export function buildSeedData(): SeedEntry[] {
   // chart) sharing records with the numeric ones to prove multi-type records render
   // correctly.
   {
-    const denseMetric = new Metric(Crypto.randomUUID(), 'dense', 'Numeric', {min: 0, max: 100});
+    // Four of the eight carry a description and four deliberately don't, so one
+    // Record form shows every state of the info button at once.
+    const denseMetric = new Metric(Crypto.randomUUID(), 'dense', 'Numeric', {min: 0, max: 100},
+      'One point per day for 45 days — the densely-populated trend chart.');
     const sparseMetric = new Metric(Crypto.randomUUID(), 'sparse', 'Numeric', {min: 0});
-    const hourlyMetric = new Metric(Crypto.randomUUID(), 'hourly', 'Numeric', {min: 0, max: 100});
-    const yearlyMetric = new Metric(Crypto.randomUUID(), 'yearly', 'Numeric', {min: 0});
+    // Several lines, so the dialog has line breaks to preserve.
+    const hourlyMetric = new Metric(Crypto.randomUUID(), 'hourly', 'Numeric', {min: 0, max: 100},
+      'Every 3 hours over the last 21, then one point per day for 12 days.\n' +
+      'At 1D the only metric dense enough to fill the hour-bucketed window.\n' +
+      'At 1W and 1M still populated, at day resolution.\n' +
+      'The day 3 back also carries a 09:30 and a 15:00 — the only hour anywhere holding two records.');
+    // Near METRIC_DESCRIPTION_MAX_LENGTH, so the dialog's longest body is on the form.
+    const yearlyMetric = new Metric(Crypto.randomUUID(), 'yearly', 'Numeric', {min: 0},
+      "One point every 14 days across 350 days, so the 1Y window's 30-day buckets have about a dozen " +
+      'points to draw instead of one clump against the right-hand edge. The same records read as a ' +
+      'nearly-empty chart at 1M, where only three of them fall inside the window — the same metric, two ' +
+      'very different charts, without a single record having moved. This text runs close to the ' +
+      '500-character limit deliberately, so the longest body the dialog can show is on the form every ' +
+      'time the fixtures are reseeded.');
     const insufficientMetric = new Metric(Crypto.randomUUID(), 'insufficient', 'Numeric', {min: 0, max: 100});
-    const flagMetric = new Metric(Crypto.randomUUID(), 'flag', 'Boolean');
+    // The only described non-Numeric Metric, covering the SegmentedField path.
+    const flagMetric = new Metric(Crypto.randomUUID(), 'flag', 'Boolean', null,
+      'Boolean, so it never charts — and the segmented control this button sits in.');
     const categoryMetric = new Metric(Crypto.randomUUID(), 'category', 'Enum', {allowedValues: ['a', 'b', 'c']});
     const noteMetric = new Metric(Crypto.randomUUID(), 'note', 'Text');
     const observation = new Observation(Crypto.randomUUID(), 'mixed metrics', [

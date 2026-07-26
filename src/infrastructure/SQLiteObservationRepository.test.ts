@@ -52,22 +52,47 @@ describe('SQLiteObservationRepository', () => {
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       2,
-      'INSERT INTO metrics (id, observationId, name, type, constraintJson) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO metrics (id, observationId, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?)',
       'metric-1',
       'obs-1',
       'Temperature',
       'Numeric',
+      null,
       null
     );
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       3,
-      'INSERT INTO metrics (id, observationId, name, type, constraintJson) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO metrics (id, observationId, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?)',
       'metric-2',
       'obs-1',
       'Condition',
       'Text',
+      null,
       null
+    );
+  });
+
+  it('should persist each metric description, including null and one with newlines', async () => {
+    const metrics = [
+      new Metric('metric-1', 'Temperature', 'Numeric', null, 'Degrees Celsius, outdoors.'),
+      new Metric('metric-2', 'Condition', 'Text', null, 'One of:\nclear\nrain\nsnow'),
+      new Metric('metric-3', 'Windy', 'Boolean')
+    ];
+    const observation = new Observation('obs-1', 'Weather', metrics);
+
+    await repository.save(observation);
+
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      2, expect.any(String), 'metric-1', 'obs-1', 'Temperature', 'Numeric', null,
+      'Degrees Celsius, outdoors.'
+    );
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      3, expect.any(String), 'metric-2', 'obs-1', 'Condition', 'Text', null,
+      'One of:\nclear\nrain\nsnow'
+    );
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      4, expect.any(String), 'metric-3', 'obs-1', 'Windy', 'Boolean', null, null
     );
   });
 
@@ -173,6 +198,36 @@ describe('SQLiteObservationRepository', () => {
       const result = await repository.findAll();
 
       expect(result[0].metrics[0].constraint).toEqual({ min: -40, max: 60 });
+    });
+
+    it('should round-trip each metric description, including null and one with newlines', async () => {
+      mockGetAllAsync
+        .mockResolvedValueOnce([
+          { id: 'obs-1', name: 'Weather', description: null, createdAt: 1000 }
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'm-1', observationId: 'obs-1', name: 'Degrees', type: 'Numeric',
+            constraintJson: null, description: 'Degrees Celsius, outdoors.'
+          },
+          {
+            id: 'm-2', observationId: 'obs-1', name: 'Condition', type: 'Text',
+            constraintJson: null, description: 'One of:\nclear\nrain\nsnow'
+          },
+          {
+            id: 'm-3', observationId: 'obs-1', name: 'Windy', type: 'Boolean',
+            constraintJson: null, description: null
+          }
+        ]);
+
+      const result = await repository.findAll();
+
+      expect(mockGetAllAsync).toHaveBeenLastCalledWith(
+        'SELECT id, observationId, name, type, constraintJson, description FROM metrics'
+      );
+      expect(result[0].metrics[0].description).toBe('Degrees Celsius, outdoors.');
+      expect(result[0].metrics[1].description).toBe('One of:\nclear\nrain\nsnow');
+      expect(result[0].metrics[2].description).toBeNull();
     });
   });
 

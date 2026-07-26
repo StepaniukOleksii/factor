@@ -181,4 +181,97 @@ describe('CreateObservationUseCase', () => {
     const savedObservation = (mockRepository.save as any).mock.calls[0][0] as Observation;
     expect(savedObservation.description).toBeNull();
   });
+
+  describe('metric descriptions', () => {
+    const savedMetrics = () =>
+      ((mockRepository.save as any).mock.calls[0][0] as Observation).metrics;
+
+    it('should accept and trim a valid metric description', async () => {
+      await useCase.execute({
+        name: 'Coffee',
+        metrics: [{name: 'Cups', type: 'Numeric', description: '  Mugs, not espresso shots.  '}]
+      });
+
+      expect(savedMetrics()[0].description).toBe('Mugs, not espresso shots.');
+    });
+
+    it('should accept a metric description of exactly 500 characters', async () => {
+      const description = 'a'.repeat(500);
+
+      await useCase.execute({
+        name: 'Coffee',
+        metrics: [{name: 'Cups', type: 'Numeric', description}]
+      });
+
+      expect(savedMetrics()[0].description).toBe(description);
+    });
+
+    it('should reject a metric description longer than 500 characters', async () => {
+      const input = {
+        name: 'Coffee',
+        metrics: [{name: 'Cups', type: 'Numeric', description: 'a'.repeat(501)}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('Metric description cannot exceed 500 characters');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should normalize an empty or whitespace-only metric description to null', async () => {
+      await useCase.execute({
+        name: 'Coffee',
+        metrics: [
+          {name: 'Cups', type: 'Numeric', description: ''},
+          {name: 'Roast', type: 'Text', description: '   '}
+        ]
+      });
+
+      expect(savedMetrics()[0].description).toBeNull();
+      expect(savedMetrics()[1].description).toBeNull();
+    });
+
+    it('should default a metric description to null when omitted', async () => {
+      await useCase.execute({
+        name: 'Coffee',
+        metrics: [{name: 'Cups', type: 'Numeric'}]
+      });
+
+      expect(savedMetrics()[0].description).toBeNull();
+    });
+
+    // A per-value legend is only readable as a list if the line breaks survive.
+    it('should trim the ends of a metric description while keeping interior newlines', async () => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'Score', type: 'Numeric', description: '\n 1 = low\n3 = ok\n5 = great \n'}]
+      });
+
+      expect(savedMetrics()[0].description).toBe('1 = low\n3 = ok\n5 = great');
+    });
+
+    it('should validate each metric description independently', async () => {
+      const input = {
+        name: 'Coffee',
+        metrics: [
+          {name: 'Cups', type: 'Numeric', description: 'Fine.'},
+          {name: 'Roast', type: 'Text', description: 'a'.repeat(501)}
+        ]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('Metric description cannot exceed 500 characters');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should keep each metric to its own description', async () => {
+      await useCase.execute({
+        name: 'Coffee',
+        metrics: [
+          {name: 'Cups', type: 'Numeric', description: 'Mugs, not espresso shots.'},
+          {name: 'Roast', type: 'Text'}
+        ]
+      });
+
+      expect(savedMetrics()[0].description).toBe('Mugs, not espresso shots.');
+      expect(savedMetrics()[1].description).toBeNull();
+    });
+  });
 });

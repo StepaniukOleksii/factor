@@ -16,6 +16,7 @@ import {CreateObservationUseCase} from '../../application/CreateObservationUseCa
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {MetricValueType} from '../../domain/Metric';
 import {
+    METRIC_DESCRIPTION_MAX_LENGTH,
     METRIC_NAME_MAX_LENGTH,
     OBSERVATION_DESCRIPTION_MAX_LENGTH,
     OBSERVATION_NAME_MAX_LENGTH,
@@ -41,6 +42,7 @@ export type CreateObservationScreenProps = NativeStackScreenProps<RootStackParam
 interface MetricDraft {
     name: string;
     type: MetricValueType;
+    description: string;
 }
 
 /** The Metric types this screen offers, in the order the dropdown lists them. */
@@ -49,13 +51,13 @@ const METRIC_TYPE_CHOICES: MetricValueType[] = ['Numeric', 'Text', 'Boolean'];
 export function CreateObservationScreen({navigation}: CreateObservationScreenProps) {
     const [observationName, setObservationName] = useState('');
     const [description, setDescription] = useState('');
-    const [metrics, setMetrics] = useState<MetricDraft[]>([{name: '', type: 'Numeric'}]);
+    const [metrics, setMetrics] = useState<MetricDraft[]>([{name: '', type: 'Numeric', description: ''}]);
 
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const [activeMetricIndex, setActiveMetricIndex] = useState<number | null>(null);
 
     const handleAddMetric = () => {
-        setMetrics([...metrics, {name: '', type: 'Numeric'}]);
+        setMetrics([...metrics, {name: '', type: 'Numeric', description: ''}]);
     };
 
     const handleMetricChange = <K extends keyof MetricDraft>(index: number, key: K, value: MetricDraft[K]) => {
@@ -74,7 +76,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
             await useCase.execute({
                 name: observationName,
                 description: description.trim(),
-                metrics: metrics.map(m => ({name: m.name, type: m.type}))
+                metrics: metrics.map(m => ({name: m.name, type: m.type, description: m.description}))
             });
             navigation.goBack();
         } catch (error: any) {
@@ -169,6 +171,19 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                                             <Text style={styles.typeText}>{formatMetricType(metric.type)}</Text>
                                             <MaterialIcons name="expand-more" size={20} color={COLORS.outline}/>
                                         </TouchableOpacity>
+                                    </View>
+
+                                    <View style={styles.metricField}>
+                                        <LabeledTextField
+                                            label="DESCRIPTION"
+                                            value={metric.description}
+                                            onChangeText={(val) => handleMetricChange(index, 'description', val)}
+                                            placeholder="Optional — what does each value mean?"
+                                            multiline
+                                            numberOfLines={3}
+                                            maxLength={METRIC_DESCRIPTION_MAX_LENGTH}
+                                            showCounter
+                                        />
                                     </View>
                                 </View>
                             </View>

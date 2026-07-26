@@ -16,6 +16,7 @@ interface MetricRow {
   name: string;
   type: string;
   constraintJson: string | null;
+  description: string | null;
 }
 
 export class SQLiteObservationRepository implements ObservationRepository {
@@ -33,12 +34,13 @@ export class SQLiteObservationRepository implements ObservationRepository {
 
       for (const metric of observation.metrics) {
         await db.runAsync(
-          'INSERT INTO metrics (id, observationId, name, type, constraintJson) VALUES (?, ?, ?, ?, ?)',
+          'INSERT INTO metrics (id, observationId, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?)',
           metric.id,
           observation.id,
           metric.name,
           metric.type,
-          metric.constraint ? JSON.stringify(metric.constraint) : null
+          metric.constraint ? JSON.stringify(metric.constraint) : null,
+          metric.description
         );
       }
     });
@@ -56,7 +58,7 @@ export class SQLiteObservationRepository implements ObservationRepository {
     }
 
     const metricRows = await db.getAllAsync<MetricRow>(
-      'SELECT id, observationId, name, type, constraintJson FROM metrics'
+      'SELECT id, observationId, name, type, constraintJson, description FROM metrics'
     );
 
     const metricsByObservation = new Map<string, Metric[]>();
@@ -64,7 +66,13 @@ export class SQLiteObservationRepository implements ObservationRepository {
       const constraint: MetricConstraint = row.constraintJson
         ? JSON.parse(row.constraintJson)
         : null;
-      const metric = new Metric(row.id, row.name, row.type as MetricValueType, constraint);
+      const metric = new Metric(
+        row.id,
+        row.name,
+        row.type as MetricValueType,
+        constraint,
+        row.description
+      );
 
       const existing = metricsByObservation.get(row.observationId) ?? [];
       existing.push(metric);
