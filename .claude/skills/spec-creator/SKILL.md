@@ -2,7 +2,7 @@
 name: spec-creator
 description: Creates a new feature specification based on project templates and existing spec patterns. Triggered when the user asks to create or write a spec for a new feature.
 metadata:
-  version: "1.5.0"
+  version: "1.5.1"
 ---
 
 # Spec Creator Skill
@@ -38,7 +38,7 @@ Determine which Epic this feature belongs to (see `development-process.md` for w
   like a fit, confirm with the user before attaching to it.
 * If the user indicates this feature is the start of a new logical group of related features, ask whether to
   create a new epic for it.
-* Otherwise, the feature belongs in `.sdd/epics/0-unparented/` — most features end up here.
+* Otherwise, the feature belongs in `.sdd/epics/0-unparented/`.
 
 ## 2. Use the Template
 
@@ -63,16 +63,15 @@ fields, types, methods, and components with inline code formatting (e.g. `observ
 bodies, JSX, full type/interface declarations, or anything resembling a diff. Choosing exact syntax and control
 flow is the implementer's job, not the spec's: embedding it in the spec creates a second, unmaintained copy of
 the implementation that silently drifts from the real code as the feature evolves, and forces later specs to
-carry "superseded by" corrections when it does. `1-1-observation-creation/spec.md` is the model to follow here
-— it specifies fields and behavior without a single code block; do not emulate specs that embed code, even if
-they are more recent.
+carry "superseded by" corrections when it does. Do not emulate specs that embed code, even if they are more
+recent.
 
 The **Verification Plan** section must include both *Manual Verification* steps and expectations for *Automated Tests*.
 
 ## 4. Saving the Spec
 
-Save to `.sdd\epics\[epic-id]-[epic-name]\[epic-id]-[feature-id]-[feature-name]\spec.md`, following the numbering
-convention in `development-process.md` (use epic id `0` / `0-unparented` if no epic was a fit).
+Save to `.sdd/epics/[epic-id]-[epic-name]/[epic-id]-[feature-id]-[feature-name]/spec.md`, following the numbering
+convention in `development-process.md`.
 
 If the feature belongs to a new epic that doesn't exist yet, create it first using
 `.sdd/templates/epic-template.md`, saved as `.sdd/epics/[epic-id]-[epic-name]/epic.md` (check `.sdd/epics/` for
@@ -81,12 +80,11 @@ The `Related ADRs` section is optional — omit it entirely unless an ADR actual
 
 *(Note: Create a logical, hyphenated name for the feature folder.)*
 
-## 5. Promote Backlog Items
+## 5. Clear the Promoted Backlog Entry
 
 If the feature originates from (or overlaps with) an entry in `.sdd/backlog/`, remove that entry from the backlog
 once the spec is saved, so the idea isn't left behind to later contradict the spec it became.
 
 ## 6. Scope Limit
 
-Do **NOT** write any application code when this skill is invoked. Your sole responsibility is to produce the
-specification document (and, when introducing a new epic, its `epic.md`).
+Do **NOT** write any application code when this skill is invoked. This skill only writes documents.
