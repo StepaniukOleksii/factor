@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Factor - Metric Description</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        // Color values copied verbatim from src/presentation/theme/colors.ts, so this
+        // mockup matches the running app exactly rather than a generic MD3 token set.
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "background": "#131313",
+                        "surface": "#131313",
+                        "on-surface": "#e5e2e1",
+                        "on-surface-variant": "#c2c9b9",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-container-highest": "#353534",
+                        "outline-variant": "#42493d",
+                        "outline": "#8c9385",
+                        "primary-container": "#b6f09c",
+                        "on-primary-container": "#3c6f2a",
+                        "on-primary-fixed-variant": "#205110",
+                        "primary": "#f9fff0",
+                        "on-primary": "#0b3900",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005"
+                    },
+                    fontFamily: {
+                        sans: ["Hanken Grotesk"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Hanken Grotesk', sans-serif; }
+
+        /* ---- Existing field parts, unchanged: TYPOGRAPHY.fieldLabel / .error,
+               LabeledTextField's input and counter, SegmentedField's segments ---- */
+        .label-row    { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .label-left   { display: flex; align-items: center; gap: 6px; }
+        .label        { font-size: 14px; font-weight: 600; color: #c2c9b9; }
+        .input        { background: #0e0e0e; border: 1px solid #42493d; border-radius: 8px;
+                        padding: 12px 16px; color: #e5e2e1; font-size: 16px; }
+        .input-multi  { min-height: 72px; white-space: pre-line; }
+        .input-empty  { color: #8c9385; }
+        .input-error  { border-color: #ffb4ab; }
+        .error        { font-size: 12px; color: #ffb4ab; margin-top: 4px; }
+        .counter      { font-size: 12px; color: #8c9385; text-align: right; margin-top: 4px; }
+        .seg-row      { display: flex; gap: 8px; }
+        .seg          { flex: 1 1 0; display: flex; align-items: center; justify-content: center;
+                        padding: 12px 16px; border-radius: 8px; border: 1px solid #42493d;
+                        background: #0e0e0e; color: #c2c9b9; font-size: 15px; font-weight: 600;
+                        user-select: none; }
+        .seg-selected { background: #b6f09c; border-color: #b6f09c; color: #0b3900; }
+        .seg-error    { border-color: #ffb4ab; }
+
+        /* ---- What this spec adds: FieldHelpButton ----
+           The glyph stands for MaterialIcons `info-outline`. It sits in .label-left,
+           against the label text, rather than in the trailing slot where
+           LabeledTextField's labelAccessory (the Create screen's delete button) lives.
+           One tint only - it opens a window rather than expanding in place, so it has
+           no open state to show. hitSlop takes the touch target to 40x40 in the app;
+           the glyph itself is 18px. */
+        .help-btn     { font-family: 'Material Symbols Outlined'; font-size: 18px;
+                        line-height: 1; color: #c2c9b9; cursor: pointer; user-select: none; }
+
+        /* FieldHelpButton's dialog, styled after the Observation Details confirmation
+           dialogs: rgba(0,0,0,.6) overlay, surfaceContainerLow content at RADIUS.xl,
+           24px padding, 24px gap, ELEVATION.dialog, capped at 384px. */
+        .overlay      { background: rgba(0, 0, 0, 0.6); border-radius: 12px; padding: 24px 16px;
+                        display: flex; align-items: center; justify-content: center; }
+        .dialog       { background: #1c1b1b; border: 1px solid #42493d; border-radius: 16px;
+                        max-width: 384px; width: 100%; padding: 24px;
+                        display: flex; flex-direction: column; gap: 24px;
+                        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); }
+        .dialog-title { font-size: 20px; font-weight: 700; color: #e5e2e1; line-height: 28px; }
+        /* pre-line stands for what a React Native Text does with the newlines the user
+           typed - they survive as line breaks. */
+        .dialog-body  { font-size: 16px; color: #c2c9b9; line-height: 24px; white-space: pre-line; }
+        .dialog-acts  { display: flex; justify-content: flex-end; }
+        .dialog-close { padding: 10px 24px; border-radius: 24px; font-size: 14px; font-weight: 500;
+                        color: #e5e2e1; cursor: pointer; user-select: none; }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+
+<!--
+  Every state of the components this spec touches: the two shared field components on
+  the surfaceContainerLow Metric card they render inside on the Record form, the
+  FieldHelpButton dialog they open, and the authoring field on the Create Observation
+  metric card. No screens.
+-->
+
+<main class="max-w-5xl mx-auto px-6 py-10 flex flex-col gap-10">
+
+    <h1 class="text-xl font-semibold text-primary">Metric Description</h1>
+
+    <!-- ============ Fields on the Record form ============ -->
+    <section class="flex flex-col gap-4">
+        <h2 class="text-sm font-semibold text-on-surface-variant tracking-wide">The Metric fields — a button in
+            the label row is the whole change</h2>
+
+        <div class="grid md:grid-cols-2 gap-6">
+
+            <!-- State A -->
+            <div class="flex flex-col gap-2">
+                <p class="text-xs text-on-surface-variant">A — No description. Exactly what renders today: no
+                    button, and no gap left where one would be.</p>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                    <div class="label-row">
+                        <div class="label-left"><span class="label">Hours Slept</span></div>
+                    </div>
+                    <div class="input input-empty">&nbsp;</div>
+                </div>
+            </div>
+
+            <!-- State B -->
+            <div class="flex flex-col gap-2">
+                <p class="text-xs text-on-surface-variant">B — Described. The button is the only difference from
+                    A; the field keeps its height and position, opened dialog or not.</p>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                    <div class="label-row">
+                        <div class="label-left">
+                            <span class="label">Mood</span>
+                            <span class="help-btn">info</span>
+                        </div>
+                    </div>
+                    <div class="input">4</div>
+                </div>
+            </div>
+
+            <!-- State C -->
+            <div class="flex flex-col gap-2">
+                <p class="text-xs text-on-surface-variant">C — Described, after a blocked save. The button and
+                    the error occupy different rows and never interact.</p>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                    <div class="label-row">
+                        <div class="label-left">
+                            <span class="label">Mood</span>
+                            <span class="help-btn">info</span>
+                        </div>
+                    </div>
+                    <div class="input input-empty input-error">&nbsp;</div>
+                    <p class="error">This field is required</p>
+                </div>
+            </div>
+
+            <!-- State D -->
+            <div class="flex flex-col gap-2">
+                <p class="text-xs text-on-surface-variant">D — Described Boolean. Same button in the same place;
+                    the segments below are untouched by this spec.</p>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                    <div class="label-row">
+                        <div class="label-left">
+                            <span class="label">Well Rested</span>
+                            <span class="help-btn">info</span>
+                        </div>
+                    </div>
+                    <div class="seg-row">
+                        <div class="seg seg-selected">Yes</div>
+                        <div class="seg">No</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ============ FieldHelpButton's dialog ============ -->
+    <section class="flex flex-col gap-4">
+        <h2 class="text-sm font-semibold text-on-surface-variant tracking-wide">FieldHelpButton — the
+            dialog</h2>
+
+        <div class="grid md:grid-cols-2 gap-6">
+
+            <!-- State E -->
+            <div class="flex flex-col gap-2">
+                <p class="text-xs text-on-surface-variant">E — Opened. Heading is the Metric's name, body is its
+                    description, one dismiss action. A tap on the overlay or the back gesture also closes it.</p>
+                <div class="overlay">
+                    <div class="dialog">
+                        <div class="flex flex-col gap-2">
+                            <p class="dialog-title">Well Rested</p>
+                            <!-- One source line on purpose: .dialog-body is pre-line, so a
+                                 wrapped line here would render as a break nobody typed. -->
+                            <p class="dialog-body">Yes if you woke before the alarm and felt ready. No if you snoozed or dragged through the morning.</p>
+                        </div>
+                        <div class="dialog-acts">
+                            <span class="dialog-close">Close</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- State F -->
+            <div class="flex flex-col gap-2">
+                <p class="text-xs text-on-surface-variant">F — A per-value legend, the case this feature exists
+                    for. The user's line breaks survive; at 500 characters nothing needs truncating.</p>
+                <div class="overlay">
+                    <div class="dialog">
+                        <div class="flex flex-col gap-2">
+                            <p class="dialog-title">Mood</p>
+                            <p class="dialog-body">How you felt on average today, not right now.
+1 = barely functioning
+2 = low, coping
+3 = neutral
+4 = good
+5 = great</p>
+                        </div>
+                        <div class="dialog-acts">
+                            <span class="dialog-close">Close</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ============ Where a description is written ============ -->
+    <section class="flex flex-col gap-4">
+        <h2 class="text-sm font-semibold text-on-surface-variant tracking-wide">LabeledTextField — the
+            authoring field, on the Create Observation metric card</h2>
+
+        <div class="grid md:grid-cols-2 gap-6">
+
+            <!-- State G -->
+            <div class="flex flex-col gap-2">
+                <p class="text-xs text-on-surface-variant">G — Optional, always visible, multiline, counted to
+                    500. No help button of its own: the label and placeholder say enough.</p>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                    <div class="label-row">
+                        <div class="label-left"><span class="label">DESCRIPTION</span></div>
+                    </div>
+                    <div class="input input-multi">How you felt on average today, not right now.
+1 = barely functioning
+2 = low, coping
+3 = neutral
+4 = good
+5 = great</div>
+                    <p class="counter">137/500</p>
+                </div>
+            </div>
+
+            <!-- State H -->
+            <div class="flex flex-col gap-2">
+                <p class="text-xs text-on-surface-variant">H — Left empty, the common case. Normalized to
+                    <code class="text-on-surface">null</code>, so the Metric renders as state A.</p>
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                    <div class="label-row">
+                        <div class="label-left"><span class="label">DESCRIPTION</span></div>
+                    </div>
+                    <div class="input input-multi input-empty">Optional — what does each value mean?</div>
+                    <p class="counter">0/500</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+</main>
+
+</body>
+</html>
