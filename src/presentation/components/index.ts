@@ -21,6 +21,11 @@ export {LabeledTextField} from './LabeledTextField';
 /** Props interface for LabeledTextField component **/
 export {LabeledTextFieldProps} from './LabeledTextField';
 
+/** Labeled row of single-select segments, deselectable, with an inline error - used for form fields choosing one of a few fixed values, or none **/
+export {SegmentedField} from './SegmentedField';
+/** Props interfaces for SegmentedField component **/
+export {SegmentedFieldProps, SegmentedFieldOption} from './SegmentedField';
+
 /** Full-screen safe-area root wrapper (app background + Android status-bar padding) - outermost element of every screen **/
 export {ScreenContainer} from './ScreenContainer';
 /** Props interface for ScreenContainer component **/

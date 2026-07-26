@@ -29,6 +29,7 @@ import {
     ScreenHeader
 } from "@presentation/components";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
+import {formatMetricType} from "@presentation/metricDisplay";
 import type {RootStackParamList} from '../navigation/routes';
 
 // Create instances here for simplicity, typically would use DI.
@@ -37,10 +38,18 @@ const useCase = new CreateObservationUseCase(repository);
 
 export type CreateObservationScreenProps = NativeStackScreenProps<RootStackParamList, 'CreateObservation'>;
 
+interface MetricDraft {
+    name: string;
+    type: MetricValueType;
+}
+
+/** The Metric types this screen offers, in the order the dropdown lists them. */
+const METRIC_TYPE_CHOICES: MetricValueType[] = ['Numeric', 'Text', 'Boolean'];
+
 export function CreateObservationScreen({navigation}: CreateObservationScreenProps) {
     const [observationName, setObservationName] = useState('');
     const [description, setDescription] = useState('');
-    const [metrics, setMetrics] = useState([{name: '', type: 'Numeric'}]);
+    const [metrics, setMetrics] = useState<MetricDraft[]>([{name: '', type: 'Numeric'}]);
 
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const [activeMetricIndex, setActiveMetricIndex] = useState<number | null>(null);
@@ -49,7 +58,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
         setMetrics([...metrics, {name: '', type: 'Numeric'}]);
     };
 
-    const handleMetricChange = (index: number, key: 'name' | 'type', value: string) => {
+    const handleMetricChange = <K extends keyof MetricDraft>(index: number, key: K, value: MetricDraft[K]) => {
         const newMetrics = [...metrics];
         newMetrics[index] = {...newMetrics[index], [key]: value};
         setMetrics(newMetrics);
@@ -65,7 +74,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
             await useCase.execute({
                 name: observationName,
                 description: description.trim(),
-                metrics: metrics.map(m => ({name: m.name, type: m.type as string}))
+                metrics: metrics.map(m => ({name: m.name, type: m.type}))
             });
             navigation.goBack();
         } catch (error: any) {
@@ -157,7 +166,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                                             style={styles.typeSelector}
                                             onPress={() => openDropdown(index)}
                                         >
-                                            <Text style={styles.typeText}>{metric.type}</Text>
+                                            <Text style={styles.typeText}>{formatMetricType(metric.type)}</Text>
                                             <MaterialIcons name="expand-more" size={20} color={COLORS.outline}/>
                                         </TouchableOpacity>
                                     </View>
@@ -183,13 +192,13 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                         <View style={styles.modalOverlay}>
                             <TouchableWithoutFeedback>
                                 <View style={styles.modalContent}>
-                                    {['Numeric', 'Text', 'Boolean'].map(type => (
+                                    {METRIC_TYPE_CHOICES.map(type => (
                                         <TouchableOpacity
                                             key={type}
                                             style={styles.modalOption}
-                                            onPress={() => selectType(type as MetricValueType)}
+                                            onPress={() => selectType(type)}
                                         >
-                                            <Text style={styles.modalOptionText}>{type}</Text>
+                                            <Text style={styles.modalOptionText}>{formatMetricType(type)}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </View>

@@ -1,6 +1,7 @@
 import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
+import {Switch} from 'react-native';
 import {RecordFormScreen} from './RecordFormScreen';
 import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
@@ -23,11 +24,10 @@ const {
 
 vi.mock('react-native', () => {
     const RN = require('react-native-web');
-    // react-native-web's real TextInput/Switch touch `document` on mount, which isn't
-    // available under the node test environment; stub them as plain host nodes so
-    // their props (value, onChangeText, onValueChange, ...) remain inspectable.
+    // react-native-web's real TextInput touches `document` on mount, which isn't
+    // available under the node test environment; stub it as a plain host node so
+    // its props (value, onChangeText, ...) remain inspectable.
     RN.TextInput = 'TextInput';
-    RN.Switch = 'Switch';
     return RN;
 });
 vi.mock('@expo/vector-icons', () => ({
@@ -108,6 +108,24 @@ function findTouchableWithIconName(root: any, iconName: string) {
     return null;
 }
 
+/** A Boolean Metric's "Yes"/"No" segment - the outermost match is the touchable itself. */
+function booleanSegment(root: any, metricId: string, value: boolean) {
+    return root.findAllByProps({testID: `record-metric-${metricId}-${value}`})[0];
+}
+
+async function pressBooleanSegment(root: any, metricId: string, value: boolean) {
+    await act(async () => {
+        booleanSegment(root, metricId, value).props.onPress();
+    });
+}
+
+/** Each segment's selected state, "Yes" first. */
+function booleanSelectedStates(root: any, metricId: string): boolean[] {
+    return [true, false].map(
+        value => booleanSegment(root, metricId, value).props.accessibilityState.selected,
+    );
+}
+
 function dateField(root: any) {
     return root.findAllByProps({testID: 'record-date-field'})[0];
 }
@@ -184,6 +202,17 @@ describe('RecordFormScreen', () => {
             expect(mockGetRecordByIdExecute).not.toHaveBeenCalled();
         });
 
+        it('renders the Boolean metric as an unselected Yes/No segmented field, not a Switch', async () => {
+            const {root} = await renderScreen();
+
+            expect(findAllByText(root.root, 'Yes').length).toBe(1);
+            expect(findAllByText(root.root, 'No').length).toBe(1);
+            // Neither segment selected, so "not answered yet" is visibly its own
+            // state rather than looking like an answer of "No".
+            expect(booleanSelectedStates(root.root, 'metric-2')).toEqual([false, false]);
+            expect(root.root.findAllByType(Switch).length).toBe(0);
+        });
+
         it('creates a record and calls onCreated without touching UpdateRecordUseCase', async () => {
             const {root, onCreated} = await renderScreen();
 
@@ -192,10 +221,7 @@ describe('RecordFormScreen', () => {
                 durationInput.props.onChangeText('8');
             });
 
-            const restedSwitch = root.root.findByType('Switch');
-            await act(async () => {
-                restedSwitch.props.onValueChange(true);
-            });
+            await pressBooleanSegment(root.root, 'metric-2', true);
 
             const saveButton = findTouchableWithText(root.root, 'Add Record');
             await act(async () => {
@@ -211,6 +237,86 @@ describe('RecordFormScreen', () => {
             });
             expect(mockUpdateRecordExecute).not.toHaveBeenCalled();
             expect(onCreated).toHaveBeenCalledTimes(1);
+        });
+
+        // The Switch this replaced sat at "off" while the Metric held no value, so
+        // recording `false` meant turning it on and back off again - two taps, and
+        // a value that never differed from an untouched field.
+        it('submits false after a single press on "No"', async () => {
+            const {root} = await renderScreen();
+
+            const durationInput = root.root.findByProps({keyboardType: 'numeric'});
+            await act(async () => {
+                durationInput.props.onChangeText('8');
+            });
+
+            await pressBooleanSegment(root.root, 'metric-2', false);
+            expect(booleanSelectedStates(root.root, 'metric-2')).toEqual([false, true]);
+
+            const saveButton = findTouchableWithText(root.root, 'Add Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+
+            expect(mockCreateRecordExecute).toHaveBeenCalledWith({
+                observationId: 'obs-1',
+                values: [
+                    {metricId: 'metric-1', value: 8},
+                    {metricId: 'metric-2', value: false},
+                ],
+            });
+        });
+
+        it('blocks saving while the Boolean is unanswered, with the required message', async () => {
+            const {root} = await renderScreen();
+
+            const durationInput = root.root.findByProps({keyboardType: 'numeric'});
+            await act(async () => {
+                durationInput.props.onChangeText('8');
+            });
+
+            const saveButton = findTouchableWithText(root.root, 'Add Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+
+            expect(mockCreateRecordExecute).not.toHaveBeenCalled();
+            expect(findAllByText(root.root, 'This field is required').length).toBe(1);
+        });
+
+        it('clears the message once a segment is picked, and blocks the save again once it is cleared', async () => {
+            const {root} = await renderScreen();
+
+            const durationInput = root.root.findByProps({keyboardType: 'numeric'});
+            await act(async () => {
+                durationInput.props.onChangeText('8');
+            });
+
+            const saveButton = findTouchableWithText(root.root, 'Add Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+            expect(findAllByText(root.root, 'This field is required').length).toBe(1);
+
+            await pressBooleanSegment(root.root, 'metric-2', true);
+            expect(findAllByText(root.root, 'This field is required').length).toBe(0);
+
+            // Pressing the selected segment returns the field to no value, which
+            // the required rule blocks exactly as an untouched one.
+            await pressBooleanSegment(root.root, 'metric-2', true);
+            expect(booleanSelectedStates(root.root, 'metric-2')).toEqual([false, false]);
+
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+
+            expect(mockCreateRecordExecute).not.toHaveBeenCalled();
+            // A cleared Metric contributes no value at all. Were its key left in
+            // place holding `undefined`, it would reach `Metric.validateValue` as
+            // an *invalid* value instead - "Invalid value", or a save alert.
+            expect(findAllByText(root.root, 'This field is required').length).toBe(1);
+            expect(findAllByText(root.root, 'Invalid value').length).toBe(0);
+            expect(globalThis.alert).not.toHaveBeenCalled();
         });
 
         it('calls onBack when the back button is pressed, without persisting anything', async () => {
@@ -247,6 +353,19 @@ describe('RecordFormScreen', () => {
 
             const durationInput = root.root.findByProps({keyboardType: 'numeric'});
             expect(durationInput.props.value).toBe('7.2');
+        });
+
+        it.each([true, false])('pre-selects the segment matching the stored value %s', async stored => {
+            mockGetRecordByIdExecute.mockResolvedValue(new DomainRecord(
+                'record-1',
+                'obs-1',
+                timestamp,
+                new Map<string, any>([['metric-1', 7.2], ['metric-2', stored]]),
+            ));
+
+            const {root} = await renderScreen({recordId: 'record-1'});
+
+            expect(booleanSelectedStates(root.root, 'metric-2')).toEqual([stored, !stored]);
         });
 
         it('displays the observation title, metrics, and Date/Time fields pre-filled from the record', async () => {
@@ -369,6 +488,44 @@ describe('RecordFormScreen', () => {
             });
             expect(mockCreateRecordExecute).not.toHaveBeenCalled();
             expect(onCreated).toHaveBeenCalledTimes(1);
+        });
+
+        it('submits the new value when the Boolean selection is changed', async () => {
+            const {root} = await renderScreen({recordId: 'record-1'});
+
+            await pressBooleanSegment(root.root, 'metric-2', false);
+            expect(booleanSelectedStates(root.root, 'metric-2')).toEqual([false, true]);
+
+            const saveButton = findTouchableWithText(root.root, 'Save Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+
+            expect(mockUpdateRecordExecute).toHaveBeenCalledWith({
+                recordId: 'record-1',
+                observationId: 'obs-1',
+                timestamp,
+                values: [
+                    {metricId: 'metric-1', value: 7.2},
+                    {metricId: 'metric-2', value: false},
+                ],
+            });
+        });
+
+        it('blocks saving once the stored Boolean is cleared', async () => {
+            const {root} = await renderScreen({recordId: 'record-1'});
+
+            // The stored value is `true`, so pressing "Yes" deselects it.
+            await pressBooleanSegment(root.root, 'metric-2', true);
+            expect(booleanSelectedStates(root.root, 'metric-2')).toEqual([false, false]);
+
+            const saveButton = findTouchableWithText(root.root, 'Save Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+
+            expect(mockUpdateRecordExecute).not.toHaveBeenCalled();
+            expect(findAllByText(root.root, 'This field is required').length).toBe(1);
         });
 
         it('saves the edited timestamp alongside edited values', async () => {

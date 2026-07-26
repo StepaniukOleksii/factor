@@ -25,6 +25,7 @@ import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
 import {CenteredState, FooterBar, PrimaryActionButton, ScreenContainer, ScreenHeader} from "@presentation/components";
 import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from "@presentation/theme";
+import {formatMetricValue} from "@presentation/metricDisplay";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 import {rendererRegistry} from '../charts/rendererRegistry';
 import {
@@ -453,7 +454,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                                 >
                                                     {observation.metrics.map((metric, index) => {
                                                         const val = record.values.get(metric.id);
-                                                        const displayVal = val !== undefined && val !== null ? String(val) : '-';
+                                                        const displayVal = formatMetricValue(metric.type, val);
                                                         return (
                                                             <View key={metric.id}
                                                                   style={[styles.metricValueBlock, index === observation.metrics.length - 1 && styles.metricValueBlockLast]}>

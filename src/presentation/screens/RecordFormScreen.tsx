@@ -1,14 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+import {KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
 import DateTimePicker, {type DateTimePickerEvent} from '@react-native-community/datetimepicker';
 import {MaterialIcons} from '@expo/vector-icons';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -27,8 +18,10 @@ import {
     LabeledTextField,
     PrimaryActionButton,
     ScreenContainer,
-    ScreenHeader
+    ScreenHeader,
+    SegmentedField,
 } from "@presentation/components";
+import {BOOLEAN_METRIC_OPTIONS} from "@presentation/metricDisplay";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatShortDate, formatShortTime} from '@shared/formatTimeRange';
 import type {RootStackParamList} from '../navigation/routes';
@@ -121,7 +114,17 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
     };
 
     const handleValueChange = (metricId: string, value: any) => {
-        setValues(prev => ({...prev, [metricId]: value}));
+        setValues(prev => {
+            // A cleared value is the Metric's key being *absent*, never a key
+            // holding `undefined`: `handleSave` submits every key it finds, and
+            // `Metric.validateValue` rejects `undefined` as an invalid value.
+            if (value === undefined) {
+                const newValues = {...prev};
+                delete newValues[metricId];
+                return newValues;
+            }
+            return {...prev, [metricId]: value};
+        });
         if (errors[metricId]) {
             setErrors(prev => {
                 const newErrors = {...prev};
@@ -199,20 +202,19 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
     const renderMetricInput = (metric: Metric) => {
         const error = errors[metric.id];
 
-        // Boolean uses a Switch, which is not a text field.
+        // Boolean picks between two segments, which is not a text field. Both
+        // start unselected, so "not answered yet" reads differently from "No".
         if (metric.type === 'Boolean') {
             return (
                 <View key={metric.id} style={styles.inputContainer}>
-                    <Text style={styles.label}>{metric.name}</Text>
-                    <View style={styles.inputWrapper}>
-                        <Switch
-                            value={!!values[metric.id]}
-                            onValueChange={(val) => handleValueChange(metric.id, val)}
-                            trackColor={{false: COLORS.surfaceContainerLowest, true: COLORS.primaryContainer}}
-                            thumbColor={values[metric.id] ? COLORS.onPrimaryFixedVariant : COLORS.outline}
-                        />
-                    </View>
-                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                    <SegmentedField<boolean>
+                        label={metric.name}
+                        testID={`record-metric-${metric.id}`}
+                        options={BOOLEAN_METRIC_OPTIONS}
+                        selected={values[metric.id]}
+                        onSelect={(val) => handleValueChange(metric.id, val)}
+                        error={error}
+                    />
                 </View>
             );
         }
@@ -420,11 +422,4 @@ const styles = StyleSheet.create({
         borderColor: COLORS.outlineVariant,
         padding: 16,
     },
-    // Label for the Boolean (Switch) field, which can't use LabeledTextField directly.
-    label: {...TYPOGRAPHY.fieldLabel, marginBottom: 8},
-    inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    errorText: {...TYPOGRAPHY.error, marginTop: 4},
 });

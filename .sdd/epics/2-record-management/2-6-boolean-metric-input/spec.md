@@ -91,14 +91,22 @@ that presentation.
 
 ### Manual Verification
 
-1. Create a Record for an Observation with a Boolean Metric: two segments, neither selected.
-2. Fill every other Metric and save: blocked, with "This field is required" below the unselected segments.
+Run "Reseed test data" first (see [testing-data.md](../../../../testing-data.md)). `no numeric` carries
+Boolean `done` beside a single Enum `mood`, so its form is the quickest place to work through the control's
+states; `mixed metrics` carries Boolean `flag` alongside Numeric, Enum and Text Metrics, so it is where the
+other input types are checked for regressions.
+
+1. Open `no numeric` and tap "Add Record": `done` shows two segments, neither selected.
+2. Type `ok` into `mood` and save: blocked, with "This field is required" below `done`'s segments.
 3. Tap "No" once: it selects, the message clears, and saving succeeds.
-4. Re-open the Record for editing: "No" is pre-selected.
+4. Re-open that Record for editing — tap it under RECENT RECORDS, then Edit: "No" is pre-selected.
 5. Tap "Yes", save, re-open: "Yes" is pre-selected.
 6. Tap the selected segment: it deselects.
 7. Save with it cleared: blocked with the required message.
-8. Numeric, Text and Enum inputs are unchanged, as are the Observation Details Record tiles.
+8. Open `mixed metrics` and tap "Add Record": only `flag` renders as segments — the Numeric (`dense`,
+   `sparse`, `hourly`, `yearly`, `insufficient`), Enum (`category`) and Text (`note`) Metrics are unchanged
+   text fields. Its Observation Details Record tiles show `flag` as "Yes"/"No" — the words the segments
+   carry — rather than `true`/`false`.
 9. With a screen reader, each segment announces its label and whether it is selected.
 
 ### Automated Tests
@@ -108,7 +116,9 @@ that presentation.
   supplied error; reports each segment's selected state to accessibility.
 * **Record form, create mode:** renders `SegmentedField` rather than a `Switch`; saving untouched is blocked
   with the required message; one tap on "No" submits `false` (regression guard for the two-tap bug); one tap
-  on "Yes" submits `true`; a cleared Metric is absent from the submitted values.
+  on "Yes" submits `true`; clearing a Metric returns it to no value and blocks the save with the required
+  message rather than "Invalid value" or a save-failure alert — the removed key's only observable effect
+  from the screen, since the required rule stops a cleared Metric from ever reaching the command.
 * **Record form, edit mode:** a stored `false` pre-selects "No" and `true` pre-selects "Yes"; changing the
   selection and saving submits the new value; clearing and saving is blocked.
 * Update existing Record form tests that reach for the Boolean control by `Switch` type, and remove the test

@@ -509,6 +509,63 @@ describe('ObservationDetailsScreen Record Actions', () => {
     });
 });
 
+describe('ObservationDetailsScreen Record Values', () => {
+    const observationWithBoolean = {
+        id: 'obs-1',
+        name: 'Test Observation',
+        metrics: [
+            {id: 'm1', name: 'Note', type: 'Text'},
+            {id: 'm2', name: 'Well Rested', type: 'Boolean'},
+        ],
+    } as unknown as Observation;
+
+    function recordHolding(values: [string, unknown][]): DomainRecord {
+        return {
+            id: 'rec-1',
+            observationId: 'obs-1',
+            timestamp: new Date('2026-07-04T12:00:00Z'),
+            values: new Map(values),
+        } as unknown as DomainRecord;
+    }
+
+    async function expandRecord(root: any) {
+        await act(async () => {
+            findRecordHeader(root.root).props.onPress();
+        });
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(observationWithBoolean);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+        vi.stubGlobal('alert', vi.fn());
+    });
+
+    it.each([[true, 'Yes'], [false, 'No']])(
+        'shows a Boolean %s as "%s" - the same word its input offers, never the raw value',
+        async (stored, label) => {
+            mockGetRecentRecordsExecute.mockResolvedValue([
+                recordHolding([['m1', 'slept badly'], ['m2', stored]]),
+            ]);
+            const root = await renderScreen();
+
+            await expandRecord(root);
+
+            expect(findAllByText(root.root, label).length).toBeGreaterThan(0);
+            expect(findAllByText(root.root, String(stored)).length).toBe(0);
+        },
+    );
+
+    it('shows a placeholder for a Metric the Record holds no value for', async () => {
+        mockGetRecentRecordsExecute.mockResolvedValue([recordHolding([['m1', 'slept badly']])]);
+        const root = await renderScreen();
+
+        await expandRecord(root);
+
+        expect(findAllByText(root.root, '-').length).toBeGreaterThan(0);
+    });
+});
+
 describe('ObservationDetailsScreen Trends', () => {
     beforeEach(() => {
         vi.clearAllMocks();
