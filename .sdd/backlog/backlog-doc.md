@@ -6,3 +6,4 @@ notes until they're ready to become a real spec.
 1. Create git commit conventions. Describe labels and commit content.
 2. How make the skill to read only relevant documents. For example no need reading domain model if implementing UI
    changes
+3. Adjust spec-creator skill: less verbose, keep things simple, avoid duplicated sections.
