@@ -1,8 +1,8 @@
 ---
 name: spec-creator
-description: Creates a new feature specification based on project templates and existing spec patterns. Triggered when the user asks to create or write a spec for a new feature.
+description: Creates a new feature specification based on the skill's worked example and the project guidelines. Triggered when the user asks to create or write a spec for a new feature.
 metadata:
-  version: "1.5.1"
+  version: "1.6.0"
 ---
 
 # Spec Creator Skill
@@ -40,22 +40,15 @@ Determine which Epic this feature belongs to (see `development-process.md` for w
   create a new epic for it.
 * Otherwise, the feature belongs in `.sdd/epics/0-unparented/`.
 
-## 2. Use the Template
+## 2. Follow the Example
 
-You **must** use the official template located at `.sdd/templates/spec-template.md` as your structural foundation.
-Do not invent a new format.
+Read `.claude/skills/spec-creator/example-spec.md` and match its structure, depth, and voice. It defines the
+document's format — do not invent another. It is a worked example built for this skill — a fictional feature
+of a fictional app, so nothing in it can be mistaken for a Factor requirement. Take its shape, never its
+subject.
 
-## 3. Emulate Existing Specs
-
-When filling out the template sections, match the depth and formatting of existing robust specifications (like
-`.sdd/epics/1-observation-management/1-1-observation-creation/spec.md`).
-
-Pay special attention to the **Technical Design** section, ensuring it covers:
-
-* **Data Models:** Define entities, their properties, primary/foreign keys, and data types.
-* **Application Layer:** Define the use cases or commands, including inputs and expected behaviors.
-* **Storage Layer:** Define the necessary repository interfaces and implementation details.
-* **User Interface:** Detail the required screens, components, and user interactions.
+Existing specs under `.sdd/epics/` are not the reference. They vary in age and quality, and the older ones
+ predate the rules this skill now imposes.
 
 **Describe, don't implement.** Write the Technical Design in prose and structured bullet lists. Name entities,
 fields, types, methods, and components with inline code formatting (e.g. `observationId: UUID`,
@@ -63,12 +56,11 @@ fields, types, methods, and components with inline code formatting (e.g. `observ
 bodies, JSX, full type/interface declarations, or anything resembling a diff. Choosing exact syntax and control
 flow is the implementer's job, not the spec's: embedding it in the spec creates a second, unmaintained copy of
 the implementation that silently drifts from the real code as the feature evolves, and forces later specs to
-carry "superseded by" corrections when it does. Do not emulate specs that embed code, even if they are more
-recent.
+carry "superseded by" corrections when it does.
 
 The **Verification Plan** section must include both *Manual Verification* steps and expectations for *Automated Tests*.
 
-## 4. Saving the Spec
+## 3. Saving the Spec
 
 Save to `.sdd/epics/[epic-id]-[epic-name]/[epic-id]-[feature-id]-[feature-name]/spec.md`, following the numbering
 convention in `development-process.md`.
@@ -80,11 +72,11 @@ The `Related ADRs` section is optional — omit it entirely unless an ADR actual
 
 *(Note: Create a logical, hyphenated name for the feature folder.)*
 
-## 5. Clear the Promoted Backlog Entry
+## 4. Clear the Promoted Backlog Entry
 
 If the feature originates from (or overlaps with) an entry in `.sdd/backlog/`, remove that entry from the backlog
 once the spec is saved, so the idea isn't left behind to later contradict the spec it became.
 
-## 6. Scope Limit
+## 5. Scope Limit
 
 Do **NOT** write any application code when this skill is invoked. This skill only writes documents.

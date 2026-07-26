@@ -37,7 +37,8 @@ Project knowledge lives under `.sdd/`:
 * `.sdd/epics/` — feature specs, grouped into Epics (see below).
 * `.sdd/adr/` — Architecture Decision Records for significant, hard-to-reverse technical choices.
 * `.sdd/backlog/` — informal, unrefined ideas and known issues, not yet worth a spec.
-* `.sdd/templates/` — the canonical templates for specs, epics, and ADRs.
+* `.sdd/templates/` — the canonical templates for epics and ADRs. Spec structure comes from the
+  `spec-creator` skill's worked example instead.
 
 ---
 
