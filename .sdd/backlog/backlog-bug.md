@@ -18,14 +18,3 @@ they're ready to become a real spec.
    set the same way, so the presets likely have the same gap (not driven on-device, inferred from the code).
    Guarding on `loadingTrends` alone cannot close it; the tap handler would need to notice that the rendered
    window no longer matches the active selection, or the flag would have to be set before the render commits.
-4. `Record.updateValues` can add or overwrite a Metric value but never remove one — it iterates the incoming
-   map and `set`s each key, so a Metric absent from the map keeps whatever value it already had rather than
-   being cleared. `Record.removeValue` exists for exactly this and has no production caller (only its own
-   unit test). Not reachable today: every Metric value is required, so `RecordFormScreen` never submits a
-   Record with a value missing, and `UpdateRecordUseCase` always passes a full map. It becomes reachable the
-   moment Metric values may be optional — a user clearing a value in edit mode would see the save succeed and
-   the old value still there on re-open. Fix is either to have the update path replace the value map wholesale
-   or to diff it and call the existing `removeValue`; the storage layer already deletes and re-inserts
-   `record_values` rows on update, so nothing below the domain needs to change. Prerequisite for optional
-   Metric values — see `2-6-boolean-metric-input`, which gives the Record form a control that can express
-   "no value" but deliberately stops short of persisting one.

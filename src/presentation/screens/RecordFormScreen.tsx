@@ -115,10 +115,9 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
 
     const handleValueChange = (metricId: string, value: any) => {
         setValues(prev => {
-            // A cleared value is the Metric's key being *absent*, never a key
-            // holding `undefined`: `handleSave` submits every key it finds, and
-            // `Metric.validateValue` rejects `undefined` as an invalid value.
-            if (value === undefined) {
+            // A cleared value is the Metric's key being *absent*, never one
+            // holding `undefined` or `''` - whatever is found here is submitted.
+            if (value === undefined || value === '') {
                 const newValues = {...prev};
                 delete newValues[metricId];
                 return newValues;
@@ -152,14 +151,14 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
         if (!observation) return;
         if (isEditMode && (!record || !timestamp)) return;
 
-        // Validate all metrics
+        // Values are optional (ADR-3) - only what was entered is validated.
         const newErrors: Record<string, string> = {};
         for (const metric of observation.metrics) {
             const val = values[metric.id];
-            // Basic check for missing required
             if (val === undefined || val === null || val === '') {
-                newErrors[metric.id] = 'This field is required';
-            } else if (!metric.validateValue(val)) {
+                continue;
+            }
+            if (!metric.validateValue(val)) {
                 newErrors[metric.id] = 'Invalid value';
             }
         }
@@ -171,10 +170,13 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
 
         try {
             setSaving(true);
-            const commandValues = Object.keys(values).map(key => ({
-                metricId: key,
-                value: values[key]
-            }));
+            // The Record's whole value set, not a delta - what is left out is cleared.
+            const commandValues = Object.keys(values)
+                .filter(key => values[key] !== undefined && values[key] !== null && values[key] !== '')
+                .map(key => ({
+                    metricId: key,
+                    value: values[key]
+                }));
 
             if (isEditMode && record && timestamp) {
                 await updateRecordUseCase.execute({

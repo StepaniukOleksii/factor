@@ -20,14 +20,13 @@ export class Record extends Entity<string> {
     return this._values;
   }
 
+  /** Replaces the values: a Metric absent from `values` is cleared, not left as it was. */
   public updateValues(values: Map<string, any>, observation: Observation): void {
     if (this.observationId !== observation.id) {
       throw new Error("Observation ID mismatch.");
     }
     observation.validateValues(values);
-    for (const [key, val] of values.entries()) {
-      this._values.set(key, val);
-    }
+    this._values = new Map(values);
   }
 
   public removeValue(metricId: string): void {

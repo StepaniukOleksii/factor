@@ -34,6 +34,30 @@ describe('Record', () => {
       expect(record.getValue('m1')).toBe(8);
     });
 
+    it('should remove a value whose metric is absent from the incoming values', () => {
+      const metric1 = new Metric('m1', 'Duration', 'Numeric');
+      const metric2 = new Metric('m2', 'Quality', 'Numeric');
+      const obs = new Observation('o1', 'Sleep', [metric1, metric2]);
+
+      const record = new Record('r1', 'o1', new Date(), new Map([['m1', 8], ['m2', 3]]));
+
+      record.updateValues(new Map<string, any>([['m1', 9]]), obs);
+
+      expect(record.getValue('m1')).toBe(9);
+      expect(record.getValue('m2')).toBeUndefined();
+    });
+
+    it('should leave the record with no values when given none', () => {
+      const metric1 = new Metric('m1', 'Duration', 'Numeric');
+      const obs = new Observation('o1', 'Sleep', [metric1]);
+
+      const record = new Record('r1', 'o1', new Date(), new Map([['m1', 8]]));
+
+      record.updateValues(new Map<string, any>(), obs);
+
+      expect(record.values.size).toBe(0);
+    });
+
     it('should throw an error if observation id does not match', () => {
       const metric1 = new Metric('m1', 'Duration', 'Numeric');
       const obs = new Observation('o2', 'Sleep', [metric1]); // Notice o2 instead of o1

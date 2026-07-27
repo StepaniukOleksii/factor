@@ -269,7 +269,7 @@ describe('RecordFormScreen', () => {
             });
         });
 
-        it('blocks saving while the Boolean is unanswered, with the required message', async () => {
+        it('saves the Metric that was filled in, omitting the unanswered Boolean', async () => {
             const {root} = await renderScreen();
 
             const durationInput = root.root.findByProps({keyboardType: 'numeric'});
@@ -282,11 +282,13 @@ describe('RecordFormScreen', () => {
                 await saveButton!.props.onPress();
             });
 
-            expect(mockCreateRecordExecute).not.toHaveBeenCalled();
-            expect(findAllByText(root.root, 'This field is required').length).toBe(1);
+            expect(mockCreateRecordExecute).toHaveBeenCalledWith({
+                observationId: 'obs-1',
+                values: [{metricId: 'metric-1', value: 8}],
+            });
         });
 
-        it('clears the message once a segment is picked, and blocks the save again once it is cleared', async () => {
+        it('omits a Boolean that was picked and then cleared again', async () => {
             const {root} = await renderScreen();
 
             const durationInput = root.root.findByProps({keyboardType: 'numeric'});
@@ -294,31 +296,61 @@ describe('RecordFormScreen', () => {
                 durationInput.props.onChangeText('8');
             });
 
-            const saveButton = findTouchableWithText(root.root, 'Add Record');
-            await act(async () => {
-                await saveButton!.props.onPress();
-            });
-            expect(findAllByText(root.root, 'This field is required').length).toBe(1);
-
             await pressBooleanSegment(root.root, 'metric-2', true);
-            expect(findAllByText(root.root, 'This field is required').length).toBe(0);
-
-            // Pressing the selected segment returns the field to no value, which
-            // the required rule blocks exactly as an untouched one.
+            // Pressing the selected segment returns the field to no value.
             await pressBooleanSegment(root.root, 'metric-2', true);
             expect(booleanSelectedStates(root.root, 'metric-2')).toEqual([false, false]);
 
+            const saveButton = findTouchableWithText(root.root, 'Add Record');
             await act(async () => {
                 await saveButton!.props.onPress();
             });
 
-            expect(mockCreateRecordExecute).not.toHaveBeenCalled();
-            // A cleared Metric contributes no value at all. Were its key left in
-            // place holding `undefined`, it would reach `Metric.validateValue` as
-            // an *invalid* value instead - "Invalid value", or a save alert.
-            expect(findAllByText(root.root, 'This field is required').length).toBe(1);
+            // Were the key left in place holding `undefined`, it would reach
+            // `Metric.validateValue` as an *invalid* value - hence the checks below.
+            expect(mockCreateRecordExecute).toHaveBeenCalledWith({
+                observationId: 'obs-1',
+                values: [{metricId: 'metric-1', value: 8}],
+            });
             expect(findAllByText(root.root, 'Invalid value').length).toBe(0);
             expect(globalThis.alert).not.toHaveBeenCalled();
+        });
+
+        it('creates a Record carrying no values when nothing at all is entered', async () => {
+            const {root} = await renderScreen();
+
+            const saveButton = findTouchableWithText(root.root, 'Add Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+
+            expect(mockCreateRecordExecute).toHaveBeenCalledWith({
+                observationId: 'obs-1',
+                values: [],
+            });
+        });
+
+        it('omits a Numeric Metric whose text was typed and then erased', async () => {
+            const {root} = await renderScreen();
+
+            const durationInput = root.root.findByProps({keyboardType: 'numeric'});
+            await act(async () => {
+                durationInput.props.onChangeText('8');
+            });
+            await act(async () => {
+                durationInput.props.onChangeText('');
+            });
+
+            const saveButton = findTouchableWithText(root.root, 'Add Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+
+            expect(mockCreateRecordExecute).toHaveBeenCalledWith({
+                observationId: 'obs-1',
+                values: [],
+            });
+            expect(findAllByText(root.root, 'Invalid value').length).toBe(0);
         });
 
         it('calls onBack when the back button is pressed, without persisting anything', async () => {
@@ -514,7 +546,7 @@ describe('RecordFormScreen', () => {
             });
         });
 
-        it('blocks saving once the stored Boolean is cleared', async () => {
+        it('submits without the Metric once the stored Boolean is cleared', async () => {
             const {root} = await renderScreen({recordId: 'record-1'});
 
             // The stored value is `true`, so pressing "Yes" deselects it.
@@ -526,8 +558,12 @@ describe('RecordFormScreen', () => {
                 await saveButton!.props.onPress();
             });
 
-            expect(mockUpdateRecordExecute).not.toHaveBeenCalled();
-            expect(findAllByText(root.root, 'This field is required').length).toBe(1);
+            expect(mockUpdateRecordExecute).toHaveBeenCalledWith({
+                recordId: 'record-1',
+                observationId: 'obs-1',
+                timestamp,
+                values: [{metricId: 'metric-1', value: 7.2}],
+            });
         });
 
         it('saves the edited timestamp alongside edited values', async () => {
