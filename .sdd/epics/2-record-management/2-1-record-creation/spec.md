@@ -20,6 +20,8 @@ This iteration focuses exclusively on creating Records. Record editing, deletion
 * [ ] **Dynamic Metric Inputs:** The Record Creation screen must render an input for each Metric belonging to the selected Observation.
 * [ ] **Type-Based Input Validation:** Metric inputs must validate user input based on the Metric type.
 * [ ] **Required Metric Values:** The user must provide a value for every Metric before the Record can be created.
+  * **Superseded by [ADR-3](../../../adr/3-record-metric-value-requirements.md).** Every value is optional,
+    including all of them.
 * [ ] **Record Timestamp:** The created Record must automatically store the current timestamp representing when the observation was recorded.
 * [ ] **Local-First Storage:** Records must be persisted only in local device storage.
 * [ ] **Create Record Action:** The Record Creation screen must provide an "Add Record" button at the bottom of the screen.
@@ -48,6 +50,8 @@ Reuse existing Record and Metric domain models.
 
     * Retrieves the Observation and its Metrics.
     * Validates that all required Metrics have corresponding values.
+        * **Superseded by [ADR-3](../../../adr/3-record-metric-value-requirements.md).** No completeness
+          check; only supplied values are validated.
     * Validates that each value matches the Metric type.
     * Generates UUIDs for the Record and Record Values.
     * Assigns the current timestamp.
@@ -124,6 +128,8 @@ Additional validation checks:
 
 * Enter invalid text into a NUMBER field and verify validation prevents submission.
 * Leave required Metric values empty and verify Record creation is blocked.
+  * **Superseded by [ADR-3](../../../adr/3-record-metric-value-requirements.md).** Verify instead that a
+    partly filled form, and an empty one, both create a Record.
 * Verify BOOLEAN Metrics use an appropriate control and save correctly.
 
 ---
@@ -134,6 +140,8 @@ Additional validation checks:
 
     * Verify `CreateRecordUseCase` creates Records and Record Values correctly.
     * Verify validation rejects missing Metric values.
+        * **Superseded by [ADR-3](../../../adr/3-record-metric-value-requirements.md).** Verify creation
+          from a subset, and from none.
     * Verify validation rejects values that do not match Metric types.
     * Verify timestamps and IDs are generated correctly.
 

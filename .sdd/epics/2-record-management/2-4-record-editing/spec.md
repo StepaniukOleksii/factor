@@ -35,6 +35,9 @@ The user can modify the values for all Metrics.
 
 The existing validation rules from the Record Creation feature apply.
 
+* **Superseded by [ADR-3](../../../adr/3-record-metric-value-requirements.md).** Values are optional and may
+  be cleared; what is submitted replaces them.
+
 The Record timestamp is not editable.
 
 ### Saving

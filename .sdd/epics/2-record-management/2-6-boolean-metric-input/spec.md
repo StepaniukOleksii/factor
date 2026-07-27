@@ -46,6 +46,9 @@ None. Note that `Record.updateValues` sets keys and cannot remove one, so a clea
 persisted — not reachable here, because the required check blocks the save first. Tracked separately in the
 bug backlog; do not fix it in this feature.
 
+* **Superseded by [ADR-3](../../../adr/3-record-metric-value-requirements.md).** `updateValues` replaces the
+  map, so a cleared value now persists.
+
 ### 3.3 Storage Layer
 
 None. A Metric with no value simply has no `record_values` row.
