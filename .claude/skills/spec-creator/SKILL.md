@@ -2,7 +2,7 @@
 name: spec-creator
 description: Creates a new feature specification based on the skill's worked example and the project guidelines. Triggered when the user asks to create or write a spec for a new feature.
 metadata:
-  version: "1.7.0"
+  version: "1.8.0"
 ---
 
 # Spec Creator Skill
@@ -88,9 +88,10 @@ Save to `.sdd/epics/[epic-id]-[epic-name]/[epic-id]-[feature-id]-[feature-name]/
 convention in `development-process.md`.
 
 If the feature belongs to a new epic that doesn't exist yet, create it first using
-`.sdd/templates/epic-template.md`, saved as `.sdd/epics/[epic-id]-[epic-name]/epic.md` (check `.sdd/epics/` for
-the next sequential epic id). Populate its Goal from the shared purpose of the features that will live inside it.
-The `Related ADRs` section is optional — omit it entirely unless an ADR actually relates to this epic.
+`.claude/skills/spec-creator/epic-template.md`, saved as `.sdd/epics/[epic-id]-[epic-name]/epic.md`
+(check `.sdd/epics/` for the next sequential epic id). Populate its Goal from the shared purpose of the
+features that will live inside it. The `Related ADRs` section is optional — omit it entirely unless an ADR
+actually relates to this epic.
 
 *(Note: Create a logical, hyphenated name for the feature folder.)*
 

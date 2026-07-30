@@ -9,4 +9,3 @@ notes until they're ready to become a real spec.
 3. Create a separate design skill with rules like provide only the final screen 
 4. Spec evolution. Do not freeze them, evolve 
 5. Response summarizer
-6. Move epic-template.md to spec-creator

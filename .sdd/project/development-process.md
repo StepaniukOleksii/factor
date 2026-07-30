@@ -35,10 +35,11 @@ Project knowledge lives under `.sdd/`:
 
 * `.sdd/project/` — standing guidelines that apply across the whole project (this document and its siblings).
 * `.sdd/epics/` — feature specs, grouped into Epics (see below).
-* `.sdd/adr/` — Architecture Decision Records for significant, hard-to-reverse technical choices.
+* `.sdd/adr/` — Architecture Decision Records for significant, hard-to-reverse technical choices. New ones
+  start from `adr-template.md`, which lives in that same folder.
 * `.sdd/backlog/` — informal, unrefined ideas and known issues, not yet worth a spec.
-* `.sdd/templates/` — the canonical templates for epics and ADRs. Spec structure comes from the
-  `spec-creator` skill's worked example instead.
+
+Epic and spec structure are not templated here — they belong to the `spec-creator` skill.
 
 ---
 
@@ -47,7 +48,7 @@ Project knowledge lives under `.sdd/`:
 Every feature spec lives inside an Epic folder under `.sdd/epics/`.
 
 * An Epic is a group of features working toward one shared, bounded outcome. It holds an `epic.md` (see
-  `.sdd/templates/epic-template.md`) plus one folder per feature.
+  `.claude/skills/spec-creator/epic-template.md`) plus one folder per feature.
 * Features that don't share a genuinely common outcome with anything else live under the standing
   `0-unparented` epic. Most features start here — a new epic is only created when several features clearly
   belong together.
