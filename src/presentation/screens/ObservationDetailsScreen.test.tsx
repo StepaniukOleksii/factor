@@ -34,10 +34,23 @@ const {
     };
 });
 
+/** The screen's `hardwareBackPress` listeners, latest registration last. */
+const {backPressListeners} = vi.hoisted(() => ({
+    backPressListeners: new Set<() => boolean>(),
+}));
+
 vi.mock('react-native', () => {
     const RN = require('react-native-web');
     RN.Modal = ({children, visible}: any) =>
         visible ? <RN.View testID="modal">{children}</RN.View> : null;
+    // `react-native-web`'s own logs an error and never fires, so the screen's
+    // listener would be unreachable.
+    RN.BackHandler = {
+        addEventListener: (_event: string, handler: () => boolean) => {
+            backPressListeners.add(handler);
+            return {remove: () => backPressListeners.delete(handler)};
+        },
+    };
     return RN;
 });
 vi.mock('@expo/vector-icons', () => ({
@@ -47,26 +60,37 @@ vi.mock('@react-native-community/datetimepicker', () => ({
     default: 'DateTimePicker',
 }));
 
-const {focusListeners} = vi.hoisted(() => ({focusListeners: new Set<() => void>()}));
+const {focusListeners, blurListeners} = vi.hoisted(() => ({
+    focusListeners: new Set<() => void>(),
+    blurListeners: new Set<() => void>(),
+}));
 
 // `useFocusEffect` is the only React Navigation API the screen itself uses, so
 // stubbing it is all that stands between this test and a NavigationContainer.
 // Keyed on the callback exactly as the real hook is - so a changed time range
 // re-runs it - plus a counter `refocusScreen` below bumps, standing in for the
-// screen being returned to.
+// screen being returned to, and a flag `blurScreen` clears, for one covered by a
+// screen pushed on top.
 vi.mock('@react-navigation/native', () => {
     const React = require('react');
     return {
         useFocusEffect: (callback: React.EffectCallback) => {
             const [focusCount, setFocusCount] = React.useState(0);
+            const [focused, setFocused] = React.useState(true);
             React.useEffect(() => {
-                const listener = () => setFocusCount((count: number) => count + 1);
-                focusListeners.add(listener);
+                const onFocus = () => {
+                    setFocused(true);
+                    setFocusCount((count: number) => count + 1);
+                };
+                const onBlur = () => setFocused(false);
+                focusListeners.add(onFocus);
+                blurListeners.add(onBlur);
                 return () => {
-                    focusListeners.delete(listener);
+                    focusListeners.delete(onFocus);
+                    blurListeners.delete(onBlur);
                 };
             }, []);
-            React.useEffect(callback, [callback, focusCount]);
+            React.useEffect(() => (focused ? callback() : undefined), [callback, focusCount, focused]);
         },
     };
 });
@@ -170,6 +194,30 @@ async function refocusScreen() {
     await act(async () => {
         focusListeners.forEach(listener => listener());
     });
+}
+
+/** Tears the screen's focus effects down, the way a screen pushed over it does. */
+async function blurScreen() {
+    await act(async () => {
+        blurListeners.forEach(listener => listener());
+    });
+}
+
+/**
+ * Android's system back button, answered by the last listener registered - the
+ * real dispatch order. Returns `true` for a press the screen consumed, `false`
+ * for one it declined and left React Navigation to close the screen with.
+ */
+async function pressSystemBack(): Promise<boolean> {
+    const listener = [...backPressListeners].pop();
+    // Asserted rather than answered with `false`: an unregistered listener would
+    // look exactly like a declined press.
+    expect(listener).toBeTruthy();
+    let consumed = false;
+    await act(async () => {
+        consumed = listener!();
+    });
+    return consumed;
 }
 
 async function openRecordMenu(root: any) {
@@ -1238,6 +1286,251 @@ describe('ObservationDetailsScreen Chart Zoom', () => {
         });
 
         expect(customSegment(root).props.accessibilityState.selected).toBe(true);
+    });
+});
+
+/**
+ * Zoom is a ladder that only went downwards: a wider window had to be re-entered
+ * by hand. The system back button now climbs back up it, one window per press.
+ */
+describe('ObservationDetailsScreen Back Unzoom', () => {
+    // Pinned as in the zoom suite: which calendar days a zoom comes to rest on
+    // decides every window here.
+    const NOW = new Date(2026, 6, 15, 10, 30);
+
+    // Two Records five days apart sharing one of `1Y`'s 30-day buckets, plus a
+    // third in the next bucket along so the chart has a second point to draw.
+    const spanStart = recordAt('span-start', on(5, 26));
+    const spanEnd = recordAt('span-end', on(5, 31));
+    const nextBucket = recordAt('next-bucket', on(6, 25));
+
+    /** The six whole days a tap on that bucket's point zooms to. */
+    const ZOOMED: TimeRange = {start: on(5, 26, 0), end: on(6, 1, 0)};
+
+    const YEAR_MS = 365 * DAY_MS;
+
+    function fetchCount(): number {
+        return mockGetRecordsByTimeRangeExecute.mock.calls.length;
+    }
+
+    function selectedPresets(root: any): (TimeRangePreset | 'custom')[] {
+        const presets = (['1D', '1W', '1M', '1Y'] as TimeRangePreset[]).filter(
+            preset => presetSegment(root, preset).props.accessibilityState.selected,
+        );
+        return customSegment(root).props.accessibilityState.selected
+            ? [...presets, 'custom']
+            : presets;
+    }
+
+    beforeEach(() => {
+        vi.useFakeTimers({shouldAdvanceTime: true});
+        vi.setSystemTime(NOW);
+        // Screens rendered by earlier tests are never unmounted, so their
+        // listeners would still answer this suite's presses.
+        focusListeners.clear();
+        blurListeners.clear();
+        backPressListeners.clear();
+        vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
+        mockGetRecentRecordsExecute.mockResolvedValue([]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([spanStart, spanEnd, nextBucket]);
+        vi.stubGlobal('alert', vi.fn());
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    /** Renders at `1Y` and zooms into the point folding the two nearby Records. */
+    async function renderZoomedFromYear(navigate: (name: string, params: unknown) => void = vi.fn()) {
+        const root = await renderScreen(navigate);
+        await selectPreset(root, '1Y');
+        await pressChartPoint(root);
+        expect(lastRequestedRange()).toEqual(ZOOMED);
+        return root;
+    }
+
+    it('declines a press with nothing zoomed, leaving the window, the charts and navigation alone', async () => {
+        const navigate = vi.fn();
+        const root = await renderScreen(navigate);
+        await selectPreset(root, '1Y');
+        const beforePress = fetchCount();
+
+        expect(await pressSystemBack()).toBe(false);
+
+        expect(fetchCount()).toBe(beforePress);
+        expect(selectedPresets(root)).toEqual(['1Y']);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
+        expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('restores the pre-zoom window on a press, redrawing every Numeric chart at it', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            numericObservation({id: 'm1', name: 'Duration'}, {id: 'm2', name: 'Quality'}),
+        );
+        const paired: [string, number][] = [['m1', 5], ['m2', 50]];
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            recordAt('span-start', on(5, 26), paired),
+            recordAt('span-end', on(5, 31), paired),
+            recordAt('next-bucket', on(6, 25), paired),
+        ]);
+        const navigate = vi.fn();
+        const root = await renderZoomedFromYear(navigate);
+        const zoomedFetches = fetchCount();
+
+        expect(await pressSystemBack()).toBe(true);
+
+        // One fetch for the unzoom, not one per chart.
+        expect(fetchCount()).toBe(zoomedFetches + 1);
+        expect(lastRequestedRange().end.getTime() - lastRequestedRange().start.getTime()).toBe(YEAR_MS);
+        expect(selectedPresets(root)).toEqual(['1Y']);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(2);
+        expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('unwinds two zooms one press at a time, newest first, then declines', async () => {
+        // A cluster within an hour, a second Record that same evening, and two
+        // spread out beyond: enough for the ladder to have two rungs.
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            recordAt('cluster-a', on(5, 26, 12)),
+            recordAt('cluster-b', new Date(2026, 4, 26, 12, 30)),
+            recordAt('same-day-evening', on(5, 26, 18)),
+            spanEnd,
+            nextBucket,
+        ]);
+        const root = await renderZoomedFromYear();
+
+        // Down again to the single day the next point's Records share.
+        await pressChartPoint(root);
+        expect(lastRequestedRange()).toEqual({start: on(5, 26, 0), end: on(5, 27, 0)});
+
+        expect(await pressSystemBack()).toBe(true);
+        expect(lastRequestedRange()).toEqual(ZOOMED);
+
+        expect(await pressSystemBack()).toBe(true);
+        expect(selectedPresets(root)).toEqual(['1Y']);
+        const atTheTop = fetchCount();
+
+        expect(await pressSystemBack()).toBe(false);
+        expect(fetchCount()).toBe(atTheTop);
+    });
+
+    it('forgets the windows behind a zoom once a preset is selected', async () => {
+        const root = await renderZoomedFromYear();
+
+        await selectPreset(root, '1W');
+        const beforePress = fetchCount();
+
+        expect(await pressSystemBack()).toBe(false);
+        expect(fetchCount()).toBe(beforePress);
+        expect(selectedPresets(root)).toEqual(['1W']);
+    });
+
+    it('forgets the windows behind a zoom once a custom range is applied', async () => {
+        const root = await renderZoomedFromYear();
+
+        await openCustomModal(root);
+        await pickCustomDay(root, 'start', on(7, 10, 0));
+        await pickCustomDay(root, 'end', on(7, 14, 0));
+        await pressCustomModalButton(root, 'Apply');
+        expect(lastRequestedRange()).toEqual({start: on(7, 10, 0), end: on(7, 15, 0)});
+        const beforePress = fetchCount();
+
+        expect(await pressSystemBack()).toBe(false);
+        expect(fetchCount()).toBe(beforePress);
+        expect(selectedPresets(root)).toEqual(['custom']);
+    });
+
+    it('forgets nothing when the custom range modal is cancelled', async () => {
+        const root = await renderZoomedFromYear();
+
+        await openCustomModal(root);
+        await pickCustomDay(root, 'start', on(7, 10, 0));
+        await pressCustomModalButton(root, 'Cancel');
+
+        expect(await pressSystemBack()).toBe(true);
+        expect(selectedPresets(root)).toEqual(['1Y']);
+    });
+
+    it('leaves nothing to undo after a tap that opens a Record instead of zooming', async () => {
+        // Two days apart at the default 1M window, so each keeps its own bucket
+        // and the tapped point stands for one Record.
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            recordAt('earliest', on(7, 10)),
+            recordAt('latest', on(7, 12)),
+        ]);
+        const navigate = vi.fn();
+        const root = await renderScreen(navigate);
+
+        await pressChartPoint(root);
+        expect(navigate).toHaveBeenCalledWith('EditRecord', {observationId: 'obs-1', recordId: 'earliest'});
+        const beforePress = fetchCount();
+
+        expect(await pressSystemBack()).toBe(false);
+        expect(fetchCount()).toBe(beforePress);
+        expect(selectedPresets(root)).toEqual(['1M']);
+    });
+
+    it('leaves nothing to undo after a tap too narrow to zoom', async () => {
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            recordAt('same-hour-a', on(7, 15, 5)),
+            recordAt('same-hour-b', new Date(2026, 6, 15, 5, 20)),
+            recordAt('later-hour', on(7, 15, 8)),
+        ]);
+        const root = await renderScreen();
+        await selectPreset(root, '1D');
+
+        // A day is where zoom comes to rest, so the tap changes no window.
+        await pressChartPoint(root);
+        const beforePress = fetchCount();
+
+        expect(await pressSystemBack()).toBe(false);
+        expect(fetchCount()).toBe(beforePress);
+        expect(selectedPresets(root)).toEqual(['1D']);
+    });
+
+    it('swallows a press while a window switch is in flight, and does not replay it', async () => {
+        const root = await renderScreen();
+        await selectPreset(root, '1Y');
+
+        let releaseFetch: (records: DomainRecord[]) => void = () => {};
+        mockGetRecordsByTimeRangeExecute.mockReturnValueOnce(
+            new Promise(resolve => {
+                releaseFetch = resolve;
+            }),
+        );
+        await pressChartPoint(root);
+        const inFlight = fetchCount();
+
+        // Consumed, but nothing popped: that would stack a second reload on the
+        // fetch in flight.
+        expect(await pressSystemBack()).toBe(true);
+        expect(fetchCount()).toBe(inFlight);
+
+        await act(async () => {
+            releaseFetch([spanStart, spanEnd, nextBucket]);
+        });
+
+        expect(fetchCount()).toBe(inFlight);
+        expect(selectedPresets(root)).toEqual(['custom']);
+        expect(lastRequestedRange()).toEqual(ZOOMED);
+    });
+
+    it('stops listening while another screen covers it, and unwinds again on return', async () => {
+        const root = await renderZoomedFromYear();
+
+        await blurScreen();
+
+        // A `BackHandler` listener is global, so one left registered here would
+        // unzoom these charts while the user was backing out of the screen above.
+        expect(backPressListeners.size).toBe(0);
+
+        await refocusScreen();
+
+        // The history belongs to the visit, not to the listener.
+        expect(selectedPresets(root)).toEqual(['custom']);
+        expect(await pressSystemBack()).toBe(true);
+        expect(selectedPresets(root)).toEqual(['1Y']);
     });
 });
 

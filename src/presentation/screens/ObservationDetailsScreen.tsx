@@ -1,5 +1,6 @@
 import React, {useCallback, useState} from 'react';
 import {
+    BackHandler,
     Modal,
     Platform,
     Pressable,
@@ -76,12 +77,15 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
     // journey goes with it rather than leaving a screen for it behind.
     const onDeleted = () => navigation.popToTop();
 
-    // The Trends window the user picked. Ordinary local state: screens pushed
-    // on top of this one leave it mounted, so the selection survives a trip to
-    // a Record and back, and dies with the screen when the user pops out to the
-    // list - which is the exploration scoping, for free (ADR-2).
-    const [timeRangeSelection, setTimeRangeSelection] =
-        useState<TimeRangeSelection>(DEFAULT_TIME_RANGE_SELECTION);
+    // The Trends windows this visit has been through, the last one active. One
+    // array rather than a current-plus-previous pair, so there is exactly one
+    // place the active window can come from.
+    //
+    // Ordinary local state: it survives a Record screen sitting on top and dies
+    // when this screen is popped, which is the visit scoping from ADR-2.
+    const [timeRangeHistory, setTimeRangeHistory] =
+        useState<TimeRangeSelection[]>([DEFAULT_TIME_RANGE_SELECTION]);
+    const timeRangeSelection = timeRangeHistory[timeRangeHistory.length - 1];
     const [observation, setObservation] = useState<Observation | null>(null);
     const [records, setRecords] = useState<DomainRecord[]>([]);
     const [chartRecords, setChartRecords] = useState<DomainRecord[]>([]);
@@ -123,6 +127,31 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
         useCallback(() => {
             loadTrendData(timeRangeSelection);
         }, [observationId, timeRangeSelection]),
+    );
+
+    // On focus rather than on mount: `BackHandler` listeners are global and fire
+    // whichever screen is on top, so a mount-scoped one would go on unzooming
+    // these charts while the user was backing out of a Record. And `BackHandler`
+    // rather than React Navigation's `beforeRemove`, which sees every route
+    // removal - the header arrow included, and that has to keep leaving. Open
+    // dialogs need nothing here: an Android `Modal` takes the press in its own
+    // window, so this listener is never reached.
+    useFocusEffect(
+        useCallback(() => {
+            const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+                // Popping mid-fetch would stack a second reload on the one in
+                // flight - the guard chart taps already carry.
+                if (loadingTrends) {
+                    return true;
+                }
+                if (timeRangeHistory.length === 1) {
+                    return false;
+                }
+                setTimeRangeHistory(history => history.slice(0, -1));
+                return true;
+            });
+            return () => subscription.remove();
+        }, [loadingTrends, timeRangeHistory]),
     );
 
     const loadRecentRecords = async () => {
@@ -187,7 +216,9 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
         if (!chartRange || spanOf(zoomed) >= spanOf(chartRange)) {
             return;
         }
-        setTimeRangeSelection({kind: 'custom', range: zoomed});
+        // Only this branch touches the history: a tap that opens a Record, or one
+        // already at rest at a single day, leaves nothing for back to undo.
+        setTimeRangeHistory(history => [...history, {kind: 'custom', range: zoomed}]);
     };
 
     const toggleExpand = (recordId: string) => {
@@ -345,9 +376,12 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>TRENDS</Text>
                             <View style={styles.trendsSelector}>
+                                {/* A window picked outright - here or in the range
+                                    modal below - starts a fresh history: the user
+                                    is stating where to be, not descending. */}
                                 <TimeRangeSelector
                                     selected={timeRangeSelection}
-                                    onSelectPreset={preset => setTimeRangeSelection({kind: 'preset', preset})}
+                                    onSelectPreset={preset => setTimeRangeHistory([{kind: 'preset', preset}])}
                                     onPressCustom={() => setCustomModalVisible(true)}
                                     disabled={loadingTrends}
                                 />
@@ -357,7 +391,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                 initialRange={getTimeRangeForSelection(timeRangeSelection)}
                                 onCancel={() => setCustomModalVisible(false)}
                                 onApply={range => {
-                                    setTimeRangeSelection({kind: 'custom', range});
+                                    setTimeRangeHistory([{kind: 'custom', range}]);
                                     setCustomModalVisible(false);
                                 }}
                             />

@@ -18,6 +18,8 @@ BOOT_TIMEOUT=180
 BUILD_TIMEOUT=900
 DISPLAY_TIMEOUT=60
 JS_TIMEOUT=150
+# How long a stalled bundle fetch is given before the launch is re-issued.
+JS_RETRY_INTERVAL=30
 LOG_FILE="$(mktemp -t emulator-setup-build.XXXXXX.log)"
 
 log() { echo "[emulator-setup] $*" >&2; }
@@ -137,12 +139,16 @@ log "App window displayed — reconnecting via 10.0.2.2 before the JS wait"
 # emulator cannot reliably reach - the app then hangs on a "Bundling" banner and
 # never starts JS, so the wait below would time out. Relaunch explicitly against
 # 10.0.2.2 (the emulator's stable host-loopback alias, as the reload step in the
-# emulator-verifier skill uses) so the bundle loads deterministically. Clear
-# logcat first so the "Running main" wait matches only this relaunch.
-adb -s "$DEVICE" shell am force-stop "$PACKAGE" >/dev/null 2>&1
+# emulator-verifier skill uses) so the bundle loads deterministically.
+relaunch_dev_client() {
+  adb -s "$DEVICE" shell am force-stop "$PACKAGE" >/dev/null 2>&1
+  adb -s "$DEVICE" shell am start -a android.intent.action.VIEW \
+    -d "exp+factor://expo-development-client/?url=http://10.0.2.2:${PORT}" >/dev/null 2>&1
+}
+
+# Cleared first so the "Running main" wait matches only these relaunches.
 adb -s "$DEVICE" logcat -c
-adb -s "$DEVICE" shell am start -a android.intent.action.VIEW \
-  -d "exp+factor://expo-development-client/?url=http://10.0.2.2:${PORT}" >/dev/null 2>&1
+relaunch_dev_client
 
 # "Displayed" only means the native window was composited — for a fresh
 # React Native app that's typically still a blank root view. The JS bundle
@@ -151,6 +157,13 @@ adb -s "$DEVICE" shell am start -a android.intent.action.VIEW \
 # connectivity probes (the same known cause as the bundle-load gotcha in
 # the emulator-verifier skill). Wait for the JS runtime to actually start —
 # a generic React Native signal, not app-specific — before calling it ready.
+#
+# A bundle fetch that loses that race doesn't recover on its own: the dev
+# client sits on its "Bundling" banner indefinitely, so waiting longer never
+# helps and the whole boot+build is lost to a transient stall. Re-issue the
+# launch periodically instead - a fresh attempt is what gets it moving once
+# the network has settled, and one that succeeded already has left its marker
+# in the buffer this still greps.
 waited=0
 until adb -s "$DEVICE" logcat -d 2>/dev/null | grep -q 'ReactNativeJS: Running "main"'; do
   if ! kill -0 "$BUILD_PID" 2>/dev/null; then
@@ -159,6 +172,10 @@ until adb -s "$DEVICE" logcat -d 2>/dev/null | grep -q 'ReactNativeJS: Running "
   sleep 2
   waited=$((waited + 2))
   [ "$waited" -ge "$JS_TIMEOUT" ] && fail "JS app did not start running within ${JS_TIMEOUT}s of the window being displayed — see $LOG_FILE"
+  if [ "$((waited % JS_RETRY_INTERVAL))" -eq 0 ]; then
+    log "no JS after ${waited}s — the bundle fetch has stalled; relaunching"
+    relaunch_dev_client
+  fi
 done
 
 log "JS app running"

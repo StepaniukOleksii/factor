@@ -18,7 +18,7 @@ export function ScreenHeader(
     return (
         <View style={styles.header}>
             {onBack ? (
-                <TouchableOpacity onPress={onBack} style={styles.actionButton}>
+                <TouchableOpacity onPress={onBack} style={styles.actionButton} accessibilityLabel="Back">
                     <MaterialIcons name="arrow-back" size={24} color={COLORS.primary}/>
                 </TouchableOpacity>
             ) : (

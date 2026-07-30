@@ -1,0 +1,320 @@
+appId: com.anonymous.factor
+---
+# System back steps back up the zoom ladder, one window per press, and leaves the
+# screen only once there is no zoom left to undo (see
+# .sdd/epics/3-observation-visualization/3-10-back-to-unzoom-trend-chart/spec.md).
+# The Vitest suite drives the screen's listener directly; only this flow presses
+# the real Android back button, so it is the only place the dialogs, the header
+# arrow and a screen pushed on top are shown to be unaffected by it.
+#
+# Which window is showing is read from the selector segments' `selected` state -
+# the charts are Skia canvases and say nothing else a flow can read.
+#
+# The screen ignores both a back press and a segment tap while a window's Records
+# are still loading, so every step that changes the window is followed by a wait
+# for the selector to leave its disabled state. Without it the flow races the
+# fetch it just triggered, and the press that lands mid-flight is swallowed by
+# design rather than by any bug.
+- launchApp:
+    clearState: true
+# Dev-client launcher preamble - a cleared launch lands on Expo's dev-server
+# launcher. Wait for it to detect the local Metro server, then connect via
+# 10.0.2.2 (the emulator's stable host-loopback alias); see
+# create-observation-and-record.yaml for the full rationale.
+- extendedWaitUntil:
+    visible: "http://10.0.2.2:8081"
+    timeout: 30000
+- tapOn: "http://10.0.2.2:8081"
+- tapOn:
+    text: "Continue"
+    optional: true
+
+# --- Seed data ---------------------------------------------------------------
+# A zoom needs a chart point folding several Records - a fixture far too slow to
+# build through the Record form, since every Record would need backdating one
+# native date picker at a time. The seeded set already carries one, so this flow
+# reseeds instead, and the dev menu that a cleared launch opens by itself is the
+# only place a flow can reach "Reseed test data": opening it otherwise takes a
+# shake or KEYCODE_MENU, neither of which Maestro can send.
+- extendedWaitUntil:
+    visible: "CUSTOM MENU ITEMS"
+    timeout: 30000
+- tapOn: "Reseed test data"
+- runFlow:
+    when:
+      visible: "CUSTOM MENU ITEMS"
+    commands:
+      - back
+- assertVisible: "Observations"
+# The list was already mounted when the seed landed and only reloads on focus, so
+# bounce through another screen to bring it back.
+- tapOn: "Create observation"
+- back
+- extendedWaitUntil:
+    visible: "stale records"
+    timeout: 15000
+
+# --- The screen opens at the default window, with nothing behind it ----------
+# `stale records` is the fixture every zoom below works from: its three Records
+# sit 42-58 days back, so a year-long window folds all three into one aggregated
+# point - and a chart drawing a single point draws it in the canvas's vertical
+# middle, which is where Maestro taps.
+- tapOn: "stale records"
+- assertVisible: "TRENDS"
+- assertVisible:
+    id: "time-range-preset-1M"
+    selected: true
+- assertVisible:
+    id: "time-range-custom"
+    selected: false
+
+# --- Windows picked outright leave nothing to undo ---------------------------
+# Picking one states where to be rather than descending from somewhere, so
+# however many are picked, the next press still leaves.
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "time-range-preset-1D"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "time-range-preset-1Y"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- assertVisible:
+    id: "time-range-preset-1Y"
+    selected: true
+- back
+- assertVisible: "Observations"
+
+# --- Zoom --------------------------------------------------------------------
+# Reopening is a new visit: the default window is back, and the 1Y picked above
+# went with the screen that held it.
+- tapOn: "stale records"
+- assertVisible:
+    id: "time-range-preset-1M"
+    selected: true
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "time-range-preset-1Y"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+# The one step in the suite that cannot go by text: a chart point is drawn inside
+# a Skia canvas, which exposes neither text nor an accessibility label, so this
+# aims at the chart's own testID. The Observation has a single Numeric metric, so
+# there is exactly one chart to hit.
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+
+# --- A screen pushed on top does not take the zoom with it -------------------
+# The listener is registered on focus rather than on mount, so the press that
+# leaves the Record form cannot reach the charts underneath and unzoom them. A
+# mount-scoped listener would fail here and nowhere else.
+- tapOn: "Add Record"
+- assertNotVisible: "TRENDS"
+- back
+- assertVisible: "TRENDS"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+
+# --- A dialog over the zoom takes the press itself ---------------------------
+# Each runs in its own Android window and closes through its own onRequestClose,
+# so the screen's listener never sees the press and the window stays put.
+- tapOn: "More options"
+- assertVisible: "Delete"
+- back
+- assertNotVisible: "Delete"
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+
+- tapOn:
+    id: "time-range-custom"
+- assertVisible: "Custom time range"
+- back
+- assertNotVisible: "Custom time range"
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+
+# --- The feature -------------------------------------------------------------
+# The press restores the window the zoom started from rather than leaving.
+- back
+- assertVisible:
+    id: "time-range-preset-1Y"
+    selected: true
+- assertVisible:
+    id: "time-range-custom"
+    selected: false
+- assertVisible: "stale records"
+# Nothing left to undo, so this one leaves, exactly as a back press did before.
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- back
+- assertVisible: "Observations"
+
+# --- A cancelled range modal forgets nothing ---------------------------------
+- tapOn: "stale records"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "time-range-preset-1Y"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "time-range-custom"
+- assertVisible: "Custom time range"
+- tapOn: "Cancel custom time range"
+- back
+- assertVisible:
+    id: "time-range-preset-1Y"
+    selected: true
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- back
+- assertVisible: "Observations"
+
+# --- An applied range is a fresh starting point ------------------------------
+# Applied unchanged, so the window on show is the zoom's own - but choosing it is
+# still a statement of where to be, and what was behind it is forgotten.
+- tapOn: "stale records"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "time-range-preset-1Y"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "time-range-custom"
+- assertVisible: "Custom time range"
+- tapOn: "Apply custom time range"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- back
+- assertVisible: "Observations"
+
+# --- So is a preset picked after a zoom --------------------------------------
+- tapOn: "stale records"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "time-range-preset-1Y"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+- tapOn:
+    id: "time-range-preset-1W"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- back
+- assertVisible: "Observations"
+
+# --- The header arrow leaves whether or not a zoom is showing ----------------
+- tapOn: "stale records"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "time-range-preset-1Y"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+- tapOn: "Back"
+- assertVisible: "Observations"
