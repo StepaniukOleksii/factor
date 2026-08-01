@@ -2,7 +2,7 @@
 name: spec-creator
 description: Creates a new feature specification based on the skill's worked example and the project guidelines. Triggered when the user asks to create or write a spec for a new feature.
 metadata:
-  version: "1.8.0"
+  version: "1.9.0"
 ---
 
 # Spec Creator Skill
@@ -81,6 +81,10 @@ existing pattern to follow.
 **Reuse the seeded fixtures.** Before writing a manual step that enters data by hand, check `testing-data.md`
 for a seeded Observation or Metric already covering the scenario, and name it in the step. Add seed data only
 when nothing fits; only a complex feature needs that addition written up in `testing-data.md`.
+
+**Decide the E2E flow.** `testing-android-e2e.md` states which features get one and how flows are named.
+Record the outcome as an `E2E` bullet in Verification's Automated Tests list — the flow's filename and the
+fixture it opens from, or `None` with the reason.
 
 ## 3. Saving the Spec
 

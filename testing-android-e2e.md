@@ -2,35 +2,30 @@
 
 ## Purpose
 
-E2E tests drive the **real, running app** on an Android emulator the way a person would — tapping
-buttons, typing into fields, and asserting on what actually appears on screen. They exercise the one
-combination the Vitest suite mocks out piece by piece: real navigation, real SQLite, and real Skia
-chart rendering together (see the automated-tests section of
-[testing-android-manually.md](testing-android-manually.md#automated-tests-and-typechecking)).
+E2E tests drive the **real, running app** on an Android emulator the way a person would. They exercise the one
+combination the Vitest suite mocks out piece by piece: real navigation, real SQLite, and real Skia chart rendering
+together.
 
-They complement, not replace, the Vitest unit/component tests. Keep E2E to a few high-value golden
-paths; push detailed edge-case coverage down into Vitest, which is far faster and needs no emulator.
+## What gets a flow
 
-## Tooling: Maestro
+Most client-facing features get one, so that a green suite means the app works rather than that a
+handful of paths do.
 
-We use [Maestro](https://maestro.mobile.dev) for E2E. Flows are written as declarative YAML
-(`tapOn`, `inputText`, `assertVisible`, …), which stays readable and tolerates minor UI timing
-without hand-written waits.
+* **One flow per spec**, named after the spec's folder — `.maestro/3-10-back-to-unzoom-trend-chart.yaml`
+  covers `.sdd/epics/3-observation-visualization/3-10-back-to-unzoom-trend-chart/`. The filename is
+  the entire coverage map, so there is nothing to keep in sync.
+* **One representative pass per feature.** A flow walks the path a user would take, once. Variations,
+  edge cases, validation and error states stay in Vitest, which is faster and needs no emulator.
+  Covering each requirement separately instead would give a six-requirement spec six flows. The suite
+  then grows slow enough to start skipping, and a suite that isn't run protects nothing.
+* **Property flows** cover invariants belonging to no single spec — that data survives a process
+  restart, for instance. They take a descriptive name with no numeric prefix, which is what marks
+  them as not a spec's flow.
+* **Whether a feature gets a flow is decided when its spec is written**, and recorded in that spec's
+  Verification section — the only place that decision is written down.
 
-Maestro is a standalone CLI, **not** an npm dependency — install it once on the machine that runs the
-tests:
-
-```bash
-curl -Ls "https://get.maestro.mobile.dev" | bash
-```
-
-Then confirm it's on `PATH`:
-
-```bash
-maestro --version
-```
-
-(On Windows, install under WSL or Git Bash per the Maestro docs; it drives the same emulator via `adb`.)
+Flows are therefore independent: adding one never disturbs another, and a failure names the feature
+that broke.
 
 ## Prerequisites
 
@@ -38,9 +33,10 @@ E2E runs against the **dev-client build connecting to Metro** on the `Pixel_7` e
 e2e` runner (below) handles booting the emulator, building/installing the dev client, and starting
 Metro for you — so the only standing prerequisites are:
 
-* **The `Pixel_7` AVD and the Android SDK/JDK are set up** — the same one-time setup as manual testing
-  ([testing-android-manually.md](testing-android-manually.md#one-time-setup)).
-* **The Maestro CLI is installed** and on `PATH` (see above).
+* **The `Pixel_7` AVD and the Android SDK/JDK are set up**
+* **The Maestro CLI is installed** and on `PATH`. It's a standalone CLI, **not** an npm dependency:
+  install it once per machine with `curl -Ls "https://get.maestro.mobile.dev" | bash`, and confirm with
+  `maestro --version`. On Windows, install it under WSL or Git Bash; it drives the same emulator via `adb`.
 
 The emulator (not a physical device) is required: flows reach Metro at `10.0.2.2:8081`, the emulator's
 fixed host-loopback alias, which does not resolve on a physical device.
@@ -48,8 +44,8 @@ fixed host-loopback alias, which does not resolve on a physical device.
 ## Running the tests
 
 ```bash
-npm run e2e                                        # = bash scripts/e2e.sh — all flows
-npm run e2e -- .maestro/create-observation-and-record.yaml   # a single flow
+npm run e2e                            # = bash scripts/e2e.sh — all flows
+npm run e2e -- .maestro/<flow>.yaml    # a single flow
 ```
 
 `npm run e2e` runs [`scripts/e2e.sh`](scripts/e2e.sh), which wraps the run end to end:
@@ -73,7 +69,7 @@ Booting and rebuilding on every run is wasteful while authoring. Keep the emulat
 
 ```bash
 E2E_KEEP_EMULATOR=1 npm run e2e     # leaves the emulator + Metro running at the end
-maestro test .maestro/foo.yaml      # re-run directly against the still-running app
+maestro test .maestro/<flow>.yaml   # re-run directly against the still-running app
 maestro studio                      # interactive inspector for discovering selectors
 ```
 
@@ -81,18 +77,9 @@ Tear down manually when done: `bash scripts/emulator-teardown.sh`.
 
 ## How flows are written
 
-Each flow is one YAML file directly in `.maestro/`, beginning with the app id:
-
-```yaml
-appId: com.anonymous.factor   # matches app.json's android.package
----
-- runFlow:
-    file: subflows/launch.yaml
-    env:
-      DEV_COMMAND: reset
-      READY_TEXT: "No observations created yet."
-- ...
-```
+Each flow is one file of declarative [Maestro](https://maestro.mobile.dev) YAML (`tapOn`, `inputText`,
+`assertVisible`, …) directly in `.maestro/`, opening with the app id — `com.anonymous.factor`, matching
+`app.json`'s `android.package`.
 
 `.maestro/subflows/` holds fragments shared between flows. `.maestro/config.yaml` limits the runner's
 glob to `*.yaml` in `.maestro/` itself; without it, `maestro test .maestro/` recurses and runs every
@@ -116,6 +103,8 @@ Conventions this project follows:
 * **`testID` only where nothing readable exists**, or where a flow must read state text cannot express.
   Both current uses qualify: `numeric-trend-chart-pressable` is a Skia canvas, `time-range-preset-1Y`
   is matched on its `selected` state.
+* **Comment why a step exists, not what it does.** `tapOn: "Add Record"` explains itself; the reason a
+  flow waits, reseeds, or reaches for a `testID` does not.
 
 ### Two rules for dev links
 
@@ -131,9 +120,8 @@ Neither is visible from reading the YAML, and both cost a failed run to find:
 
 ## Gotchas
 
-* **Emulator + Metro only.** Two things tie these flows to a dev build on the emulator: `10.0.2.2` is
-  the emulator's own host-loopback alias and resolves nowhere else, and the dev commands are
-  `__DEV__`-only. A release-build target would need both replaced.
+* **Emulator + Metro only.** Besides the `10.0.2.2` dependency above, the dev links are `__DEV__`-only
+  commands. A release-build target would need both replaced.
 * **A plain `launchApp` hangs rather than fails.** Left to itself the dev client reconnects to the
   host's LAN IP, which the emulator cannot reach, then sits on its bundling banner indefinitely —
   waiting never recovers it. Hence `subflows/launch.yaml` passing Metro's address explicitly, as

@@ -40,6 +40,8 @@
 * Test business-critical behavior.
 * Add tests for bug fixes.
 * Keep tests readable and maintainable.
+* End-to-end coverage is decided per spec rather than per class — see
+  [testing-android-e2e.md](../../testing-android-e2e.md).
 
 ---
 
