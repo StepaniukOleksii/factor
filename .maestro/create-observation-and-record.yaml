@@ -4,33 +4,13 @@ appId: com.anonymous.factor
 # it, and confirm it shows up. Touches real navigation, real SQLite, and real
 # Skia chart rendering together - the one combination every Vitest test mocks
 # out piece by piece (see testing-android-manually.md).
-- launchApp:
-    clearState: true
-# Clearing app state also clears the dev-client's memory of which Metro
-# server to connect to, so a cleared launch lands on Expo's native launcher
-# picker screen instead of the JS app. `10.0.2.2` is the Android emulator's
-# fixed host-loopback alias, so this address is stable across machines as
-# long as this runs against the emulator (not a physical device). The launcher
-# detects the local Metro server a beat after the screen itself renders, so wait
-# for that row before tapping - otherwise the tap races ahead and misses it.
-- extendedWaitUntil:
-    visible: "http://10.0.2.2:8081"
-    timeout: 30000
-- tapOn: "http://10.0.2.2:8081"
-# First-ever connect on a cleared install also opens the dev menu itself,
-# with a one-time "this is the developer menu" tip on top of it. "Continue"
-# dismisses the tip, leaving the dev menu open underneath; the Android back
-# button is what closes the dev menu overlay and reveals the running app
-# underneath it ("Go home" would instead exit back to the launcher).
-- tapOn:
-    text: "Continue"
-    optional: true
+
+# Empty to start, so a re-run doesn't stack a second "Sleep" beside the first.
 - runFlow:
-    when:
-      visible: "CUSTOM MENU ITEMS"
-    commands:
-      - back
-- assertVisible: "Observations"
+    file: subflows/launch.yaml
+    env:
+      DEV_COMMAND: reset
+      READY_TEXT: "No observations created yet."
 
 - tapOn: "Create observation"
 - assertVisible: "New Observation"

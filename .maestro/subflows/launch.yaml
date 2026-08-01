@@ -1,0 +1,17 @@
+appId: com.anonymous.factor
+---
+# The opening every flow shares: start the app against Metro, then put the
+# database into a known state. See testing-android-e2e.md for why the launch
+# passes Metro's address explicitly, and for the rules dev links follow.
+#
+#   DEV_COMMAND — `reset` for an empty database, `seed` for the testing-data.md set
+#   READY_TEXT  — text the list shows only once that command has landed
+- stopApp
+- openLink: exp+factor://expo-development-client/?url=http://10.0.2.2:8081
+- extendedWaitUntil:
+    visible: "Observations"
+    timeout: 90000
+- openLink: exp+factor://dev/${DEV_COMMAND}
+- extendedWaitUntil:
+    visible: "${READY_TEXT}"
+    timeout: 30000

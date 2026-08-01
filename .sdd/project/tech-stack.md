@@ -123,8 +123,12 @@ Maestro is used for end-to-end (E2E) testing — driving the running app on an A
 Rationale:
 
 * Declarative YAML flows: readable, low-maintenance, tolerant of minor UI timing without hand-written waits
-* Selects by visible text and accessibility labels, so no app-side test harness or code changes are needed
+* Selects by visible text and accessibility labels, so a flow asserts what a user actually sees rather than
+  an invisible tag; `testID` stays a fallback for elements that expose no readable text, such as a Skia canvas
 * Single self-contained CLI (installed outside npm)
+
+Flows do need a small app-side harness: fixtures are set up through `__DEV__`-only deep-link commands,
+since a flow cannot open the dev menu. See [testing-android-e2e.md](../../testing-android-e2e.md).
 
 ---
 

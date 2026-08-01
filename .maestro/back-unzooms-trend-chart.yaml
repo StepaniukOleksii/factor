@@ -15,44 +15,16 @@ appId: com.anonymous.factor
 # for the selector to leave its disabled state. Without it the flow races the
 # fetch it just triggered, and the press that lands mid-flight is swallowed by
 # design rather than by any bug.
-- launchApp:
-    clearState: true
-# Dev-client launcher preamble - a cleared launch lands on Expo's dev-server
-# launcher. Wait for it to detect the local Metro server, then connect via
-# 10.0.2.2 (the emulator's stable host-loopback alias); see
-# create-observation-and-record.yaml for the full rationale.
-- extendedWaitUntil:
-    visible: "http://10.0.2.2:8081"
-    timeout: 30000
-- tapOn: "http://10.0.2.2:8081"
-- tapOn:
-    text: "Continue"
-    optional: true
 
 # --- Seed data ---------------------------------------------------------------
-# A zoom needs a chart point folding several Records - a fixture far too slow to
-# build through the Record form, since every Record would need backdating one
-# native date picker at a time. The seeded set already carries one, so this flow
-# reseeds instead, and the dev menu that a cleared launch opens by itself is the
-# only place a flow can reach "Reseed test data": opening it otherwise takes a
-# shake or KEYCODE_MENU, neither of which Maestro can send.
-- extendedWaitUntil:
-    visible: "CUSTOM MENU ITEMS"
-    timeout: 30000
-- tapOn: "Reseed test data"
+# A zoom needs a chart point folding several Records, which the Record form
+# cannot build at any reasonable speed - each one would need backdating through
+# a native date picker. The seeded set already carries one.
 - runFlow:
-    when:
-      visible: "CUSTOM MENU ITEMS"
-    commands:
-      - back
-- assertVisible: "Observations"
-# The list was already mounted when the seed landed and only reloads on focus, so
-# bounce through another screen to bring it back.
-- tapOn: "Create observation"
-- back
-- extendedWaitUntil:
-    visible: "stale records"
-    timeout: 15000
+    file: subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "stale records"
 
 # --- The screen opens at the default window, with nothing behind it ----------
 # `stale records` is the fixture every zoom below works from: its three Records

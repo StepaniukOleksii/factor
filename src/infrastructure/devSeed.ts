@@ -17,12 +17,18 @@ import {buildSeedData} from './devSeedData';
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
 
-export async function reseedDevData(): Promise<void> {
+/** Wipes every Observation without seeding anything back — the empty-state fixture. */
+export async function clearDevData(): Promise<void> {
   console.log('[devSeed] Clearing existing observations...');
   const existing = await observationRepository.findAll();
   for (const observation of existing) {
     await observationRepository.delete(observation.id);
   }
+  console.log('[devSeed] Cleared.');
+}
+
+export async function reseedDevData(): Promise<void> {
+  await clearDevData();
 
   console.log('[devSeed] Inserting seed dataset...');
   const seedData = buildSeedData();

@@ -81,36 +81,63 @@ Tear down manually when done: `bash scripts/emulator-teardown.sh`.
 
 ## How flows are written
 
-Each flow is one YAML file in `.maestro/`, beginning with the app id:
+Each flow is one YAML file directly in `.maestro/`, beginning with the app id:
 
 ```yaml
 appId: com.anonymous.factor   # matches app.json's android.package
 ---
-- launchApp: { clearState: true }
+- runFlow:
+    file: subflows/launch.yaml
+    env:
+      DEV_COMMAND: reset
+      READY_TEXT: "No observations created yet."
 - ...
 ```
 
+`.maestro/subflows/` holds fragments shared between flows. `.maestro/config.yaml` limits the runner's
+glob to `*.yaml` in `.maestro/` itself; without it, `maestro test .maestro/` recurses and runs every
+fragment as a flow.
+
 Conventions this project follows:
 
-* **`clearState: true` on launch** makes every run idempotent — it wipes the local database so a
-  flow that creates a "Sleep" observation doesn't accumulate duplicates across runs.
+* **Open with `subflows/launch.yaml`.** It starts the app against Metro and puts the database into a
+  known state, parameterised by `DEV_COMMAND` (`reset` for empty, `seed` for the
+  [testing-data.md](testing-data.md) fixture set) and `READY_TEXT` (text that appears only once that
+  command has landed). Starting from a stated fixture is what makes a re-run idempotent.
+* **Set fixtures up through dev links, not through the UI.** `exp+factor://dev/seed` and
+  `exp+factor://dev/reset` are `__DEV__`-only commands handled in `App.tsx`. They exist because a flow
+  cannot open the dev menu — that takes a shake or `KEYCODE_MENU` — and because building fixtures
+  through the Record form is slow and impossible for backdated Records.
 * **Select by visible text and accessibility labels, never coordinates.** Buttons match on their
   label (`"Add Record"`), inputs on their `accessibilityLabel` (`"Hours value"`) or `placeholder`
-  (`"e.g., Duration"`), screens on their header text. This keeps flows stable across layout changes.
-  When adding a screen, give tappable elements an `accessibilityLabel` so a flow has a stable handle.
-* **Dev-launcher handling.** Because `clearState` also clears the dev client's memory of which Metro
-  server to use, a cleared launch lands on Expo's launcher/dev-menu screens first. The flow dismisses
-  them with `optional: true` steps (tap `http://10.0.2.2:8081`, tap `Continue`, `back` out of the dev
-  menu). `optional` steps are skipped silently on a non-cleared relaunch where those screens don't
-  appear.
+  (`"e.g., Duration"`), screens on their header text. This keeps flows stable across layout changes,
+  and keeps a passing assertion evidence that a user would see the same thing. When adding a screen,
+  give tappable elements an `accessibilityLabel` so a flow has a stable handle.
+* **`testID` only where nothing readable exists**, or where a flow must read state text cannot express.
+  Both current uses qualify: `numeric-trend-chart-pressable` is a Skia canvas, `time-range-preset-1Y`
+  is matched on its `selected` state.
+
+### Two rules for dev links
+
+Neither is visible from reading the YAML, and both cost a failed run to find:
+
+* **Fire a link only once the app is on screen.** `launchApp` returns before the JS bundle runs, and a
+  link arriving before the listener exists is dropped — Android does not re-deliver it, and
+  `getInitialURL` only ever returns the intent that launched the activity.
+* **Wait for a link's effect, never just the next step.** `openLink` returns on delivery, seconds
+  before a seed finishes writing. The navigator remounts only once a command resolves, so waiting for
+  the resulting text proves the whole command landed. Skip the wait and you act on a half-written
+  database, with the `openLink` step still reported green.
 
 ## Gotchas
 
-* **Emulator + Metro only.** The `10.0.2.2` launcher step ties these flows to the emulator running a
-  dev build against Metro. They will not pass against a physical device or a standalone/release APK
-  (a release build has no launcher picker — the `optional` steps would just be skipped, but the
-  address assumption still makes the emulator the supported target). If we later add a release-build
-  target, that would be a separate, launcher-free flow.
+* **Emulator + Metro only.** Two things tie these flows to a dev build on the emulator: `10.0.2.2` is
+  the emulator's own host-loopback alias and resolves nowhere else, and the dev commands are
+  `__DEV__`-only. A release-build target would need both replaced.
+* **A plain `launchApp` hangs rather than fails.** Left to itself the dev client reconnects to the
+  host's LAN IP, which the emulator cannot reach, then sits on its bundling banner indefinitely —
+  waiting never recovers it. Hence `subflows/launch.yaml` passing Metro's address explicitly, as
+  [`scripts/emulator-setup.sh`](scripts/emulator-setup.sh) does.
 * **`hideKeyboard` can be flaky on Android.** Flows call it before tapping footer buttons so the
   keyboard doesn't cover them; if a run fails intermittently at such a step, that's the usual cause.
 * **Stale dev client.** If a native dependency changed, rebuild with `npm run android` before running

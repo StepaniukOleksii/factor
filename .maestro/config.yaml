@@ -1,0 +1,4 @@
+# Without this glob `maestro test .maestro/` recurses and runs every fragment in
+# subflows/ as a flow of its own.
+flows:
+  - "*.yaml"
