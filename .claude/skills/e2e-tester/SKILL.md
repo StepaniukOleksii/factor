@@ -2,7 +2,7 @@
 name: e2e-tester
 description: Writes, runs, and debugs Maestro E2E flows for Factor. Use when a spec's Verification section names an E2E flow to be written, when the user asks for a Maestro flow, or when an E2E run fails and needs diagnosing. Not for Vitest unit/component tests, and not for screenshot-based visual checks (see emulator-verifier).
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 # E2E Tester
@@ -101,6 +101,12 @@ npm run e2e -- .maestro/<flow>.yaml
 That rebuilds, relaunches and tears down. A flow that only passes against an app already warmed up by the
 previous attempt is not finished.
 
+Where the entry in `.sdd/backlog/backlog-test.md` named existing flows as well, run the whole suite —
+bare `npm run e2e` — since a single-flow run proves nothing about the ones you edited.
+
+Green from cold retires that entry: **delete it**, leaving the file's header and intro behind if it was
+the last one.
+
 If you stop before that point, tear the environment down yourself: `bash scripts/emulator-teardown.sh`.
 
 ## 6. Diagnose Failures
@@ -114,6 +120,7 @@ client after a native dependency change, `hideKeyboard` flakiness, and the two d
 ## 7. Scope Limit
 
 This skill writes flows, plus the accessibility labels and testIDs they need to reach elements. It does
-not change product behaviour, write Vitest tests, or edit specs beyond the amendment in step 2.
+not change product behaviour, write Vitest tests, or edit specs beyond the amendment in step 2 — the
+backlog entry struck in step 5 is the only other file it touches.
 
 If a flow fails because the app is wrong, **report the defect — do not fix it here.**
