@@ -11,6 +11,14 @@ appId: com.anonymous.factor
 - extendedWaitUntil:
     visible: "Observations"
     timeout: 90000
+
+# Empty the database first, whatever the flow went on to ask for, so READY_TEXT
+# below cannot already be on screen from the previous flow's fixture.
+- openLink: exp+factor://dev/reset
+- extendedWaitUntil:
+    visible: "No observations created yet."
+    timeout: 30000
+
 - openLink: exp+factor://dev/${DEV_COMMAND}
 - extendedWaitUntil:
     visible: "${READY_TEXT}"

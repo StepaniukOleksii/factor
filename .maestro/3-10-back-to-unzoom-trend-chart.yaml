@@ -1,20 +1,16 @@
 appId: com.anonymous.factor
 ---
 # System back steps back up the zoom ladder, one window per press, and leaves the
-# screen only once there is no zoom left to undo (see
-# .sdd/epics/3-observation-visualization/3-10-back-to-unzoom-trend-chart/spec.md).
-# The Vitest suite drives the screen's listener directly; only this flow presses
-# the real Android back button, so it is the only place the dialogs, the header
-# arrow and a screen pushed on top are shown to be unaffected by it.
+# screen only once there is no zoom left to undo. The Vitest suite drives the
+# screen's listener directly; only this flow presses the real Android back button,
+# so it is the only place the dialogs, the header arrow and a screen pushed on top
+# are shown to be unaffected by it.
 #
 # Which window is showing is read from the selector segments' `selected` state -
 # the charts are Skia canvases and say nothing else a flow can read.
 #
-# The screen ignores both a back press and a segment tap while a window's Records
-# are still loading, so every step that changes the window is followed by a wait
-# for the selector to leave its disabled state. Without it the flow races the
-# fetch it just triggered, and the press that lands mid-flight is swallowed by
-# design rather than by any bug.
+# Every step that changes the window is followed by `subflows/wait-for-trends.yaml`;
+# that file explains why.
 
 # --- Seed data ---------------------------------------------------------------
 # A zoom needs a chart point folding several Records, which the Record form
@@ -43,25 +39,13 @@ appId: com.anonymous.factor
 # --- Windows picked outright leave nothing to undo ---------------------------
 # Picking one states where to be rather than descending from somewhere, so
 # however many are picked, the next press still leaves.
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-preset-1D"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-preset-1Y"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - assertVisible:
     id: "time-range-preset-1Y"
     selected: true
@@ -75,29 +59,17 @@ appId: com.anonymous.factor
 - assertVisible:
     id: "time-range-preset-1M"
     selected: true
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-preset-1Y"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 # The one step in the suite that cannot go by text: a chart point is drawn inside
 # a Skia canvas, which exposes neither text nor an accessibility label, so this
 # aims at the chart's own testID. The Observation has a single Numeric metric, so
 # there is exactly one chart to hit.
 - tapOn:
     id: "numeric-trend-chart-pressable"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - assertVisible:
     id: "time-range-custom"
     selected: true
@@ -110,11 +82,7 @@ appId: com.anonymous.factor
 - assertNotVisible: "TRENDS"
 - back
 - assertVisible: "TRENDS"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - assertVisible:
     id: "time-range-custom"
     selected: true
@@ -150,35 +118,19 @@ appId: com.anonymous.factor
     selected: false
 - assertVisible: "stale records"
 # Nothing left to undo, so this one leaves, exactly as a back press did before.
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - back
 - assertVisible: "Observations"
 
 # --- A cancelled range modal forgets nothing ---------------------------------
 - tapOn: "stale records"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-preset-1Y"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "numeric-trend-chart-pressable"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-custom"
 - assertVisible: "Custom time range"
@@ -187,11 +139,7 @@ appId: com.anonymous.factor
 - assertVisible:
     id: "time-range-preset-1Y"
     selected: true
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - back
 - assertVisible: "Observations"
 
@@ -199,92 +147,48 @@ appId: com.anonymous.factor
 # Applied unchanged, so the window on show is the zoom's own - but choosing it is
 # still a statement of where to be, and what was behind it is forgotten.
 - tapOn: "stale records"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-preset-1Y"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "numeric-trend-chart-pressable"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-custom"
 - assertVisible: "Custom time range"
 - tapOn: "Apply custom time range"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - back
 - assertVisible: "Observations"
 
 # --- So is a preset picked after a zoom --------------------------------------
 - tapOn: "stale records"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-preset-1Y"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "numeric-trend-chart-pressable"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - assertVisible:
     id: "time-range-custom"
     selected: true
 - tapOn:
     id: "time-range-preset-1W"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - back
 - assertVisible: "Observations"
 
 # --- The header arrow leaves whether or not a zoom is showing ----------------
 - tapOn: "stale records"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-preset-1Y"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "numeric-trend-chart-pressable"
-- extendedWaitUntil:
-    visible:
-      id: "time-range-custom"
-      enabled: true
-    timeout: 15000
+- runFlow: subflows/wait-for-trends.yaml
 - assertVisible:
     id: "time-range-custom"
     selected: true

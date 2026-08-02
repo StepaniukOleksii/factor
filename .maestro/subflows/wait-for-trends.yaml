@@ -1,0 +1,13 @@
+appId: com.anonymous.factor
+---
+# The Observation Details screen ignores a back press and a segment tap alike
+# while a window's Records are still loading, and the time range selector is
+# disabled for exactly that span. Waiting for it to re-enable is how a flow knows
+# the fetch it just triggered has landed. Without it the flow races that fetch,
+# and the step that arrives mid-flight is swallowed by design rather than by any
+# bug — so run this after every step that changes the window.
+- extendedWaitUntil:
+    visible:
+      id: "time-range-custom"
+      enabled: true
+    timeout: 15000
