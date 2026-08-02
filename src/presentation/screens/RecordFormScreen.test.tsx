@@ -159,24 +159,54 @@ const observation = new Observation('obs-1', 'Sleep Quality', [durationMetric, r
  * are faked here rather than passed as callbacks. Backing out pops, and saving
  * pops back onto the Observation - spying on those two navigation calls asserts
  * exactly what the `onBack`/`onCreated` props used to.
+ *
+ * `addListener` records the screen's `beforeRemove` listener so a test can
+ * invoke it with a fake event, which is how every exit reaches the screen once
+ * one is registered.
  */
 async function renderScreen(props: Partial<{ observationId: string, recordId: string, onBack: () => void, onCreated: () => void }> = {}) {
     const onBack = props.onBack ?? vi.fn();
     const onCreated = props.onCreated ?? vi.fn();
+    const dispatch = vi.fn();
     const observationId = props.observationId ?? 'obs-1';
     const route = props.recordId
         ? {name: 'EditRecord', params: {observationId, recordId: props.recordId}}
         : {name: 'CreateRecord', params: {observationId}};
+    const listeners: Record<string, (event: any) => void> = {};
+    const addListener = vi.fn((event: string, listener: (event: any) => void) => {
+        listeners[event] = listener;
+        return () => {
+            delete listeners[event];
+        };
+    });
     let root: any;
     await act(async () => {
         root = renderer.create(
             <RecordFormScreen
                 route={route as any}
-                navigation={{goBack: onBack, popTo: onCreated} as any}
+                navigation={{goBack: onBack, popTo: onCreated, dispatch, addListener} as any}
             />,
         );
     });
-    return {root: root!, onBack, onCreated};
+    return {root: root!, onBack, onCreated, dispatch, listeners};
+}
+
+/** The removal an exit dispatches, as `beforeRemove` carries it. */
+const POP_ACTION = {type: 'POP', payload: {count: 1}};
+
+/**
+ * Leaves the screen the way every route off it does: through the `beforeRemove`
+ * listener. Returns whether the removal was prevented.
+ */
+async function leaveScreen(listeners: Record<string, (event: any) => void>, action: any = POP_ACTION) {
+    const event = {
+        data: {action},
+        preventDefault: vi.fn(),
+    };
+    await act(async () => {
+        listeners['beforeRemove'](event);
+    });
+    return event.preventDefault.mock.calls.length > 0;
 }
 
 describe('RecordFormScreen', () => {
@@ -639,6 +669,192 @@ describe('RecordFormScreen', () => {
             const {root} = await renderScreen({recordId: 'record-missing'});
 
             expect(findAllByText(root.root, 'Record not found.').length).toBeGreaterThan(0);
+        });
+    });
+
+    // Every route off the form - the header arrow, the cross button, Android's
+    // back button and the system back gesture - is one route removal, so the
+    // `beforeRemove` listener stands in for all four.
+    describe('unsaved changes confirmation', () => {
+        const timestamp = new Date('2024-01-15T08:15:00');
+        const existingRecord = new DomainRecord(
+            'record-1',
+            'obs-1',
+            timestamp,
+            new Map<string, any>([['metric-1', 7.2], ['metric-2', true]]),
+        );
+
+        const dialogVisible = (root: any) => findAllByText(root.root, 'Discard changes?').length > 0;
+
+        beforeEach(() => {
+            mockGetRecordByIdExecute.mockResolvedValue(existingRecord);
+        });
+
+        it('lets an untouched edit form leave with no dialog', async () => {
+            const {root, listeners} = await renderScreen({recordId: 'record-1'});
+
+            expect(await leaveScreen(listeners)).toBe(false);
+            expect(dialogVisible(root)).toBe(false);
+        });
+
+        it('lets an untouched create form leave with no dialog', async () => {
+            const {root, listeners} = await renderScreen();
+
+            expect(await leaveScreen(listeners)).toBe(false);
+            expect(dialogVisible(root)).toBe(false);
+        });
+
+        it('lets a form still loading its data leave with no dialog', async () => {
+            mockGetObservationByIdExecute.mockReturnValue(new Promise(() => {
+            }));
+
+            const {root, listeners} = await renderScreen({recordId: 'record-1'});
+            expect(findAllByText(root.root, 'Loading...').length).toBeGreaterThan(0);
+
+            expect(await leaveScreen(listeners)).toBe(false);
+            expect(dialogVisible(root)).toBe(false);
+        });
+
+        it('opens the dialog instead of leaving when a value was changed', async () => {
+            const {root, listeners} = await renderScreen({recordId: 'record-1'});
+
+            const durationInput = root.root.findByProps({keyboardType: 'numeric'});
+            await act(async () => {
+                durationInput.props.onChangeText('8');
+            });
+
+            expect(await leaveScreen(listeners)).toBe(true);
+            expect(dialogVisible(root)).toBe(true);
+        });
+
+        it('opens the dialog instead of leaving when a stored value was cleared', async () => {
+            const {root, listeners} = await renderScreen({recordId: 'record-1'});
+
+            // The stored value is `true`, so pressing "Yes" deselects it.
+            await pressBooleanSegment(root.root, 'metric-2', true);
+
+            expect(await leaveScreen(listeners)).toBe(true);
+            expect(dialogVisible(root)).toBe(true);
+        });
+
+        it('opens the dialog instead of leaving when only the timestamp was changed', async () => {
+            const {root, listeners} = await renderScreen({recordId: 'record-1'});
+
+            const picker = await openDatePicker(root.root);
+            await act(async () => {
+                picker.props.onChange({type: 'set'}, new Date(2024, 1, 20));
+            });
+
+            expect(await leaveScreen(listeners)).toBe(true);
+            expect(dialogVisible(root)).toBe(true);
+        });
+
+        it('opens the dialog instead of leaving when anything was entered on the create form', async () => {
+            const {root, listeners} = await renderScreen();
+
+            const durationInput = root.root.findByProps({keyboardType: 'numeric'});
+            await act(async () => {
+                durationInput.props.onChangeText('8');
+            });
+
+            expect(await leaveScreen(listeners)).toBe(true);
+            expect(dialogVisible(root)).toBe(true);
+        });
+
+        it('leaves with no dialog once a change is undone', async () => {
+            const {root, listeners} = await renderScreen({recordId: 'record-1'});
+
+            const durationInput = root.root.findByProps({keyboardType: 'numeric'});
+            await act(async () => {
+                durationInput.props.onChangeText('8');
+            });
+            await act(async () => {
+                durationInput.props.onChangeText('7.2');
+            });
+
+            expect(await leaveScreen(listeners)).toBe(false);
+            expect(dialogVisible(root)).toBe(false);
+        });
+
+        it('closes the dialog, dispatches nothing and keeps the entered value on "Keep editing"', async () => {
+            const {root, listeners, dispatch} = await renderScreen({recordId: 'record-1'});
+
+            const durationInput = root.root.findByProps({keyboardType: 'numeric'});
+            await act(async () => {
+                durationInput.props.onChangeText('8');
+            });
+            await leaveScreen(listeners);
+
+            const keepButton = findTouchableWithText(root.root, 'Keep editing');
+            await act(async () => {
+                keepButton!.props.onPress();
+            });
+
+            expect(dialogVisible(root)).toBe(false);
+            expect(dispatch).not.toHaveBeenCalled();
+            expect(root.root.findByProps({keyboardType: 'numeric'}).props.value).toBe('8');
+        });
+
+        it('dispatches exactly the action the event carried on "Discard"', async () => {
+            const {root, listeners, dispatch} = await renderScreen({recordId: 'record-1'});
+            // Not a plain pop: the user is sent wherever the intercepted route
+            // was headed, not to a hardcoded destination.
+            const action = {type: 'NAVIGATE', payload: {name: 'ObservationList'}};
+
+            const durationInput = root.root.findByProps({keyboardType: 'numeric'});
+            await act(async () => {
+                durationInput.props.onChangeText('8');
+            });
+            await leaveScreen(listeners, action);
+
+            const discardButton = findTouchableWithText(root.root, 'Discard');
+            await act(async () => {
+                discardButton!.props.onPress();
+            });
+
+            expect(dispatch).toHaveBeenCalledTimes(1);
+            expect(dispatch).toHaveBeenCalledWith(action);
+            expect(dialogVisible(root)).toBe(false);
+            expect(mockUpdateRecordExecute).not.toHaveBeenCalled();
+        });
+
+        it('leaves after a successful save without opening the dialog', async () => {
+            const {root, listeners, onCreated} = await renderScreen({recordId: 'record-1'});
+
+            const durationInput = root.root.findByProps({keyboardType: 'numeric'});
+            await act(async () => {
+                durationInput.props.onChangeText('8');
+            });
+
+            const saveButton = findTouchableWithText(root.root, 'Save Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+            expect(onCreated).toHaveBeenCalledTimes(1);
+
+            // The save's own removal: still dirty against the loaded Record, and
+            // it has to pass all the same.
+            expect(await leaveScreen(listeners)).toBe(false);
+            expect(dialogVisible(root)).toBe(false);
+        });
+
+        it('leaves the next exit intercepted when the save fails', async () => {
+            mockUpdateRecordExecute.mockRejectedValue(new Error('Failed to update record'));
+            const {root, listeners, onCreated} = await renderScreen({recordId: 'record-1'});
+
+            const durationInput = root.root.findByProps({keyboardType: 'numeric'});
+            await act(async () => {
+                durationInput.props.onChangeText('8');
+            });
+
+            const saveButton = findTouchableWithText(root.root, 'Save Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+            expect(onCreated).not.toHaveBeenCalled();
+
+            expect(await leaveScreen(listeners)).toBe(true);
+            expect(dialogVisible(root)).toBe(true);
         });
     });
 

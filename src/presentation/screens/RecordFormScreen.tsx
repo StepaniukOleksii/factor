@@ -1,7 +1,17 @@
-import React, {useEffect, useState} from 'react';
-import {KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import DateTimePicker, {type DateTimePickerEvent} from '@react-native-community/datetimepicker';
 import {MaterialIcons} from '@expo/vector-icons';
+import type {NavigationAction} from '@react-navigation/native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
@@ -22,7 +32,7 @@ import {
     SegmentedField,
 } from "@presentation/components";
 import {BOOLEAN_METRIC_OPTIONS} from "@presentation/metricDisplay";
-import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
+import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatShortDate, formatShortTime} from '@shared/formatTimeRange';
 import type {RootStackParamList} from '../navigation/routes';
 
@@ -45,6 +55,30 @@ function withTime(base: Date, picked: Date): Date {
     const next = new Date(base);
     next.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
     return next;
+}
+
+/** The baseline a Record form with no Record behind it compares against. */
+const NO_STORED_VALUES: ReadonlyMap<string, any> = new Map<string, any>();
+
+/**
+ * Whether the form's values differ from the ones stored on the Record.
+ *
+ * A cleared Metric's key is *absent* from the form's set rather than holding an
+ * empty value, so the comparison spans both key sets: a key on one side only is
+ * a change. For a key on both, `!==` suffices - every stored value is a number,
+ * a string or a boolean.
+ */
+function valuesDiffer(values: Record<string, any>, stored: ReadonlyMap<string, any>): boolean {
+    const keys = new Set([...Object.keys(values), ...stored.keys()]);
+    for (const key of keys) {
+        if (!(key in values) || !stored.has(key)) {
+            return true;
+        }
+        if (values[key] !== stored.get(key)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 const observationRepository = new SQLiteObservationRepository();
@@ -83,10 +117,54 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [timestamp, setTimestamp] = useState<Date | null>(null);
     const [openPicker, setOpenPicker] = useState<'date' | 'time' | null>(null);
+    /** The removal an exit was intercepted on, held while the user decides. */
+    const [pendingExit, setPendingExit] = useState<NavigationAction | null>(null);
+    /**
+     * Saving removes this route too, and the form is still dirty against the
+     * Record it loaded at that moment, so that one removal has to pass. A ref
+     * rather than state: the listener has to see it within the same tick.
+     */
+    const leavingAfterSave = useRef(false);
 
     useEffect(() => {
         loadData();
     }, [observationId, recordId]);
+
+    // The loaded Record is never mutated, so it *is* the baseline - there is no
+    // snapshot to take or keep in sync. Create mode has no Record and renders no
+    // Date/Time fields, so its baseline is the empty value set and its timestamp
+    // never counts.
+    const isDirty =
+        valuesDiffer(values, record ? record.values : NO_STORED_VALUES)
+        || (!!record && !!timestamp && timestamp.getTime() !== record.timestamp.getTime());
+
+    // One listener covers every route off this screen - the header arrow, the
+    // cross button, Android's back button and the system back gesture are all
+    // route removals, so nothing is wired per control. Taken from the
+    // `navigation` prop rather than the `usePreventRemove` or `useNavigation`
+    // hooks, both of which need a navigator above them: the screen's tests
+    // render it bare, with a fake navigation object.
+    useEffect(() => {
+        return navigation.addListener('beforeRemove', event => {
+            if (leavingAfterSave.current || !isDirty) {
+                return;
+            }
+            event.preventDefault();
+            // The event's own action, so discarding lands the user wherever they
+            // were headed rather than at a hardcoded destination.
+            setPendingExit(event.data.action);
+        });
+    }, [navigation, isDirty]);
+
+    const handleKeepEditing = () => setPendingExit(null);
+
+    const handleDiscard = () => {
+        const action = pendingExit;
+        setPendingExit(null);
+        if (action) {
+            navigation.dispatch(action);
+        }
+    };
 
     const loadData = async () => {
         try {
@@ -191,6 +269,9 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                     values: commandValues
                 });
             }
+            // Only the success path stands the listener down, so a save that
+            // throws leaves the next exit still intercepted.
+            leavingAfterSave.current = true;
             onSaved();
         } catch (error: any) {
             console.error(isEditMode ? 'Failed to update record' : 'Failed to create record', error);
@@ -345,6 +426,47 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                         loading={saving}/>
                 </FooterBar>
             </KeyboardAvoidingView>
+
+            {/* Styled after the Observation Details screen's confirmation
+                dialogs, as `FieldHelpButton` already is - the shared modal
+                component that would replace all of them is a backlog refactor.
+                The form keeps its state throughout, so keeping the edit restores
+                nothing. */}
+            <Modal
+                visible={pendingExit !== null}
+                transparent
+                animationType="fade"
+                statusBarTranslucent
+                navigationBarTranslucent
+                onRequestClose={handleKeepEditing}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalTextGroup}>
+                            <Text style={styles.modalTitle}>Discard changes?</Text>
+                            <Text style={styles.modalBody}>
+                                The changes you made to this record will be lost.
+                            </Text>
+                        </View>
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={styles.modalKeepButton}
+                                onPress={handleKeepEditing}
+                                accessibilityLabel="Keep editing this record"
+                            >
+                                <Text style={styles.modalKeepButtonText}>Keep editing</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.modalDiscardButton}
+                                onPress={handleDiscard}
+                                accessibilityLabel="Discard unsaved changes"
+                            >
+                                <Text style={styles.modalDiscardButtonText}>Discard</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </ScreenContainer>
     );
 }
@@ -426,5 +548,63 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
         padding: 16,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 16,
+    },
+    modalContent: {
+        backgroundColor: COLORS.surfaceContainerLow,
+        borderWidth: 1,
+        borderColor: COLORS.outlineVariant,
+        borderRadius: RADIUS.xl,
+        maxWidth: 320,
+        width: '100%',
+        padding: 24,
+        gap: 20,
+        ...ELEVATION.dialog,
+    },
+    modalTextGroup: {
+        gap: 8,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: COLORS.onSurface,
+        lineHeight: 28,
+    },
+    modalBody: {
+        fontSize: 16,
+        color: COLORS.onSurfaceVariant,
+        lineHeight: 24,
+    },
+    modalActions: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 12,
+    },
+    modalKeepButton: {
+        paddingHorizontal: 24,
+        paddingVertical: 10,
+        borderRadius: RADIUS.pill,
+    },
+    modalKeepButtonText: {
+        color: COLORS.onSurface,
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    modalDiscardButton: {
+        paddingHorizontal: 24,
+        paddingVertical: 10,
+        borderRadius: RADIUS.pill,
+        backgroundColor: COLORS.error,
+    },
+    modalDiscardButtonText: {
+        color: COLORS.onError,
+        fontSize: 14,
+        fontWeight: '500',
     },
 });
