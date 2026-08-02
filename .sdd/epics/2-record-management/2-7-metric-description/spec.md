@@ -197,3 +197,4 @@ every display state on one form.
   not its segments; counter, error and selection all behave as before when the prop is absent.
 * **Screen:** `RecordFormScreen` — a described Metric renders a button and an undescribed one does not, for both
   a text-field and a Boolean Metric; both hold on the create and edit routes.
+* **E2E:** `.maestro/2-7-metric-description.yaml`, on the `seed` fixture.

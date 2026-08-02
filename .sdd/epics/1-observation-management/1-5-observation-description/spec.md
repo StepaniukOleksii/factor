@@ -100,3 +100,4 @@ many Observations at a glance.
   normalizes an empty/whitespace-only description to `null`, and defaults to `null` when omitted.
 * **Integration Tests:** `SQLiteObservationRepository` — `save()` persists `description` (including `null`)
   and `findAll()` round-trips it correctly.
+* **E2E:** `.maestro/1-5-observation-description.yaml`, on the `seed` fixture — an Observation with a description and one without.

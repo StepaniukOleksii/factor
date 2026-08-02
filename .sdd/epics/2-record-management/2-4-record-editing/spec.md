@@ -120,3 +120,4 @@ Add tests covering:
 * Preserving the Record identifier.
 * Returning to the Observation Details screen after saving.
 * Cancelling without persisting changes.
+* **E2E:** `.maestro/2-4-record-editing.yaml`, on the `seed` fixture.

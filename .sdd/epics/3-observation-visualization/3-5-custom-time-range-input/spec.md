@@ -431,6 +431,7 @@ Run "Reseed test data" first (see [testing-data.md](../../../../testing-data.md)
   comes back intact — for a preset and a custom range alike, and via Record creation as well as edit;
   while going out to the Observation list, or having the Observation deleted, drops it, so reopening
   even the *same* Observation starts at the default, as does opening a different one.
+* **E2E:** `.maestro/3-5-custom-time-range-input.yaml`, on the `seed` fixture — apply and cancel both.
 
 > **Superseded by** [Navigation Foundation](../../0-unparented/0-1-navigation-foundation/spec.md) where
 > these two bullets describe the prop contract rather than the behaviour. The screen no longer reports its

@@ -185,3 +185,4 @@ Run "Reseed test data" first (see [testing-data.md](../../../../testing-data.md)
   since one point now charts as a dot; it is replaced with an assertion matching the documented point counts
   directly — zero at `1D`, exactly one at `1W`/`1M`/`1Y` — described as the placeholder-vs-dot boundary
   rather than a blanket "never charts."
+* **E2E:** `.maestro/3-9-single-point-trend-chart.yaml`, on the `seed` fixture — the placeholder appearing and not; the dot itself is inside the canvas.

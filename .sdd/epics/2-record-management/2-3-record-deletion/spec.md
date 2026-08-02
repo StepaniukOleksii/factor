@@ -94,3 +94,4 @@ Add tests covering:
 * Loading of additional Records after deletion.
 * Empty state after deleting the final Record.
 * Error handling when deletion fails.
+* **E2E:** `.maestro/2-3-record-deletion.yaml`, on the `seed` fixture.

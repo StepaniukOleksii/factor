@@ -156,3 +156,4 @@ Add tests covering:
   * Canceling does not persist the edited timestamp.
 * Record form, create mode: no Date/Time fields are rendered, and creating a Record does not send a
   `timestamp`.
+* **E2E:** `.maestro/2-5-record-timestamp-editing.yaml`, on the `seed` fixture — the only flow that drives the native date picker.

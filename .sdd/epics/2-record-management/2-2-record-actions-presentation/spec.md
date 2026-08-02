@@ -93,3 +93,4 @@ Add tests covering:
 * Display of the selected Record information.
 * Opening and closing of the confirmation modal.
 * Edit and Delete UI interactions.
+* **E2E:** `.maestro/2-2-record-actions-presentation.yaml`, on the `seed` fixture.

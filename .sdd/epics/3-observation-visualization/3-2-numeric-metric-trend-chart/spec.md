@@ -174,3 +174,4 @@ for the `Numeric` case:
 * `ObservationDetailsScreen` tests: "TRENDS" section renders one chart per Numeric Metric; section is omitted
   when there are no Numeric Metrics; insufficient-data message shown for an under-populated Metric; existing
   "RECENT RECORDS" behavior is unaffected by the new section and data fetch.
+* **E2E:** `.maestro/3-2-numeric-metric-trend-chart.yaml`, on the `seed` fixture — which Metrics get a chart card, not what the canvas draws.

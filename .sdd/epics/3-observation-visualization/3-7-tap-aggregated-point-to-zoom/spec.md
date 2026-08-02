@@ -198,3 +198,4 @@ set does not happen to contain.
   single day a further tap on an aggregated point leaves the selection, navigation, and loaded data completely
   unchanged, as does any tap at `1D`, whose window is already one day; a tap of any kind while `loadingTrends`
   is true has no effect.
+* **E2E:** `.maestro/3-7-tap-aggregated-point-to-zoom.yaml`, on the `seed` fixture.

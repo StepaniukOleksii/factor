@@ -126,3 +126,4 @@ other input types are checked for regressions.
   selection and saving submits the new value; clearing and saving is blocked.
 * Update existing Record form tests that reach for the Boolean control by `Switch` type, and remove the test
   file's React Native `Switch` mock.
+* **E2E:** `.maestro/2-6-boolean-metric-input.yaml`, on the `seed` fixture.

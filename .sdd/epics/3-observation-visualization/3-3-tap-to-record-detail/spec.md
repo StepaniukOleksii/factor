@@ -137,3 +137,4 @@ export interface ChartRendererProps {
   and never calls `onPointPress`; one record marker dot is drawn per aggregated point.
 * `ObservationDetailsScreen` test: simulating a press on a rendered trend chart calls the screen's `onEditRecord`
   prop with the expected `recordId`.
+* **E2E:** `.maestro/3-3-tap-to-record-detail.yaml`, on the `seed` fixture — needs a window holding exactly one point, so a centre-tap can only resolve to it.

@@ -158,3 +158,4 @@ Add tests covering:
 * Empty state behavior
 * Record expansion and collapse behavior
 * Navigation to New Record screen
+* **E2E:** `.maestro/1-3-observation-details.yaml`, on the `seed` fixture.

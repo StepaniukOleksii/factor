@@ -244,3 +244,4 @@ previous seed set could not populate the shortest or longest window, and had no 
   chartable seeded Metric, `hourly` fills the "1D" window and `yearly` the "1Y" one, and the `no numeric`
   Observation has no Numeric Metrics. These keep the point counts tabulated in `testing-data.md` honest, so a
   later change to the seed data cannot quietly invalidate the manual checklist.
+* **E2E:** `.maestro/3-4-time-range-selector.yaml`, on the `seed` fixture.

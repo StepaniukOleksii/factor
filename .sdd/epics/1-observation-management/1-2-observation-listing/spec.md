@@ -145,3 +145,4 @@ instead of displaying a standalone success message.
     * Verify the application opens on the Observation List screen.
     * Verify tapping "Create Observation" navigates to the creation screen.
     * Verify successful creation returns the user to the list and refreshes the displayed data.
+* **E2E:** `.maestro/1-2-observation-listing.yaml`, on the `seed` fixture.
