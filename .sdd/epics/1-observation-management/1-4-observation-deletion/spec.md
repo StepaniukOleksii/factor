@@ -131,3 +131,6 @@ Add tests covering:
 * Cascading deletion of associated Records.
 * Preservation of Metrics that are still referenced by other Observations.
 * Navigation back to the Observation List screen after deletion.
+
+**E2E:** `.maestro/1-4-observation-deletion.yaml`, on the `seed` fixture — both the cancelled and the
+confirmed delete.

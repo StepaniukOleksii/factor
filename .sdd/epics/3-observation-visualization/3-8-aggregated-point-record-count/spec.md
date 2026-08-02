@@ -109,3 +109,5 @@ Run "Reseed test data" first (see [testing-data.md](../../../../testing-data.md)
   hit-testing/tap suite passes unchanged.
 * A clock-pinned `ObservationDetailsScreen` test reproducing `hourly`'s "day-3-back" scenario: the 09:00 point
   shows `"2"`, the 15:00 point shows nothing, and tapping the 09:00 point has no further effect.
+* **E2E:** None — the label is drawn with Skia's own text renderer inside the chart canvas, so it never
+  reaches the view hierarchy a flow reads, and this feature changes nothing outside it.

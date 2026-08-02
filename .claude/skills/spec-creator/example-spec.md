@@ -118,5 +118,5 @@ is recreated fresh — there is no in-place upgrade.
   star emits `null`; each star exposes its target value to accessibility.
 * **Screen:** `BookDetailsScreen` shows the control for a finished Book and not for an unread one;
   `BookListScreen` renders stars only for a rated Book.
-* **E2E:** `.maestro/2-4-book-rating.yaml`, on the `seed` fixture — open `finished-plain`, tap the third
-  star, go back, and confirm its list row shows three.
+* **E2E:** `.maestro/2-4-book-rating.yaml`, on the `seed` fixture — setting a rating and seeing it on the
+  list row.

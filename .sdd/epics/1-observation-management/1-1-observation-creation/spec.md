@@ -57,3 +57,4 @@ The goal of this feature is to provide the foundational capability for users to 
 ### Automated Tests
 *   **Unit Tests:** Verify `CreateObservationUseCase` correctly constructs domain models, handles validation (e.g., empty names), and calls the repository.
 *   **Integration Tests:** Verify `ObservationRepository.save` correctly persists the `Observation` and its `Metrics` to the local database and handles foreign key constraints properly.
+*   **E2E:** `.maestro/1-1-observation-creation.yaml`, on the `reset` fixture.

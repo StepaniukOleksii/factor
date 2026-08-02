@@ -252,3 +252,5 @@ Run "Reseed test data" first (see [testing-data.md](../../../../testing-data.md)
 * Regression: the existing `ObservationDetailsScreen` and `rendererRegistry` suites continue to pass
   unchanged, confirming this feature doesn't alter which chart renders or when the Trends section
   appears.
+* **E2E:** None — axis labels and gridlines are drawn with Skia's own text renderer inside the chart
+  canvas, which never reaches the view hierarchy a flow reads.

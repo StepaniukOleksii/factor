@@ -155,3 +155,5 @@ Additional validation checks:
     * Verify the "+" button navigates to the correct Observation Record Creation screen.
     * Verify invalid input prevents submission.
     * Verify successful creation returns to the Observation List.
+
+* **E2E:** `.maestro/2-1-record-creation.yaml`, on the `seed` fixture.

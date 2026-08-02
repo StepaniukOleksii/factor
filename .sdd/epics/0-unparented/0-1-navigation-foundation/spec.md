@@ -222,3 +222,6 @@ this — the new dependencies ship native code.
 * **Trend window lifetime**, re-expressed against the stack rather than the deleted classifier: the
   window survives a push-and-pop through a Record screen, and is gone after popping to the list and
   reopening the same Observation.
+* **E2E:** None — the slice has no surface of its own. Every flow exercises the stack it introduces, and
+  `.maestro/3-10-back-to-unzoom-trend-chart.yaml` covers the push-and-pop-through-a-Record-screen
+  property directly.

@@ -155,5 +155,5 @@ and lets a test invoke them and read what they returned — the same shape as th
 * The listener registered on focus is removed on blur, so a press reaching the screen while it is covered
   cannot pop its history.
 
-No Maestro flow: reaching a zoomed state means tapping a point inside a Skia canvas, which exposes no
-selectable text or accessibility label for a flow to aim at.
+* **E2E:** `.maestro/3-10-back-to-unzoom-trend-chart.yaml`, on the `seed` fixture — the full ladder,
+  plus the dialogs, pushed screen and header arrow that must leave it undisturbed.

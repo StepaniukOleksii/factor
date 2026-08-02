@@ -23,6 +23,10 @@ handful of paths do.
   them as not a spec's flow.
 * **Whether a feature gets a flow is decided when its spec is written**, and recorded in that spec's
   Verification section — the only place that decision is written down.
+* **What a chart draws is out of reach.** `NumericTrendChart` renders inside a Skia canvas, and Skia's
+  own text and marks never enter the Android view hierarchy Maestro reads. A flow can assert a chart
+  is present, tap it, and read the platform elements around it — never what it drew. A feature living
+  entirely inside the canvas is a `None`, left to unit tests and manual checks.
 
 Flows are therefore independent: adding one never disturbs another, and a failure names the feature
 that broke.
@@ -89,8 +93,10 @@ Conventions this project follows:
 
 * **Open with `subflows/launch.yaml`.** It starts the app against Metro and puts the database into a
   known state, parameterised by `DEV_COMMAND` (`reset` for empty, `seed` for the
-  [testing-data.md](testing-data.md) fixture set) and `READY_TEXT` (text that appears only once that
-  command has landed). Starting from a stated fixture is what makes a re-run idempotent.
+  [testing-data.md](testing-data.md) fixture set) and `READY_TEXT`. Starting from a stated fixture is
+  what makes a re-run idempotent. `READY_TEXT` must be text the *empty* list does not show — the
+  subflow empties the database before running the command, so that any wait is a real transition, and
+  a `READY_TEXT` already on screen beforehand would pass without waiting for anything.
 * **Set fixtures up through dev links, not through the UI.** `exp+factor://dev/seed` and
   `exp+factor://dev/reset` are `__DEV__`-only commands handled in `App.tsx`. They exist because a flow
   cannot open the dev menu — that takes a shake or `KEYCODE_MENU` — and because building fixtures

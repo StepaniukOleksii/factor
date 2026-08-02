@@ -50,3 +50,5 @@ Introduce the Skia-based rendering foundation chosen in [ADR-1](../../../adr/1-v
 * Unit tests for `GetMetricSeriesUseCase`: Numeric mean aggregation across buckets, correct bucketing for a representative `TimeRange`, and empty-records behavior.
 * Full existing Vitest suite passes unchanged with the new `@shopify/react-native-skia` mock in place.
 * A smoke test confirming `rendererRegistry` imports and initializes without error.
+* **E2E:** None — this slice ships no user-facing behaviour, by its own Goal; the Skia foundation it
+  installs is exercised by every flow that opens an Observation with a chart.
