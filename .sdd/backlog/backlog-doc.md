@@ -12,6 +12,7 @@ notes until they're ready to become a real spec.
     - `3-10` states "No Maestro flow" is possible, since a Skia canvas exposes nothing selectable. One was
       written anyway, aiming at the canvas's `testID`.
     - `2-1`'s "Return to Observation List" requirement was superseded by `0-1`, which lands a saved Record
-      on the Details screen. `2-1` already carries inline "Superseded by ADR-3" notes elsewhere, so the
-      convention exists — it just isn't applied when a *later spec* changes an earlier one's behaviour.
+      on the Details screen. The "Superseded by" convention already exists and `3-5` uses it for this exact
+      change — so the gap is not a missing convention but an inconsistently applied one: a spec that
+      changes an earlier one has to find every spec it affects, and nothing checks that it did.
 5. Response summarizer
