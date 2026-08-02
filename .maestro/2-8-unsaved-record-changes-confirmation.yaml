@@ -1,0 +1,38 @@
+appId: com.anonymous.factor
+---
+# Leaving a Record form that holds an unsaved change asks first. Of the form's
+# four exits, the cross button is the one taken here.
+
+- runFlow:
+    file: subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no numeric"
+
+# `no numeric` has no TRENDS section, which leaves its Records at the top of the
+# screen rather than below five charts.
+- tapOn: "no numeric"
+
+- longPressOn: "Today.*"
+- tapOn: "Edit Record"
+- assertVisible: "Save Record"
+
+# The fixture picks `mood` at random, so the change is to a word the Metric cannot
+# already hold - nothing else guarantees the form comes out dirty.
+- tapOn: "mood value"
+- eraseText
+- inputText: "elated"
+- hideKeyboard
+- tapOn: "Cancel editing"
+- assertVisible: "Discard changes?"
+
+# Kept
+- tapOn: "Keep editing this record"
+- assertNotVisible: "Discard changes?"
+- assertVisible: "elated"
+
+# Discarded
+- tapOn: "Cancel editing"
+- tapOn: "Discard unsaved changes"
+- assertVisible: "RECENT RECORDS"
+- assertNotVisible: "elated"

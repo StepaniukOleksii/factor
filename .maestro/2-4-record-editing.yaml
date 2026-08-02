@@ -47,6 +47,7 @@ appId: com.anonymous.factor
 - inputText: "ok"
 - hideKeyboard
 - tapOn: "Cancel editing"
+- tapOn: "Discard unsaved changes"
 
 - assertVisible: "high"
 - assertNotVisible: "ok"

@@ -27,6 +27,7 @@ appId: com.anonymous.factor
     text: "No"
     selected: true
 - back
+- tapOn: "Discard unsaved changes"
 
 # A stored value
 - longPressOn: "Today.*"

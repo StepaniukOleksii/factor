@@ -90,4 +90,5 @@ appId: com.anonymous.factor
 - tapOn: "OK"
 - assertVisible: "[A-Za-z]{3} 10"
 - tapOn: "Cancel editing"
+- tapOn: "Discard unsaved changes"
 - assertVisible: "[A-Za-z]{3} 20, 8:05 [AP]M"
