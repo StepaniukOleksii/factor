@@ -2,7 +2,7 @@
 name: spec-implementer
 description: Implements a specific feature specification. ONLY use this skill when the user explicitly asks to implement a spec (e.g., "Implement .sdd/epics/..."). Do NOT use this skill for general fixes, bugs, or minor adjustments.
 metadata:
-  version: "1.9.0"
+  version: "1.10.0"
 ---
 
 # Spec Implementer
@@ -58,7 +58,8 @@ When the user asks you to implement a specification, follow these steps:
 * **Emulator/visual verification is not this skill's job.** It's a separate concern, covered by the
   `emulator-verifier` skill — invoke that one if the user explicitly asks for it.
 * **The spec's E2E flow is not this skill's job either.** If Verification names one, writing and running it
-  belongs to the `e2e-tester` skill — note it as outstanding when you report the implementation done.
+  belongs to the `e2e-tester` skill: add an entry for it to `.sdd/backlog/backlog-test.md` so it is queued,
+  and report it as outstanding. A spec whose Verification says `None` queues nothing.
 
 ## Important Note
 
