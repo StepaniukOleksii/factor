@@ -2,7 +2,7 @@
 name: e2e-tester
 description: Writes, runs, and debugs Maestro E2E flows for Factor. Use when a spec's Verification section names an E2E flow to be written, when the user asks for a Maestro flow, or when an E2E run fails and needs diagnosing. Not for Vitest unit/component tests, and not for screenshot-based visual checks (see emulator-verifier).
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # E2E Tester
@@ -57,6 +57,35 @@ the strategy document.
 
 One representative pass. Resist covering the variations, edge cases and error states the Vitest suite
 already owns — that limit is what keeps the suite runnable.
+
+### Comments
+
+The strategy document states the principle. Default to none: a flow that is bare steps is a good flow, and
+every comment is one more thing that has to stay true as the screens change. When one is earned, write the
+shortest sentence that carries the reason.
+
+These are the narrow tests that earn one, each learned from a comment that had to be deleted again:
+
+* **Something must have *forced* the code to be this way.** A fixture that is the only one that works, a
+  wait that exists because of a race, an assertion whose purpose is invisible. A choice that could have
+  gone any other way gets no comment — justifying it implies a significance it does not have.
+* **Never restate the steps beneath it.** If the sentence can be reconstructed by reading the next four
+  lines, delete it. Bare section labels — `# Cancel path`, `# Confirm path` — are not restatement; they
+  are navigation, and they are allowed.
+* **Never cite the flow's own spec.** The filename already names it. Citing a *different* spec is fine
+  where a step exists because of a decision argued there — the filename says nothing about that one. A
+  property flow has no spec at all, so its header states the invariant it covers instead.
+* **Never argue against the alternatives.** One clause for why this fixture; nothing about the others.
+* **Never justify the flow's existence.** Why a feature earns a flow rather than Vitest coverage is a
+  decision the spec records. A flow states what it covers, never why it is entitled to exist.
+* **Name the route when the screen has more than one.** Which entry point a flow takes is a real choice
+  and is not inferable from the steps.
+* **Protect a line that reads as removable.** An assertion that looks redundant but is not — one about an
+  Observation the flow never touched, say — needs the sentence that stops the next reader deleting it.
+
+If justifying one line takes more than a couple of sentences, the reason belongs in the spec or the
+strategy document instead. Before finishing, reread every comment and cut the ones whose sentence you
+could have written from the code alone.
 
 ## 5. Run It
 

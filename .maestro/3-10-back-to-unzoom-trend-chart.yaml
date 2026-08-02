@@ -1,21 +1,10 @@
 appId: com.anonymous.factor
 ---
 # System back steps back up the zoom ladder, one window per press, and leaves the
-# screen only once there is no zoom left to undo. The Vitest suite drives the
-# screen's listener directly; only this flow presses the real Android back button,
-# so it is the only place the dialogs, the header arrow and a screen pushed on top
-# are shown to be unaffected by it.
+# screen only once there is no zoom left to undo.
 #
-# Which window is showing is read from the selector segments' `selected` state -
-# the charts are Skia canvases and say nothing else a flow can read.
-#
-# Every step that changes the window is followed by `subflows/wait-for-trends.yaml`;
-# that file explains why.
-
-# --- Seed data ---------------------------------------------------------------
-# A zoom needs a chart point folding several Records, which the Record form
-# cannot build at any reasonable speed - each one would need backdating through
-# a native date picker. The seeded set already carries one.
+# The charts are Skia canvases and expose nothing a flow can read, so the window
+# on show is checked through the time range selector's `selected` segment instead.
 - runFlow:
     file: subflows/launch.yaml
     env:
@@ -37,8 +26,6 @@ appId: com.anonymous.factor
     selected: false
 
 # --- Windows picked outright leave nothing to undo ---------------------------
-# Picking one states where to be rather than descending from somewhere, so
-# however many are picked, the next press still leaves.
 - runFlow: subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-preset-1D"
