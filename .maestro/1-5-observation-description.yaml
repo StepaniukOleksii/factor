@@ -1,0 +1,22 @@
+appId: com.anonymous.factor
+---
+# An Observation's description: under the title on its details screen, never in
+# the list, and nowhere at all for an Observation without one.
+
+- runFlow:
+    file: subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "stale records"
+
+- assertNotVisible: "All three records are 40-60 days old.*"
+
+- tapOn: "stale records"
+- assertVisible: "All three records are 40-60 days old.*"
+- tapOn: "Back"
+
+# `no records` is the one seeded Observation left without a description, and the
+# text from the screen just visited is what its absence is read against.
+- tapOn: "no records"
+- assertVisible: "No records yet."
+- assertNotVisible: "All three records are 40-60 days old.*"

@@ -1,0 +1,40 @@
+appId: com.anonymous.factor
+---
+# The screen the app opens on: its empty state, the route to Observation
+# creation, and what each item carries once there are Observations to list.
+
+- runFlow:
+    file: subflows/launch.yaml
+    env:
+      DEV_COMMAND: reset
+      READY_TEXT: "No observations created yet."
+
+- assertVisible: "Observations"
+- assertVisible: "Tap the + button to create one."
+
+- tapOn: "Create observation"
+- assertVisible: "New Observation"
+- back
+- assertVisible: "No observations created yet."
+
+# The fixture arrives mid-flow because the empty state above and the populated
+# list below both belong to this screen, and one launch can only start from one
+# of them.
+- openLink: exp+factor://dev/seed
+- extendedWaitUntil:
+    visible: "mixed metrics"
+    timeout: 30000
+
+- assertVisible: "no numeric"
+- assertVisible: "stale records"
+- assertVisible: "no records"
+
+# `mixed metrics` has eight Metrics, so its item is the one that shows a count
+# standing for the ones it left out.
+- assertVisible: "dense"
+- assertVisible: "sparse"
+- assertVisible: "hourly"
+- assertVisible: '\+5'
+
+- assertVisible: "Last record: .*"
+- assertVisible: "No records yet"

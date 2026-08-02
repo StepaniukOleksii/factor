@@ -1,0 +1,37 @@
+appId: com.anonymous.factor
+---
+# Opening an Observation from the list and reading its Records: a tile collapsed,
+# the same tile expanded, the route on to a new Record, and the empty state.
+
+- runFlow:
+    file: subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no numeric"
+
+# `no numeric` has no Numeric Metric and therefore no TRENDS section, which
+# leaves its Records at the top of the screen rather than below five charts.
+- tapOn: "no numeric"
+- assertVisible: "RECENT RECORDS"
+- assertVisible: "Add Record"
+
+- assertNotVisible: "MOOD"
+- assertNotVisible: "DONE"
+
+- tapOn: "Today.*"
+- assertVisible: "MOOD"
+- assertVisible: "DONE"
+
+- tapOn: "Today.*"
+- assertNotVisible: "MOOD"
+
+- tapOn: "Add Record"
+- assertVisible: "mood value"
+- back
+
+# The header arrow rather than a back press: this screen swallows one while its
+# Records are still loading, and the re-focus above started exactly that load.
+- tapOn: "Back"
+
+- tapOn: "no records"
+- assertVisible: "No records yet."

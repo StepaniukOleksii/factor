@@ -1,0 +1,34 @@
+appId: com.anonymous.factor
+---
+# Which Metrics the Trends section gives a chart card to, and which it leaves
+# out. What a card's canvas draws is out of reach - Skia puts nothing into the
+# view hierarchy.
+
+- runFlow:
+    file: subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "mixed metrics"
+
+# `mixed metrics` carries five Numeric Metrics beside a Boolean, an Enum and a
+# Text one.
+- tapOn: "mixed metrics"
+- assertVisible: "TRENDS"
+- assertVisible:
+    id: "trend-chart"
+- assertVisible: "dense"
+- assertVisible: "sparse"
+- assertVisible: "hourly"
+- scrollUntilVisible:
+    element: "insufficient"
+    direction: DOWN
+- assertVisible: "yearly"
+- assertNotVisible: "flag"
+- assertNotVisible: "category"
+- assertNotVisible: "note"
+
+- tapOn: "Back"
+- tapOn: "no numeric"
+- assertNotVisible: "TRENDS"
+- assertNotVisible:
+    id: "trend-chart"
