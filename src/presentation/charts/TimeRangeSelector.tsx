@@ -8,6 +8,7 @@ export interface TimeRangeSelectorProps {
   selected: TimeRangeSelection;
   onSelectPreset: (preset: TimeRangePreset) => void;
   onPressCustom: () => void;
+  /** Set while a switch's fetch is in flight, so re-tapping cannot stack up reloads. */
   disabled?: boolean;
 }
 
@@ -26,18 +27,14 @@ const CUSTOM_LABEL = 'Custom';
 
 /**
  * The Trends section's shared window control: one segment per preset plus a
- * wider Custom segment, exactly one of them selected. Selecting is all this
- * component does - the screen owns the selection and the reload it implies, so
- * one selection moves every chart in the section to the same window rather than
- * each chart carrying its own.
+ * wider Custom segment, exactly one selected. The screen owns the selection, so
+ * one choice moves every chart in the section rather than each chart carrying
+ * its own window.
  *
  * The Custom segment never selects anything itself; it asks the screen to open
- * the range modal, whether or not a custom range is already applied, so tapping
- * it again adjusts the current range. While one is applied the segment shows it
- * instead of the word "Custom", and reverts as soon as a preset is picked.
- *
- * `disabled` is set while a switch's fetch is in flight, so rapid re-tapping
- * cannot stack up overlapping reloads.
+ * the range modal even when a custom range is already applied, so tapping it
+ * again adjusts that range. While one is applied the segment shows it in place
+ * of the word "Custom".
  */
 export function TimeRangeSelector({
   selected,

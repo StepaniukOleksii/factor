@@ -22,38 +22,32 @@ export interface AggregationStrategy {
   bucketSizeMs: number;
 }
 
-/**
- * A single point on a metric's chart series. `recordId` links the point back to
- * a representative Record for tap-to-detail — the earliest Record in the bucket
- * when several are aggregated — and `recordCount` reports how many were folded
- * into the point, so a caller can tell a point standing for one Record from one
- * standing for several.
- *
- * `firstRecordAt` and `lastRecordAt` are when the earliest and latest of those
- * Records were actually taken, which is not something `x` can answer: `x` is the
- * bucket's start, a point on a fixed grid laid over the range, so a bucket's
- * edges rarely coincide with any Record and its far edge may lie beyond the last
- * one entirely. A caller wanting the span the Records themselves occupy needs
- * these two.
- */
+/** A single point on a metric's chart series. */
 export interface MetricSeriesPoint {
+  /** The bucket's start: a point on a fixed grid laid over the range, not any Record's own time. */
   x: number;
   y: number;
+  /** A representative Record for tap-to-detail - the earliest in the bucket. */
   recordId: string;
+  /** How many Records were folded into this point. */
   recordCount: number;
+  /**
+   * When the earliest and latest of those Records were actually taken. A bucket's
+   * edges rarely coincide with any Record and its far edge may lie past the last
+   * one, so `x` cannot answer this and a caller wanting the span the Records
+   * themselves occupy needs these two.
+   */
   firstRecordAt: number;
   lastRecordAt: number;
 }
 
 /**
- * Turns a Metric's Records into a chart-ready series for a given time range and
- * aggregation strategy.
+ * Turns a Metric's Records into a chart-ready series.
  *
- * Records outside the range (or without a value for the metric) are dropped; the
- * rest are grouped into fixed-width time buckets and each bucket is reduced to a
- * single point per the metric's `MetricValueType` (mean for Numeric). Only the
- * Numeric reduction is implemented in this slice; other value types throw until
- * their own slices land, since nothing calls this utility with those types yet.
+ * Records outside the range, or without a value for the metric, are dropped; the
+ * rest are bucketed and each bucket reduced per the metric's `MetricValueType`
+ * (mean for Numeric). Only the Numeric reduction exists - other value types throw
+ * until their own slices land rather than returning something plausible.
  */
 export class GetMetricSeriesUseCase {
   execute(

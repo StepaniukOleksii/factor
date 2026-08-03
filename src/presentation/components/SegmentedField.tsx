@@ -34,12 +34,10 @@ export interface SegmentedFieldProps<T> {
  * A labelled row of segments sharing the available width, at most one selected.
  *
  * Deselectable on purpose: tapping the selected segment reports `undefined`, so
- * "nothing chosen" stays a state the user can both see and reach, rather than
- * being indistinguishable from whichever option a two-state control would rest
- * on by default.
+ * "nothing chosen" stays a state the user can see and reach, rather than being
+ * indistinguishable from whichever option a two-state control rests on.
  *
- * Presentational only — it holds no selection of its own and knows nothing about
- * what its options mean. The caller owns the value and any validation.
+ * Presentational only - the caller owns the value and any validation.
  */
 export function SegmentedField<T>(
     {

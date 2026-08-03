@@ -4,7 +4,7 @@
  * literal.
  *
  * Circular elements (e.g. a 40×40 icon button rounded to a full circle) stay as
- * literal `size / 2` values — they are not steps on this scale.
+ * literal `size / 2` values - they are not steps on this scale.
  */
 export const RADIUS = {
     xs: 2,

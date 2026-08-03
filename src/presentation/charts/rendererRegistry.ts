@@ -4,27 +4,20 @@ import type {MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeri
 import {NumericTrendChart} from './NumericTrendChart';
 
 /**
- * Props every chart renderer receives: the metric being drawn, its aggregated
- * series, the time window it is drawn over, and the pixel box to draw within.
- * Renderers own their drawing but not their layout — the screen decides size and
- * labelling.
- *
- * `timeRange` is the x-axis domain: renderers scale time across `[start, end)`
- * rather than across the span of the data, so a series whose last point is in the
- * middle of the window ends in the middle of the chart rather than at the edge.
- *
- * `onPointPress` is invoked with the whole tapped series point, so the screen can
- * decide what the tap means — opening the point's Record, or narrowing the window
- * onto the bucket it aggregates. Renderers report which point was hit and nothing
- * more; those with no tappable state (e.g. an insufficient-data placeholder)
- * simply never call it.
+ * The contract every chart renderer implements. Renderers own their drawing but
+ * not their layout - the screen decides size and labelling.
  */
 export interface ChartRendererProps {
   metric: Metric;
   points: MetricSeriesPoint[];
+  /** The x-axis domain. Scaled across `[start, end)`, not across the data's own span. */
   timeRange: TimeRange;
   width: number;
   height: number;
+  /**
+   * Reports which point was hit and nothing more - what the tap *means* is the
+   * screen's decision. Renderers with no tappable state never call it.
+   */
   onPointPress: (point: MetricSeriesPoint) => void;
 }
 

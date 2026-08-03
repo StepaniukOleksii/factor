@@ -109,7 +109,6 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                         </TouchableOpacity>
                     }
                 />
-                {/* Sticky Top Section (Observation Name) */}
                 <View style={styles.stickySection}>
                     <View style={styles.section}>
                         <LabeledTextField
@@ -124,7 +123,6 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                 </View>
 
                 <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-                    {/* Description Section */}
                     <View style={styles.descriptionSection}>
                         <LabeledTextField
                             label="DESCRIPTION"
@@ -138,7 +136,6 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                         />
                     </View>
                     <View style={styles.divider}/>
-                    {/* Metrics Section */}
                     <View style={styles.metricsContainer}>
                         <Text style={styles.label}>METRICS</Text>
 
@@ -196,12 +193,10 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                     </View>
                 </ScrollView>
 
-                {/* Fixed Footer */}
                 <FooterBar>
                     <PrimaryActionButton label="Create Observation" onPress={handleSave}/>
                 </FooterBar>
 
-                {/* Dropdown Modal */}
                 <Modal visible={dropdownVisible} transparent animationType="fade">
                     <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
                         <View style={styles.modalOverlay}>
@@ -248,7 +243,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 16,
-        paddingBottom: 100, // Make room for fixed footer
+        paddingBottom: 100, // Clears the fixed footer.
     },
     section: {
         marginBottom: 0,
@@ -290,7 +285,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        height: 44, // Match input height roughly
+        height: 44, // Approximately a LabeledTextField's input height.
     },
     typeText: {
         color: COLORS.onSurface,

@@ -17,9 +17,8 @@ import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
-// The fixed window the trend chart shipped with before presets existed. The
-// default preset has to keep reproducing it exactly, otherwise adding the
-// selector silently changes the chart every user already sees.
+// The default preset has to reproduce this window exactly: any change to it
+// silently moves the chart every existing user already sees.
 const PREVIOUS_FIXED_WINDOW_MS = 30 * DAY_MS;
 const PREVIOUS_FIXED_BUCKET_SIZE_MS = DAY_MS;
 
@@ -88,7 +87,7 @@ describe('formatPointCount', () => {
   );
 
   // A label never widens past three characters, however many Records a single
-  // bucket ends up folding — nothing repositions or resizes one to make room.
+  // bucket ends up folding - nothing repositions or resizes one to make room.
   it('never exceeds three characters', () => {
     [2, 9, 10, 99, 100, 1_000_000].forEach(recordCount => {
       expect(formatPointCount(recordCount).length).toBeLessThanOrEqual(3);

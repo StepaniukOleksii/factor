@@ -4,31 +4,25 @@ import {Metric} from '../domain/Metric';
 import {Record} from '../domain/Record';
 
 /**
- * Dev/QA-only fixture data for exercising Factor's observation, record, and
- * chart features (dense trend charts, gapped trend charts, every time range
- * preset, "not enough data yet", "no records yet", stale vs. recent "last
- * record" states) without manual data entry.
+ * Dev/QA-only fixture data, reached only through `devSeed.ts` and its dev-menu
+ * command (see App.tsx) - never from a production code path.
  *
- * Never imported by production code paths — only pulled in by `devSeed.ts`,
- * which is wired to a dev-menu-only command (see App.tsx). See
- * testing-data.md at the repo root for what observations exist and why, and
- * a manual verification checklist per observation.
- *
- * Observation and metric names are short, all-lowercase summaries of the
- * scenario they cover (not realistic tracker names) so seeded data is
- * instantly distinguishable from anything entered by hand.
- *
- * "Deterministic" here means the *shape* of the data is fixed by the SEED
- * constant below (same metric values, same relative offsets from "now") —
- * not frozen absolute timestamps, since the whole point is for records to
- * land within whichever chart window is selected whenever you reseed.
- * Change SEED to get a different-but-still-reproducible dataset.
+ * testing-data.md at the repo root is the reference for what each Observation
+ * covers and how to verify it. Names here are short and all-lowercase so seeded
+ * data is instantly distinguishable from anything entered by hand.
+ */
+
+/**
+ * Fixes the *shape* of the data - same values, same offsets from "now" - but not
+ * absolute timestamps, since Records have to land inside whichever chart window
+ * is selected whenever you reseed. Change it for a different but still
+ * reproducible dataset.
  */
 const SEED = 42;
 
 /**
  * Which of `hourly`'s daily days carries its extra sub-day cluster. Any day but
- * today would do — today's own Records are hour-spaced already, and a cluster
+ * today would do - today's own Records are hour-spaced already, and a cluster
  * there would change what the shortest window shows.
  */
 const CLUSTER_DAY = 3;
@@ -101,7 +95,7 @@ export interface SeedEntry {
 export function buildSeedData(): SeedEntry[] {
   const entries: SeedEntry[] = [];
 
-  // "mixed metrics" — one observation carrying every chart/metric scenario that isn't
+  // "mixed metrics" - one observation carrying every chart/metric scenario that isn't
   // observation-level (see testing-data.md): trends at each time range's resolution, a
   // gappy trend, a trend with too few points to draw a line, and non-numeric metrics (which never
   // chart) sharing records with the numeric ones to prove multi-type records render
@@ -200,7 +194,7 @@ export function buildSeedData(): SeedEntry[] {
     entries.push({observation, records: buildRecords(observation, recordValues)});
   }
 
-  // "no numeric" — non-numeric metrics only => the details screen renders neither the
+  // "no numeric" - non-numeric metrics only => the details screen renders neither the
   // TRENDS section nor the time range selector that sits inside it, since there is
   // nothing chartable to scope.
   {
@@ -223,7 +217,7 @@ export function buildSeedData(): SeedEntry[] {
     entries.push({observation, records: buildRecords(observation, recordValues)});
   }
 
-  // "stale records" — records only 40-60 days ago => "not enough data yet" (0 points in
+  // "stale records" - records only 40-60 days ago => "not enough data yet" (0 points in
   // the 30-day window) alongside a stale "last record" date at the list/details level.
   {
     const valueMetric = new Metric(Crypto.randomUUID(), 'value', 'Numeric', {min: 0});
@@ -243,7 +237,7 @@ export function buildSeedData(): SeedEntry[] {
     entries.push({observation, records});
   }
 
-  // "no records" — no records at all => "No records yet" in both the list and details screens.
+  // "no records" - no records at all => "No records yet" in both the list and details screens.
   {
     const valueMetric = new Metric(Crypto.randomUUID(), 'value', 'Numeric', {min: 0});
     const observation = new Observation(Crypto.randomUUID(), 'no records', [valueMetric]);

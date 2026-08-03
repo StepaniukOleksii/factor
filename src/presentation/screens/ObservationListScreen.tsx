@@ -112,7 +112,6 @@ export function ObservationListScreen({navigation}: ObservationListScreenProps) 
                 />
             )}
 
-            {/* FAB */}
             <TouchableOpacity
                 style={styles.fab}
                 onPress={() => navigation.navigate('CreateObservation')}
@@ -127,7 +126,7 @@ export function ObservationListScreen({navigation}: ObservationListScreenProps) 
 const styles = StyleSheet.create({
     listContent: {
         padding: 16,
-        paddingBottom: 100, // For FAB
+        paddingBottom: 100, // Clears the FAB.
     },
     emptyContainer: {
         padding: 40,

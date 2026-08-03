@@ -23,9 +23,8 @@ import {type AxisTick, getTimeAxisTicks, getValueAxisTicks} from './axisTicks';
 import type {ChartRendererProps} from './rendererRegistry';
 import {COLORS, withAlpha} from '@presentation/theme';
 
-// The curve and its fade are the section's only coloured elements, per the
-// design, and reuse `primaryContainer` from the shared palette — no new colour
-// is introduced here.
+// The section's only coloured elements, per the design. Reuses an existing
+// palette token rather than introducing a chart-specific colour.
 const LINE_COLOR = COLORS.primaryContainer;
 const FILL_COLOR_TOP = withAlpha(COLORS.primaryContainer, 0.22);
 const FILL_COLOR_BOTTOM = withAlpha(COLORS.primaryContainer, 0);
@@ -34,29 +33,24 @@ const STROKE_WIDTH = 2.5;
 // label strip below does the same job for troughs.
 const PLOT_TOP_PADDING = 6;
 // A tap counts as hitting a point only if it falls within this many pixels of the
-// curve vertically — a comfortable touch-target radius that still rejects taps in
+// curve vertically - a comfortable touch-target radius that still rejects taps in
 // the empty space above or below the line.
 const VERTICAL_TOLERANCE = 24;
-// A small marker is drawn at each aggregated point so the tappable Records are
-// visible and users know where to aim — otherwise, on a sparse curve, the actual
-// hit targets are invisible. The dot reuses the line colour; a halo in the trend
-// card's own colour rings it so it reads as a distinct node, not a bulge in the
-// line.
+// Without a marker the hit targets on a sparse curve are invisible. The halo
+// takes the card's own colour so a dot reads as a node, not a bulge in the line.
 const POINT_RADIUS = 2.5;
 const POINT_HALO_RADIUS = 4;
 const POINT_COLOR = LINE_COLOR;
 const POINT_HALO_COLOR = COLORS.surfaceContainerLow;
-// An identical dot for every point says nothing about how many Records stand
-// behind one, so a point folding several names its count above itself. Muted to
-// the axis labels' own colour and faded further: an annotation on the curve, not
-// a second accent competing with it.
+// A point folding several Records names its count above itself. Faded below the
+// axis labels' own colour: an annotation on the curve, not a second accent.
 const POINT_COUNT_LABEL_COLOR = withAlpha(COLORS.onSurfaceVariant, 0.65);
-// How far above a point's centre the label's baseline sits — clear of the halo,
+// How far above a point's centre the label's baseline sits - clear of the halo,
 // close enough to still read as belonging to that point.
 const POINT_COUNT_LABEL_OFFSET = 9;
 
 // Gutters carved out of the chart's `{width, height}` box to make room for the
-// axis labels. What is left over is the plotting rectangle — everything the
+// axis labels. What is left over is the plotting rectangle - everything the
 // chart draws and hit-tests lives inside it.
 const VALUE_AXIS_WIDTH = 24;
 const TIME_AXIS_HEIGHT = 14;
@@ -67,45 +61,27 @@ const VALUE_LABEL_GAP = 5;
 const TIME_LABEL_BASELINE_OFFSET = 12;
 const VALUE_AXIS_TICK_COUNT = 5;
 const AXIS_FONT_SIZE = 9;
-// The muted text colour the "Not enough data yet" placeholder already uses, and
-// a gridline faint enough to read as a reference behind the curve rather than a
-// grid drawn over it — neither introduces a colour the palette doesn't have.
+// Faint enough that the gridlines read as a reference behind the curve rather
+// than a grid drawn over it.
 const AXIS_LABEL_COLOR = COLORS.onSurfaceVariant;
 const GRIDLINE_COLOR = withAlpha(COLORS.outlineVariant, 0.6);
 const GRIDLINE_WIDTH = 1;
 
 /**
- * Renders a Numeric metric's aggregated series as a single smooth Skia curve
- * with a soft gradient fill fading out beneath it.
+ * Renders a Numeric metric's aggregated series as a smooth Skia curve with a
+ * gradient fill beneath it.
  *
- * The x axis is scaled across `timeRange` — the window the chart is drawn over —
- * so points sit at their true position in time; a series that stops in the middle
- * of the window ends in the middle of the chart rather than being stretched to the
- * right edge. The y axis is scaled across the points' min/max value, per chart:
- * two metrics side by side keep their own value scales rather than sharing one.
- * A single point has nothing to connect to, so it is drawn as its marker alone on
- * the axes, without a curve or a fill; only a genuinely empty series shows an
- * "insufficient data" message instead of a canvas.
+ * x is scaled across `timeRange`, not across the data's own span, so a series
+ * that stops mid-window ends mid-chart. y is scaled per chart across this
+ * series' min/max, so two metrics side by side keep their own value scales.
  *
- * Both scales are labelled: a row of time labels along the bottom, whose format
- * and count follow the window's span (see `axisTicks`), and a column of value
- * labels down the left, each paired with a faint horizontal gridline. There are
- * no vertical gridlines and no legend — the curve stays the dominant element.
- *
- * Each aggregated point is marked with a small dot so the underlying Records are
- * visible, and a point standing for several of them carries their count above it,
- * so an aggregate can be told from a lone Record before tapping either.
- *
- * Tapping a dot (or the curve near it) selects the point nearest the tap's
- * horizontal position and reports it through `onPointPress`, provided the tap is
- * also close enough to the curve vertically; taps in the empty space above or
- * below miss silently. What a tap *means* — opening a Record, or zooming into the
- * bucket a point aggregates — is the screen's decision, not the chart's.
+ * What a tap *means* - opening a Record, or zooming into the bucket a point
+ * aggregates - is the screen's decision; this reports the point and no more.
  */
 export const NumericTrendChart = ({points, timeRange, width, height, onPointPress}: ChartRendererProps) => {
   // Ahead of the insufficient-data return so the hook order never varies. The
   // typeface resolves asynchronously, leaving this `null` for the first render
-  // or two — the axis elements below wait for it while the curve does not, so a
+  // or two - the axis elements below wait for it while the curve does not, so a
   // chart is never blank while a font loads.
   const font = useFont(AXIS_TYPEFACE, AXIS_FONT_SIZE);
 
@@ -124,14 +100,11 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
 
   const screenPoints = toScreenPoints(points, timeRange, plot, minY, maxY);
   // A curve joins points to each other, and the gradient fills the region under
-  // that curve — neither means anything with a single point, so a lone point is
+  // that curve - neither means anything with a single point, so a lone point is
   // left as its own marker on the axes rather than given a line to nowhere.
   const linePath = screenPoints.length > 1 ? buildSmoothPath(screenPoints) : null;
   const areaPath = linePath ? buildAreaPath(linePath, screenPoints, plot.bottom) : null;
 
-  // Both axes come from what the chart is already drawing — this series' value
-  // range and this chart's window — so they follow the curve automatically
-  // whenever either changes.
   const valueTicks = getValueAxisTicks(minY, maxY, VALUE_AXIS_TICK_COUNT);
   const timeTicks = getTimeAxisTicks(timeRange);
 
@@ -236,7 +209,7 @@ interface PlotRect {
 
 /**
  * Carves the label gutters out of the chart's box. Clamped so a box too small
- * to hold them — a chart whose width hasn't been measured yet — collapses to an
+ * to hold them - a chart whose width hasn't been measured yet - collapses to an
  * empty rectangle rather than an inside-out one.
  */
 function toPlotRect(width: number, height: number): PlotRect {
@@ -273,7 +246,7 @@ function baselineCentreOffset(font: SkFont): number {
 
 /**
  * Where a time label starts, given how wide it is. Labels are centred on their
- * tick, except one sitting exactly at the range's start or end — those align
+ * tick, except one sitting exactly at the range's start or end - those align
  * inwards from the plot's edge instead, so they don't overflow the card.
  */
 function timeLabelX(tick: AxisTick, labelWidth: number, plot: PlotRect): number {

@@ -26,7 +26,7 @@ export interface LabeledTextFieldProps extends Omit<TextInputProps, "style"> {
 /**
  * A labeled text input with optional character counter and inline error.
  *
- * Every field looks the same on purpose — styling is fixed here and is NOT
+ * Every field looks the same on purpose - styling is fixed here and is NOT
  * overridable, so all inputs across the app stay visually consistent. Any
  * TextInput prop (placeholder, keyboardType, multiline, maxLength, ...) is
  * forwarded to the underlying input.

@@ -3,21 +3,19 @@ import {SQLiteRecordRepository} from './SQLiteRecordRepository';
 import {buildSeedData} from './devSeedData';
 
 /**
- * Dev-menu-only command (wired up in App.tsx, gated by `__DEV__`) that resets
- * the local database to a known fixture dataset for manual QA — see
- * testing-data.md for what gets seeded and why, and testing-android-manually.md for
- * how to trigger it on-device.
- *
- * Destructive: wipes every existing observation (cascading to its metrics,
- * records, and record values via the `ON DELETE CASCADE` foreign keys set up
- * in Database.ts) before inserting the fixture set. Never call this from a
- * production code path.
+ * Dev-menu-only commands (wired up in App.tsx, gated by `__DEV__`) that reset the
+ * local database to a known fixture dataset for manual QA. See testing-data.md
+ * for what gets seeded, testing-android-manually.md for triggering it on-device.
  */
 
 const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
 
-/** Wipes every Observation without seeding anything back — the empty-state fixture. */
+/**
+ * Wipes every Observation without seeding anything back - the empty-state
+ * fixture. Cascades to metrics, records and record values through the
+ * `ON DELETE CASCADE` foreign keys in Database.ts. Never call from production.
+ */
 export async function clearDevData(): Promise<void> {
   console.log('[devSeed] Clearing existing observations...');
   const existing = await observationRepository.findAll();

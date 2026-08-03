@@ -54,8 +54,8 @@ export async function initDatabase(): Promise<void> {
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (dbInstance != null) {
     try {
-      // Perform a health check query to ensure the native connection is still alive.
-      // During Expo Go Fast Refresh, the native connection can drop while the JS instance remains.
+      // Expo Go's Fast Refresh can drop the native connection while the JS instance
+      // survives, so a live handle is not proof of a usable one.
       await dbInstance.execAsync('SELECT 1');
       return dbInstance;
     } catch (error: any) {
@@ -63,7 +63,6 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
         '[Database] Health check failed. The database connection is likely dead (e.g., due to Fast Refresh). Reconnecting...', 
         error?.message || error
       );
-      // Clear the dead instance
       dbInstance = null;
     }
   }
@@ -71,7 +70,6 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   console.log('[Database] Opening new database connection...');
   dbInstance = await SQLite.openDatabaseAsync('factor.db');
   
-  // Verify the new connection
   try {
     await dbInstance.execAsync('SELECT 1');
     console.log('[Database] New connection established and verified.');

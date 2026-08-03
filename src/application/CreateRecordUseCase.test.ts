@@ -98,7 +98,6 @@ describe('CreateRecordUseCase', () => {
 
     const useCase = new CreateRecordUseCase(mockRecordRepo, mockObservationRepo);
 
-    // Provide string for Numeric metric
     const command: CreateRecordCommand = {
       observationId: 'obs-1',
       values: [{metricId: 'metric-1', value: 'eight'}],

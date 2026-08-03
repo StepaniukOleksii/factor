@@ -1,16 +1,12 @@
 /**
  * Vitest mock for `react-native-safe-area-context`.
  *
- * The package ships native bindings that cannot load in the Node test
- * environment, the same problem `@shopify/react-native-skia` has (see ADR-1).
- * React Navigation reaches for it through `SafeAreaProviderCompat`, so any test
- * rendering the navigator pulls it in. It is activated globally in
- * `vitest.setup.ts`.
+ * Native bindings that cannot load under Node (see ADR-1). React Navigation
+ * reaches for it through `SafeAreaProviderCompat`, so any test rendering the
+ * navigator pulls it in. Activated globally in `vitest.setup.ts`.
  *
- * Insets are reported as zero throughout. Screens do not consume this package -
- * `ScreenContainer` uses React Native's own `SafeAreaView` plus explicit
- * Android status-bar padding (see ADR-2) - so nothing under test depends on
- * real inset values.
+ * Insets are zero throughout: no screen consumes this package, so nothing under
+ * test depends on real values (see ADR-2).
  */
 import React, {type ReactNode} from 'react';
 

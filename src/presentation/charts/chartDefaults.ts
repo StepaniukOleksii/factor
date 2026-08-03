@@ -5,7 +5,7 @@ export const NUMERIC_TREND_INSUFFICIENT_MESSAGE = 'Not enough data yet';
 
 /**
  * The largest count an aggregated point spells out. Past it the exact number
- * stops being worth the width — "a lot" is the whole message — so the label
+ * stops being worth the width - "a lot" is the whole message - so the label
  * stays three characters wide however many Records a bucket folds.
  */
 export const AGGREGATION_COUNT_DISPLAY_CAP = 99;
@@ -37,37 +37,35 @@ const DAY_MS = 24 * HOUR_MS;
 /**
  * The calendar day `date` falls on, as local midnight. Every window the user can
  * land on is built from whole days, so this and `startOfNextDay` are what pin
- * them to that grid — whether the days were picked in the range modal or taken
+ * them to that grid - whether the days were picked in the range modal or taken
  * from the Records behind a zoomed chart point.
  */
 export function floorToDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-/** Local midnight of the day after `date`'s — the exclusive end of that day. */
+/** Local midnight of the day after `date`'s - the exclusive end of that day. */
 export function startOfNextDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
 }
 
 /**
- * The whole calendar days that `from` and `to` fall within, as a half-open range.
- * Both instants are inside it, so a range built from the first and last Record of
- * an aggregated chart point always still contains them — the alignment grows the
- * window outwards at both ends, it never clips it.
+ * The whole calendar days `from` and `to` fall within, as a half-open range. The
+ * alignment only ever grows the window outwards, so a range built from an
+ * aggregated point's first and last Record still contains both.
  *
- * A day is therefore the narrowest window this can produce, which is what stops
- * zoom from going further: a one-day window is already bucketed by the hour (see
- * `getAggregationForCustomRange`), and every Record inside one of those buckets
- * shares a day, so aligning them again just returns the same window.
+ * A day is the narrowest window this can produce, which is what stops zoom going
+ * further: a one-day window is bucketed by the hour (see
+ * `getAggregationForCustomRange`), and every Record in such a bucket shares a
+ * day, so aligning again returns the same window.
  */
 export function getDayAlignedRange(from: Date, to: Date): TimeRange {
   return {start: floorToDay(from), end: startOfNextDay(to)};
 }
 
 /**
- * Each preset's window paired with the bucket size it is aggregated into, so that
- * a year of Records reads as clearly as a day of them rather than collapsing into
- * an unreadable smear of points. Declared shortest window first — the order the
+ * Each preset's window paired with its bucket size, so a year of Records reads as
+ * clearly as a day of them. Declared shortest window first - the order the
  * selector renders them in.
  */
 export const TIME_RANGE_PRESETS: Record<TimeRangePreset, TimeRangePresetConfig> = {
@@ -78,9 +76,8 @@ export const TIME_RANGE_PRESETS: Record<TimeRangePreset, TimeRangePresetConfig> 
 };
 
 /**
- * Selected when the Observation Details screen mounts. Its window and bucket size
- * are the fixed ones the trend chart shipped with before presets existed, so the
- * default selection reproduces exactly the chart users already see.
+ * Selected on mount. Its window and bucket size are pinned: changing either
+ * silently moves the chart every existing user already sees.
  */
 export const DEFAULT_TIME_RANGE_PRESET: TimeRangePreset = '1M';
 
@@ -113,12 +110,12 @@ export const DEFAULT_TIME_RANGE_SELECTION: TimeRangeSelection = {
 const CUSTOM_RANGE_TARGET_BUCKETS = 30;
 
 /**
- * Bucket size for an arbitrary custom range: targets ~30 buckets across the
- * range's span, floored at 1 hour and always a whole number of hours, so a
- * short custom range doesn't collapse to too few buckets and a long one doesn't
- * explode into thousands of them. Independent of the day-level precision
- * Start/End are selected at — bucket size and input granularity are separate
- * concerns, same as they are for the four presets.
+ * Bucket size for an arbitrary custom range: ~30 buckets across the span,
+ * floored at 1 hour and always a whole number of hours, so a short range doesn't
+ * collapse to too few buckets and a long one doesn't explode into thousands.
+ *
+ * Independent of the day-level precision Start/End are picked at - bucket size
+ * and input granularity are separate concerns, as they are for the presets.
  */
 export function getAggregationForCustomRange(range: TimeRange): AggregationStrategy {
   const spanMs = range.end.getTime() - range.start.getTime();

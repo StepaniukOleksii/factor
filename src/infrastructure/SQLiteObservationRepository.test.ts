@@ -3,7 +3,6 @@ import {SQLiteObservationRepository} from './SQLiteObservationRepository';
 import {Observation} from '../domain/Observation';
 import {Metric} from '../domain/Metric';
 
-// Use vi.hoisted for variables used inside vi.mock
 const { mockRunAsync, mockWithTransactionAsync, mockGetAllAsync } = vi.hoisted(() => {
   return {
     mockRunAsync: vi.fn().mockResolvedValue(undefined),

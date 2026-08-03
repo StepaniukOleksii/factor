@@ -1,12 +1,10 @@
 /**
  * Vitest mock for `@shopify/react-native-skia`.
  *
- * Skia ships native bindings that cannot load in the Node test environment
- * (see ADR-1). This module stands in for the primitives that chart components
- * will reach for, so those components can be imported and rendered under Vitest
- * without touching native code. It is activated globally in `vitest.setup.ts`.
- *
- * Extend this as later visualization slices use more Skia primitives.
+ * Native bindings that cannot load under Node (see ADR-1). Stands in for the
+ * primitives chart components reach for, so they render under Vitest without
+ * touching native code. Activated globally in `vitest.setup.ts`; extend it as
+ * later slices use more primitives.
  */
 import type {ReactNode} from 'react';
 import {vi} from 'vitest';

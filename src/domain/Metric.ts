@@ -19,7 +19,7 @@ export class Metric extends Entity<string> {
   public constraint: MetricConstraint;
   /**
    * Optional prose explaining what this Metric means and what its values stand
-   * for — guidance for the person entering a value, so deliberately no part of
+   * for - guidance for the person entering a value, so deliberately no part of
    * `validateValue`: it never constrains the value itself.
    */
   public description: string | null;

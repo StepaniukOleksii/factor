@@ -46,13 +46,11 @@ export function getTimeAxisTier(spanMs: number): TimeAxisTier {
 /**
  * The time labels a chart drawn over `timeRange` shows along its bottom edge.
  *
- * The two coarser tiers space their ticks between the range's true endpoints,
- * since a month scale's first and last dates are two different days both worth
- * naming. The two finer tiers instead divide the range into equal slices — an
- * hour, or a calendar day — and caption each slice from its middle, because
- * those scales wrap: an hour scale's 24th hour and a week's 8th day are its own
- * first hour and first day again, so a tick at the range's exact end would
- * repeat the opening label rather than say anything new.
+ * The coarser tiers space ticks between the range's true endpoints, since a month
+ * scale's first and last dates are both worth naming. The finer tiers instead
+ * caption the middle of each equal slice, because those scales wrap: an hour
+ * scale's 24th hour and a week's 8th day are its own first again, so a tick at
+ * the exact end would just repeat the opening label.
  */
 export function getTimeAxisTicks(timeRange: TimeRange): AxisTick[] {
   const startMs = timeRange.start.getTime();
@@ -93,7 +91,7 @@ export function getValueAxisTicks(
 /**
  * A tick's own moment, said as briefly as its tier allows: the hour alone
  * within a day, the weekday's initial within a week, a short date within a
- * couple of months, and a month with a two-digit year beyond that — never the
+ * couple of months, and a month with a two-digit year beyond that - never the
  * full four-digit year, which costs two characters to say what one glance at
  * the neighbouring ticks already tells you.
  */
@@ -124,8 +122,8 @@ export function formatAxisValueLabel(value: number): string {
 
 /**
  * How many equal slices a divided tier cuts its range into: a fixed eight for
- * the hour tier, and one per calendar day the range covers — capped at a full
- * week — for the week tier, so a five-day custom range reads as five days
+ * the hour tier, and one per calendar day the range covers - capped at a full
+ * week - for the week tier, so a five-day custom range reads as five days
  * rather than being stretched to seven.
  */
 function sliceCount(tier: 'hour' | 'week', spanMs: number): number {

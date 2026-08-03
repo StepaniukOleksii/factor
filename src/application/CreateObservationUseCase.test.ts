@@ -3,7 +3,6 @@ import {CreateObservationUseCase} from './CreateObservationUseCase';
 import {ObservationRepository} from './ObservationRepository';
 import {Observation} from '../domain/Observation';
 
-// Mock expo-crypto
 vi.mock('expo-crypto', () => ({
   randomUUID: () => 'test-uuid-' + Math.random().toString(36).substring(2, 11)
 }));

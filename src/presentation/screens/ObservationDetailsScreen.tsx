@@ -57,7 +57,7 @@ const TREND_CHART_HEIGHT = 108;
 // The overflow menu lives in a full-screen Modal window, so it anchors from the
 // very top of the screen: below the Android status bar (which ScreenContainer
 // pads for) plus the ScreenHeader's own 64px height, landing it just under the
-// header where the inline dropdown used to sit.
+// header.
 const MENU_TOP = (Platform.OS === 'android' ? RNStatusBar.currentHeight ?? 0 : 0) + 64;
 
 /** How long a window is, for comparing one against another. */
@@ -364,7 +364,6 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                     <Text style={styles.description}>{observation.description}</Text>
                 ) : null}
 
-                {/* Trends Section */}
                 {(() => {
                     const numericMetrics = observation.metrics.filter(metric => metric.type === 'Numeric');
                     if (numericMetrics.length === 0) {
@@ -436,7 +435,6 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                     );
                 })()}
 
-                {/* Recent Records Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>RECENT RECORDS</Text>
                     {records.length === 0 ? (
@@ -500,7 +498,6 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                                     })}
                                                 </ScrollView>
 
-                                                {/* Custom Scrollbar */}
                                                 <View style={styles.scrollbarContainer}>
                                                     <MaterialIcons name="arrow-left" size={16}
                                                                    color={COLORS.outlineVariant}/>
@@ -542,12 +539,10 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
 
             </ScrollView>
 
-            {/* Footer / Add Record Button */}
             <FooterBar>
                 <PrimaryActionButton label="Add Record" onPress={onCreateRecord}/>
             </FooterBar>
 
-            {/* Record Contextual Menu Modal */}
             <Modal
                 visible={selectedRecordForMenu !== null}
                 transparent
@@ -594,7 +589,6 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                 </Pressable>
             </Modal>
 
-            {/* Record Delete Confirmation Modal */}
             <Modal
                 visible={recordDeleteModalVisible}
                 transparent
@@ -635,7 +629,6 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                 </View>
             </Modal>
 
-            {/* Delete Confirmation Modal */}
             <Modal
                 visible={deleteModalVisible}
                 transparent
@@ -856,7 +849,6 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.outline,
         borderRadius: RADIUS.xs,
     },
-    // Modal styles
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -916,7 +908,6 @@ const styles = StyleSheet.create({
     modalDeleteButtonText: {
         fontWeight: '500',
     },
-    // Record Contextual Menu Styles (centered dialog per design)
     recordMenuOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',

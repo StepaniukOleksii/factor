@@ -4,7 +4,7 @@ import {MaterialIcons} from "@expo/vector-icons";
 import {COLORS, ELEVATION, RADIUS} from "@presentation/theme";
 
 export interface FieldHelpButtonProps {
-    /** The dialog's heading — normally the label of the field this sits in. */
+    /** The dialog's heading - normally the label of the field this sits in. */
     title: string;
     /** The dialog's body. Line breaks are rendered as typed. */
     text: string;
@@ -17,18 +17,15 @@ const GLYPH_SIZE = 18;
 const HIT_SLOP = 11;
 
 /**
- * An info button that opens a dialog explaining the field it sits in.
+ * An info button that opens a dialog explaining the field it sits in. Owns its
+ * own open state - no caller needs to read it.
  *
- * Owns whether its dialog is open: no caller needs to read that, and only one
- * dialog can be open at a time by nature, so there is nothing to coordinate.
+ * A dialog rather than inline text, so nothing on the form reflows and a long
+ * body needs no truncation or "more" affordance.
  *
- * A window above the form rather than text inside the field, so nothing on the
- * form reflows when it opens, and a long body needs no truncation, no clamping
- * and no "more" affordance.
- *
- * Deliberately not built on a generic modal component: there isn't one, and
- * creating one is tracked separately — this follows the styling of the
- * confirmation dialogs already on the Observation Details screen instead.
+ * Follows the Observation Details confirmation dialogs' styling rather than a
+ * generic modal component; there isn't one, and creating it is tracked in the
+ * backlog.
  */
 export function FieldHelpButton({title, text, testID}: FieldHelpButtonProps) {
     const [open, setOpen] = useState(false);

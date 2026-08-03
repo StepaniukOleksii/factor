@@ -98,9 +98,8 @@ function findAllByText(root: any, text: string) {
 }
 
 // Unless a test passes an explicit window, the chart is drawn over the exact span
-// of its data — reproducing the pre-fix "scale x across the data" behaviour so the
-// coordinate-based assertions below stay stable. Tests that exercise the window
-// scaling pass their own wider `timeRange`.
+// of its data, which keeps the coordinate assertions below stable. Tests that
+// exercise window scaling pass their own wider `timeRange`.
 function dataSpanRange(chartPoints: MetricSeriesPoint[]): TimeRange {
   const xs = chartPoints.map(p => p.x);
   return {
@@ -231,9 +230,9 @@ describe('NumericTrendChart', () => {
     const root = render(points(10, 20, 15, 25));
     const dots = recordDots(root);
 
-    // The curve no longer spans the full box: it starts clear of the value-label
-    // column and stops short of the right edge, and its lowest point rests on the
-    // plot's baseline rather than running into the time-label strip.
+    // The curve spans the plot, not the full box: clear of the value-label column,
+    // short of the right edge, and with its lowest point resting on the plot's
+    // baseline rather than running into the time-label strip.
     expect(dots[0].props.cx).toBe(PLOT.left);
     expect(dots[dots.length - 1].props.cx).toBe(PLOT.right);
     expect(Math.max(...dots.map((dot: any) => dot.props.cy))).toBe(PLOT.bottom);
@@ -257,7 +256,7 @@ describe('NumericTrendChart', () => {
     const dots = recordDots(root);
 
     // Day 5 of 30 and day 7 of 30, measured across the plotting rectangle rather
-    // than the full chart box — both far from its right edge.
+    // than the full chart box - both far from its right edge.
     expect(dots[0].props.cx).toBeCloseTo(PLOT.left + (5 / 30) * PLOT_WIDTH);
     expect(dots[dots.length - 1].props.cx).toBeCloseTo(PLOT.left + (7 / 30) * PLOT_WIDTH);
   });
@@ -337,7 +336,7 @@ describe('NumericTrendChart', () => {
     const chartPoints = points(10, 20, 15, 25);
     const root = render(chartPoints, onPointPress);
 
-    // Nearest the first point at screen (24, 94) — inside the plot, not at the
+    // Nearest the first point at screen (24, 94) - inside the plot, not at the
     // chart box's own left edge.
     press(root, PLOT.left, PLOT.bottom);
 
@@ -358,8 +357,8 @@ describe('NumericTrendChart', () => {
   it('reports the whole tapped point, not just the record behind it', () => {
     const onPointPress = vi.fn();
     // How many Records a point aggregates decides whether the screen opens one
-    // or zooms into the bucket, so the chart hands over the point itself rather
-    // than the one field a navigating screen used to need.
+    // or zooms into the bucket, so the chart hands over the whole point rather
+    // than just its record id.
     const aggregated: MetricSeriesPoint = {
       x: 1000,
       y: 20,
@@ -384,7 +383,7 @@ describe('NumericTrendChart', () => {
     const root = render(points(10, 20, 15, 25), onPointPress);
 
     // Horizontally nearest the first point (screen y 94), but tapped at the very
-    // top of the chart — far above the curve, so it selects nothing.
+    // top of the chart - far above the curve, so it selects nothing.
     press(root, PLOT.left, 0);
 
     expect(onPointPress).not.toHaveBeenCalled();
@@ -453,7 +452,7 @@ describe('NumericTrendChart axes', () => {
 
     expect(lines.length).toBe(5);
     // Evenly spaced across the same value domain the curve is scaled against,
-    // and horizontal only — no vertical gridlines rise from the time labels.
+    // and horizontal only - no vertical gridlines rise from the time labels.
     expect(lines.map((line: any) => line.p1.y)).toEqual([94, 72, 50, 28, 6]);
     lines.forEach((line: any) => {
       expect(line.p1.x).toBe(PLOT.left);
@@ -512,7 +511,7 @@ describe('NumericTrendChart axes', () => {
       '22',
     ]);
     // Every label is centred within its own slice, so the row sits inset from
-    // both edges — and by matching margins, since the outer two slices are the
+    // both edges - and by matching margins, since the outer two slices are the
     // same width.
     const firstLabel = labels[0];
     const lastLabel = labels[labels.length - 1];
@@ -540,7 +539,7 @@ describe('NumericTrendChart axes', () => {
 
     expect(labels.length).toBe(5);
     // The first and last ticks sit exactly at the window's start and end, so they
-    // are aligned inwards instead of centred — otherwise they'd overflow the card.
+    // are aligned inwards instead of centred - otherwise they'd overflow the card.
     const lastLabel = labels[4];
     expect(labels[0].x).toBe(PLOT.left);
     expect(lastLabel.x + lastLabel.text.length * GLYPH_WIDTH).toBe(PLOT.right);
@@ -603,7 +602,7 @@ describe('NumericTrendChart axes', () => {
 
 /**
  * Every point is drawn as the same dot, so nothing on the chart says whether one
- * stands for a single Record or for a bucket of them — nor, since a tap on each
+ * stands for a single Record or for a bucket of them - nor, since a tap on each
  * does something different, what tapping it will do. A count above the dot is
  * what answers both, without touching the dot or the tap.
  */

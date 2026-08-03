@@ -9,17 +9,17 @@
  * (e.g. `./spacing`) only requires a re-export here.
  */
 
-/** Material color roles (dark scheme) - background, surface, primary, error, etc. **/
+/** Material color roles (dark scheme) - background, surface, primary, error, etc. */
 export {COLORS} from './colors';
 
-/** Derives a translucent `rgba()` string from a solid `COLORS` token (scrims, fills, faded borders). **/
+/** Derives a translucent `rgba()` string from a solid `COLORS` token (scrims, fills, faded borders). */
 export {withAlpha} from './withAlpha';
 
-/** Shared text style presets - section captions, field labels, inline errors. **/
+/** Shared text style presets - section captions, field labels, inline errors. */
 export {TYPOGRAPHY} from './typography';
 
-/** Border-radius scale - xs/sm/md/lg/xl/pill. **/
+/** Border-radius scale - xs/sm/md/lg/xl/pill. */
 export {RADIUS} from './radius';
 
-/** Shadow / elevation presets for floating surfaces - dialog, dropdown. **/
+/** Shadow / elevation presets for floating surfaces - dialog, dropdown. */
 export {ELEVATION} from './elevation';

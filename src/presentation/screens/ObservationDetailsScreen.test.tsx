@@ -139,8 +139,6 @@ const initialRecord = {
     values: new Map([['m1', 10]]),
 } as unknown as DomainRecord;
 
-// --- Helpers ---
-
 function findAllByText(root: any, text: string) {
     return root.findAll(
         (node: any) => node.children && node.children.length === 1 && node.children[0] === text,
@@ -171,10 +169,9 @@ function findTouchableWithText(root: any, text: string) {
 }
 
 /**
- * The screen owns its time range again, so no harness holds one for it. It
- * takes its Observation from the route and pushes routes to move, so both are
- * faked here - `navigate` is the spy standing in for what used to be the
- * `onEditRecord` prop.
+ * The screen owns its time range, so no harness holds one for it. It takes its
+ * Observation from the route and pushes routes to move, so both are faked here;
+ * `navigate` is the spy every outbound move is asserted through.
  */
 async function renderScreen(navigate: (name: string, params: unknown) => void = vi.fn()) {
     let root: any;
@@ -285,9 +282,9 @@ async function pressChartPoint(root: any, chartIndex = 0) {
 }
 
 /**
- * The line-coloured marker dots the charts draw, one per aggregated point - what
- * says how a window's Records were bucketed, now that any point count from one
- * upwards draws a chart.
+ * The line-coloured marker dots the charts draw, one per aggregated point. Since
+ * any point count from one upwards draws a chart, these are what say how a
+ * window's Records were bucketed.
  */
 function recordDots(root: any) {
     return root.root
@@ -370,8 +367,6 @@ async function applyCustomRange(root: any, daysAgo: number) {
     await pressCustomModalButton(root, 'Apply');
 }
 
-// --- Tests ---
-
 describe('ObservationDetailsScreen Record Actions', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -386,7 +381,6 @@ describe('ObservationDetailsScreen Record Actions', () => {
         const root = await renderScreen();
         await openRecordMenu(root);
 
-        // The contextual menu should now be visible with the title and timestamp
         const titles = findAllByText(root.root, 'Record actions');
         expect(titles.length).toBeGreaterThan(0);
 
@@ -401,7 +395,6 @@ describe('ObservationDetailsScreen Record Actions', () => {
         const root = await renderScreen();
         await openRecordMenu(root);
 
-        // Find and press the Cancel button inside the contextual menu
         const cancelButton = findTouchableWithText(root.root, 'Cancel');
         expect(cancelButton).toBeTruthy();
 
@@ -409,7 +402,6 @@ describe('ObservationDetailsScreen Record Actions', () => {
             cancelButton!.props.onPress();
         });
 
-        // "Record actions" title should no longer be visible
         const titles = findAllByText(root.root, 'Record actions');
         expect(titles.length).toBe(0);
     });
@@ -428,7 +420,6 @@ describe('ObservationDetailsScreen Record Actions', () => {
 
         expect(navigate).toHaveBeenCalledWith('EditRecord', {observationId: 'obs-1', recordId: 'rec-1'});
 
-        // Menu should be dismissed
         const titles = findAllByText(root.root, 'Record actions');
         expect(titles.length).toBe(0);
     });
@@ -444,11 +435,9 @@ describe('ObservationDetailsScreen Record Actions', () => {
             deleteRecordButton!.props.onPress();
         });
 
-        // Contextual menu should be closed
         const menuTitles = findAllByText(root.root, 'Record actions');
         expect(menuTitles.length).toBe(0);
 
-        // Confirmation modal should be open
         const confirmTitle = findAllByText(root.root, 'Delete this record?');
         expect(confirmTitle.length).toBeGreaterThan(0);
 
@@ -461,7 +450,6 @@ describe('ObservationDetailsScreen Record Actions', () => {
         await openRecordMenu(root);
         await openDeleteRecordConfirmation(root);
 
-        // Press Cancel in the confirmation modal
         const cancelButton = findTouchableWithText(root.root, 'Cancel');
         expect(cancelButton).toBeTruthy();
 
@@ -469,11 +457,8 @@ describe('ObservationDetailsScreen Record Actions', () => {
             cancelButton!.props.onPress();
         });
 
-        // Confirmation modal should be dismissed
         const confirmTitle = findAllByText(root.root, 'Delete this record?');
         expect(confirmTitle.length).toBe(0);
-
-        // Nothing should have been deleted
         expect(mockDeleteRecordExecute).not.toHaveBeenCalled();
     });
 
@@ -498,17 +483,12 @@ describe('ObservationDetailsScreen Record Actions', () => {
             await deleteConfirmButton!.props.onPress();
         });
 
-        // The correct record was deleted
         expect(mockDeleteRecordExecute).toHaveBeenCalledWith('rec-1');
 
-        // Confirmation modal should be dismissed
         const confirmTitle = findAllByText(root.root, 'Delete this record?');
         expect(confirmTitle.length).toBe(0);
 
-        // The record list was refreshed from the data source
         expect(mockGetRecentRecordsExecute).toHaveBeenCalledTimes(2);
-
-        // The replacement record loaded during refresh is now displayed
         expect(countRecordCards(root.root)).toBe(1);
     });
 
@@ -542,17 +522,13 @@ describe('ObservationDetailsScreen Record Actions', () => {
             await deleteConfirmButton!.props.onPress();
         });
 
-        // The confirmation modal remains open since deletion failed
         const confirmTitle = findAllByText(root.root, 'Delete this record?');
         expect(confirmTitle.length).toBeGreaterThan(0);
-
-        // The record was not removed from the displayed list
         expect(countRecordCards(root.root)).toBe(1);
 
-        // The list was not refreshed since deletion did not succeed
+        // The initial load and nothing since: a failed delete triggers no refresh.
         expect(mockGetRecentRecordsExecute).toHaveBeenCalledTimes(1);
 
-        // A meaningful error message was surfaced to the user
         expect(globalThis.alert).toHaveBeenCalledWith(expect.stringContaining('Failed to delete record'));
     });
 });
@@ -1290,8 +1266,8 @@ describe('ObservationDetailsScreen Chart Zoom', () => {
 });
 
 /**
- * Zoom is a ladder that only went downwards: a wider window had to be re-entered
- * by hand. The system back button now climbs back up it, one window per press.
+ * Zoom is a ladder. Tapping a point descends it; the system back button climbs
+ * back up, one window per press.
  */
 describe('ObservationDetailsScreen Back Unzoom', () => {
     // Pinned as in the zoom suite: which calendar days a zoom comes to rest on

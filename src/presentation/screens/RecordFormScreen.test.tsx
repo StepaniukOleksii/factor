@@ -67,8 +67,6 @@ vi.mock('../../application/UpdateRecordUseCase', () => ({
     })),
 }));
 
-// --- Helpers ---
-
 function findAllByText(root: any, text: string) {
     return root.findAll(
         (node: any) => node.children && node.children.length === 1 && node.children[0] === text,
@@ -157,8 +155,8 @@ const observation = new Observation('obs-1', 'Sleep Quality', [durationMetric, r
 /**
  * The screen takes its ids from the route and leaves through the stack, so both
  * are faked here rather than passed as callbacks. Backing out pops, and saving
- * pops back onto the Observation - spying on those two navigation calls asserts
- * exactly what the `onBack`/`onCreated` props used to.
+ * pops back onto the Observation; those two navigation spies are how both are
+ * asserted.
  *
  * `addListener` records the screen's `beforeRemove` listener so a test can
  * invoke it with a fake event, which is how every exit reaches the screen once
@@ -271,9 +269,9 @@ describe('RecordFormScreen', () => {
             expect(onCreated).toHaveBeenCalledTimes(1);
         });
 
-        // The Switch this replaced sat at "off" while the Metric held no value, so
-        // recording `false` meant turning it on and back off again - two taps, and
-        // a value that never differed from an untouched field.
+        // One press records `false`. A two-state control would rest at "off" while
+        // the Metric held no value, making `false` cost two taps and never differ
+        // visibly from an untouched field.
         it('submits false after a single press on "No"', async () => {
             const {root} = await renderScreen();
 

@@ -275,7 +275,6 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
             onSaved();
         } catch (error: any) {
             console.error(isEditMode ? 'Failed to update record' : 'Failed to create record', error);
-            // fallback generic error handling
             alert(error.message || 'Failed to save record.');
         } finally {
             setSaving(false);
@@ -303,8 +302,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
             );
         }
 
-        // Numeric, Text and Enum all render as a text field.
-        // (Enum would ideally use a picker; per spec a standard input is fine for now.)
+        // Enum would ideally use a picker; per spec a standard input is fine for now.
         const isNumeric = metric.type === 'Numeric';
 
         return (
@@ -320,7 +318,9 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                     onChangeText={(text) => {
                         if (isNumeric) {
                             const num = parseFloat(text);
-                            // pass text if invalid so it triggers validation error, else number
+                            // Unparseable input is submitted as the raw string, so
+                            // `Metric.validateValue` reports it rather than it being
+                            // silently dropped as `NaN`.
                             handleValueChange(metric.id, isNaN(num) ? text : num);
                         } else {
                             handleValueChange(metric.id, text);

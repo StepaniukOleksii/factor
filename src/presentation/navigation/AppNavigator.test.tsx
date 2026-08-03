@@ -170,7 +170,7 @@ describe('AppNavigator', () => {
 
         goBack(root, 'CreateRecord');
 
-        // Not the list, which is where the old navigator always landed.
+        // Not the list: a form opened from an Observation returns to that Observation.
         expect(stack(root)).toEqual(['ObservationList', 'ObservationDetails']);
     });
 
@@ -218,9 +218,9 @@ describe('AppNavigator', () => {
 });
 
 /**
- * The exploration scoping that `AppNavigator` used to enforce with a rule, now
- * a consequence of the stack's own lifetime. Expressed against screen-local
- * state, which is where the trend window lives again.
+ * Exploration scoping falls out of the stack's own lifetime rather than being a
+ * rule the navigator enforces. Expressed against screen-local state, which is
+ * where the trend window lives.
  */
 describe('AppNavigator trend window lifetime', () => {
     beforeEach(() => {

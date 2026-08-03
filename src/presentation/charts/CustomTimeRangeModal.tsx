@@ -26,17 +26,14 @@ function lastIncludedDay(range: TimeRange): Date {
 }
 
 /**
- * Picks the Start and End of an arbitrary chart window, each to the nearest
- * calendar day.
+ * Picks the Start and End of an arbitrary chart window, to the nearest calendar
+ * day. A Start and End on the same day is a valid, one-day-wide selection.
  *
- * Days are the smallest unit on offer: there is no time-of-day control, and a
- * Start and End on the same day is a valid, one-day-wide selection. The two days
- * are converted into the half-open `TimeRange` the rest of the app queries with
- * only on Apply, so "the day the user picked" and "the query boundary" never get
- * confused with one another in between.
+ * The picked days become the half-open `TimeRange` the rest of the app queries
+ * with only on Apply, so "the day the user picked" and "the query boundary" are
+ * never confused in between.
  *
- * The parent owns visibility: Apply reports the new range and leaves closing to
- * the parent, matching how the screen's other modals work.
+ * The parent owns visibility: Apply reports the range and leaves closing to it.
  */
 export function CustomTimeRangeModal({
   visible,

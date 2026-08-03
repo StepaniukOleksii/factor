@@ -17,7 +17,7 @@ const devLinkCommands: Record<string, () => Promise<void>> = {
   reset: clearDevData,
 };
 
-// `onComplete` fires only once the command has finished writing — a flow has no
+// `onComplete` fires only once the command has finished writing - a flow has no
 // other way to tell, since firing a link is one-way.
 function handleDevLink(url: string, dbReady: Promise<void>, onComplete: () => void): void {
   const afterScheme = url.split('://')[1];

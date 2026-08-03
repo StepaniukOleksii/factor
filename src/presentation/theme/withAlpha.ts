@@ -1,9 +1,8 @@
 /**
  * Derives a translucent `rgba()` string from a solid hex color token.
  *
- * Use this for scrims, gradient fills, and faded borders instead of hardcoding
- * an `rgba(...)` literal, so the translucent variant stays tied to its source
- * token in `COLORS` and can't silently drift out of sync with it.
+ * Use this for scrims, gradient fills and faded borders instead of an `rgba(...)`
+ * literal, so the translucent variant stays tied to its `COLORS` source token.
  *
  * @param hex   A `#rgb` or `#rrggbb` color (typically a `COLORS` token).
  * @param alpha Opacity in the range 0–1.
