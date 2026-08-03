@@ -24,7 +24,14 @@ import {DeleteRecordUseCase} from '../../application/DeleteRecordUseCase';
 import {GetMetricSeriesUseCase, MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
-import {CenteredState, FooterBar, PrimaryActionButton, ScreenContainer, ScreenHeader} from "@presentation/components";
+import {
+    CenteredState,
+    Dialog,
+    FooterBar,
+    PrimaryActionButton,
+    ScreenContainer,
+    ScreenHeader
+} from "@presentation/components";
 import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatMetricValue} from "@presentation/metricDisplay";
 import {formatRelativeTime} from '@shared/formatRelativeTime';
@@ -543,132 +550,78 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                 <PrimaryActionButton label="Add Record" onPress={onCreateRecord}/>
             </FooterBar>
 
-            <Modal
+            {/* Cancel deliberately carries no accessibility label:
+                `.maestro/2-2-record-actions-presentation.yaml` taps it by its
+                visible text. */}
+            <Dialog
                 visible={selectedRecordForMenu !== null}
-                transparent
-                animationType="fade"
-                statusBarTranslucent
-                navigationBarTranslucent
+                title="Record actions"
+                message={selectedRecordForMenu ? formatRelativeTime(selectedRecordForMenu.timestamp) : undefined}
                 onRequestClose={handleCloseRecordMenu}
+                actions={[{label: 'Cancel', onPress: handleCloseRecordMenu}]}
             >
-                <Pressable style={styles.recordMenuOverlay} onPress={handleCloseRecordMenu}>
-                    <Pressable style={styles.recordMenuContent} onPress={(e) => e.stopPropagation()}>
-                        <View style={styles.recordMenuHeader}>
-                            <Text style={styles.recordMenuTitle}>Record actions</Text>
-                            {selectedRecordForMenu && (
-                                <Text style={styles.recordMenuSubtitle}>
-                                    {formatRelativeTime(selectedRecordForMenu.timestamp)}
-                                </Text>
-                            )}
-                        </View>
-                        <View style={styles.recordMenuActions}>
-                            <TouchableOpacity
-                                style={styles.recordMenuAction}
-                                onPress={handleEditRecord}
-                            >
-                                <MaterialIcons name="edit" size={20} color={COLORS.onSurface}/>
-                                <Text style={styles.recordMenuActionText}>Edit Record</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.recordMenuAction}
-                                onPress={handleDeleteRecordMenuClick}
-                            >
-                                <MaterialIcons name="delete" size={20} color={COLORS.error}/>
-                                <Text style={styles.recordMenuActionTextDestructive}>Delete Record</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.recordMenuFooter}>
-                            <TouchableOpacity
-                                style={styles.recordMenuCancelButton}
-                                onPress={handleCloseRecordMenu}
-                            >
-                                <Text style={styles.recordMenuCancelText}>Cancel</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </Pressable>
-                </Pressable>
-            </Modal>
+                <View style={styles.recordMenuActions}>
+                    <TouchableOpacity
+                        style={styles.recordMenuAction}
+                        onPress={handleEditRecord}
+                    >
+                        <MaterialIcons name="edit" size={20} color={COLORS.onSurface}/>
+                        <Text style={styles.recordMenuActionText}>Edit Record</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.recordMenuAction}
+                        onPress={handleDeleteRecordMenuClick}
+                    >
+                        <MaterialIcons name="delete" size={20} color={COLORS.error}/>
+                        <Text style={styles.recordMenuActionTextDestructive}>Delete Record</Text>
+                    </TouchableOpacity>
+                </View>
+            </Dialog>
 
-            <Modal
+            <Dialog
                 visible={recordDeleteModalVisible}
-                transparent
-                animationType="fade"
-                statusBarTranslucent
-                navigationBarTranslucent
+                title="Delete this record?"
+                message="This specific entry will be permanently removed."
                 onRequestClose={handleCancelDeleteRecord}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContentSmall}>
-                        <View style={styles.modalTextGroup}>
-                            <Text style={styles.modalTitle}>Delete this record?</Text>
-                            <Text style={styles.modalBody}>
-                                This specific entry will be permanently removed.
-                            </Text>
-                        </View>
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity
-                                style={styles.modalCancelButton}
-                                onPress={handleCancelDeleteRecord}
-                                disabled={deletingRecord}
-                                accessibilityLabel="Cancel record deletion"
-                            >
-                                <Text style={styles.modalCancelButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modalDeleteButton, deletingRecord && styles.modalDeleteButtonDisabled]}
-                                onPress={handleConfirmDeleteRecord}
-                                disabled={deletingRecord}
-                                accessibilityLabel="Confirm record deletion"
-                            >
-                                <Text style={styles.modalDeleteButtonText}>
-                                    {deletingRecord ? 'Deleting…' : 'Delete'}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+                actions={[
+                    {
+                        label: 'Cancel',
+                        onPress: handleCancelDeleteRecord,
+                        disabled: deletingRecord,
+                        accessibilityLabel: 'Cancel record deletion',
+                    },
+                    {
+                        label: deletingRecord ? 'Deleting…' : 'Delete',
+                        onPress: handleConfirmDeleteRecord,
+                        variant: 'destructive',
+                        disabled: deletingRecord,
+                        accessibilityLabel: 'Confirm record deletion',
+                    },
+                ]}
+            />
 
-            <Modal
+            <Dialog
                 visible={deleteModalVisible}
-                transparent
-                animationType="fade"
-                statusBarTranslucent
-                navigationBarTranslucent
+                title="Delete Observation?"
+                message={'Are you sure you want to delete this observation and all its records? ' +
+                    'This action cannot be undone.'}
                 onRequestClose={handleCancelDelete}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalTextGroup}>
-                            <Text style={styles.modalTitle}>Delete Observation?</Text>
-                            <Text style={styles.modalBody}>
-                                Are you sure you want to delete this observation and all its records? This action cannot
-                                be undone.
-                            </Text>
-                        </View>
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity
-                                style={styles.modalCancelButton}
-                                onPress={handleCancelDelete}
-                                disabled={deleting}
-                                accessibilityLabel="Cancel deletion"
-                            >
-                                <Text style={styles.modalCancelButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modalDeleteButton, deleting && styles.modalDeleteButtonDisabled]}
-                                onPress={handleConfirmDelete}
-                                disabled={deleting}
-                                accessibilityLabel="Confirm deletion"
-                            >
-                                <Text style={styles.modalDeleteButtonText}>
-                                    {deleting ? 'Deleting…' : 'Delete'}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+                actions={[
+                    {
+                        label: 'Cancel',
+                        onPress: handleCancelDelete,
+                        disabled: deleting,
+                        accessibilityLabel: 'Cancel deletion',
+                    },
+                    {
+                        label: deleting ? 'Deleting…' : 'Delete',
+                        onPress: handleConfirmDelete,
+                        variant: 'destructive',
+                        disabled: deleting,
+                        accessibilityLabel: 'Confirm deletion',
+                    },
+                ]}
+            />
         </ScreenContainer>
     );
 }
@@ -849,98 +802,6 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.outline,
         borderRadius: RADIUS.xs,
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 16,
-    },
-    modalContent: {
-        backgroundColor: COLORS.surfaceContainerLow,
-        borderWidth: 1,
-        borderColor: COLORS.outlineVariant,
-        borderRadius: RADIUS.xl,
-        maxWidth: 384,
-        width: '100%',
-        padding: 24,
-        gap: 24,
-        ...ELEVATION.dialog,
-    },
-    modalTextGroup: {
-        gap: 8,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: COLORS.onSurface,
-        lineHeight: 28,
-    },
-    modalBody: {
-        fontSize: 16,
-        color: COLORS.onSurfaceVariant,
-        lineHeight: 24,
-    },
-    modalActions: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        gap: 12,
-    },
-    modalCancelButton: {
-        paddingHorizontal: 24,
-        paddingVertical: 10,
-        borderRadius: RADIUS.pill,
-    },
-    modalCancelButtonText: {
-        color: COLORS.onSurface,
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    modalDeleteButton: {
-        paddingHorizontal: 24,
-        paddingVertical: 10,
-        borderRadius: RADIUS.pill,
-        backgroundColor: COLORS.error,
-    },
-    modalDeleteButtonDisabled: {
-        opacity: 0.6,
-    },
-    modalDeleteButtonText: {
-        fontWeight: '500',
-    },
-    recordMenuOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 16,
-    },
-    recordMenuContent: {
-        backgroundColor: COLORS.surfaceContainerLow,
-        borderWidth: 1,
-        borderColor: COLORS.outlineVariant,
-        borderRadius: RADIUS.xl,
-        maxWidth: 320,
-        width: '100%',
-        padding: 24,
-        gap: 24,
-        ...ELEVATION.dialog,
-    },
-    recordMenuHeader: {
-        gap: 4,
-    },
-    recordMenuTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: COLORS.onSurface,
-        lineHeight: 28,
-    },
-    recordMenuSubtitle: {
-        fontSize: 14,
-        color: COLORS.onSurfaceVariant,
-        fontWeight: '500',
-        lineHeight: 20,
-    },
     recordMenuActions: {
         gap: 8,
     },
@@ -962,29 +823,5 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: COLORS.error,
         fontWeight: '500',
-    },
-    recordMenuFooter: {
-        alignItems: 'flex-end',
-    },
-    recordMenuCancelButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: RADIUS.pill,
-    },
-    recordMenuCancelText: {
-        fontSize: 14,
-        color: COLORS.onSurfaceVariant,
-        fontWeight: '500',
-    },
-    modalContentSmall: {
-        backgroundColor: COLORS.surfaceContainerLow,
-        borderWidth: 1,
-        borderColor: COLORS.outlineVariant,
-        borderRadius: RADIUS.xl,
-        maxWidth: 320,
-        width: '100%',
-        padding: 24,
-        gap: 20,
-        ...ELEVATION.dialog,
     },
 });

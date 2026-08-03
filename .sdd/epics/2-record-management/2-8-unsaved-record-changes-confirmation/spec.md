@@ -74,7 +74,8 @@ sets it, so a save that throws leaves the guard armed.
 A `Modal` in `RecordFormScreen`, styled after the Observation Details screen's confirmation dialogs exactly as
 [Metric Description](../2-7-metric-description/spec.md) §3.4 specifies for `FieldHelpButton`, and for the same
 reason — the shared modal component that would replace all of them is
-[a backlog refactor](../../../backlog/backlog-ref.md).
+[a backlog refactor](../../../backlog/backlog-ref.md). *(Superseded: that refactor landed. This is now a
+`Dialog`, with the wording, actions and behaviour below unchanged.)*
 
 * Headed "Discard changes?", with a body stating the edit will be lost.
 * Two actions: "Keep editing", which closes the dialog and drops the held action, and "Discard", destructive in

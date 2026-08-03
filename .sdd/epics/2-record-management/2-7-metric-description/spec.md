@@ -86,6 +86,8 @@ to read that, and only one dialog can be open at a time by nature, so there is n
   size, but need not at the largest accessibility ones.
 * Deliberately not built on a generic modal component. There isn't one, and creating one is already tracked in
   the refactor backlog; this follows the existing dialogs' styling rather than pre-empting that work.
+  *(Superseded: `Dialog` now exists and `FieldHelpButton` renders through it. The behaviour above is unchanged
+  bar the dialog's width, which is now the one every dialog shares.)*
 
 **Both field components** gain one optional prop, `helpText?: string` — role-named rather than named after
 `Metric.description`, like `error` is, since neither component knows anything about Metrics and neither should

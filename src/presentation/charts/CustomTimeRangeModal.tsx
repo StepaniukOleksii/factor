@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from 'react';
-import {Modal, Pressable, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import DateTimePicker, {type DateTimePickerEvent} from '@react-native-community/datetimepicker';
 import {MaterialIcons} from '@expo/vector-icons';
-import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from '@presentation/theme';
+import {Dialog} from '@presentation/components';
+import {COLORS, RADIUS, TYPOGRAPHY} from '@presentation/theme';
 import {formatShortDate} from '@shared/formatTimeRange';
 import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {floorToDay, startOfNextDay} from './chartDefaults';
@@ -72,83 +73,65 @@ export function CustomTimeRangeModal({
   };
 
   return (
-    <Modal
+    <Dialog
       visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      navigationBarTranslucent
+      title="Custom time range"
+      message="Choose a start and end day."
       onRequestClose={onCancel}
+      actions={[
+        {
+          label: 'Cancel',
+          onPress: onCancel,
+          accessibilityLabel: 'Cancel custom time range',
+        },
+        {
+          label: 'Apply',
+          onPress: handleApply,
+          variant: 'primary',
+          disabled: endBeforeStart,
+          accessibilityLabel: 'Apply custom time range',
+        },
+      ]}
     >
-      <Pressable style={styles.overlay} onPress={onCancel}>
-        <Pressable style={styles.content} onPress={event => event.stopPropagation()}>
-          <View style={styles.textGroup}>
-            <Text style={styles.title}>Custom time range</Text>
-            <Text style={styles.body}>Choose a start and end day.</Text>
-          </View>
+      <DayField
+        label="Start"
+        endpoint="start"
+        value={startDay}
+        invalid={endBeforeStart}
+        onPress={() => setOpenPicker('start')}
+      />
+      {openPicker === 'start' && (
+        <DateTimePicker
+          testID="custom-range-start-picker"
+          value={startDay}
+          mode="date"
+          onChange={handlePicked(setStartDay)}
+        />
+      )}
 
-          <DayField
-            label="Start"
-            endpoint="start"
-            value={startDay}
-            invalid={endBeforeStart}
-            onPress={() => setOpenPicker('start')}
-          />
-          {openPicker === 'start' && (
-            <DateTimePicker
-              testID="custom-range-start-picker"
-              value={startDay}
-              mode="date"
-              onChange={handlePicked(setStartDay)}
-            />
-          )}
+      <DayField
+        label="End"
+        endpoint="end"
+        value={endDay}
+        invalid={endBeforeStart}
+        onPress={() => setOpenPicker('end')}
+      />
+      {openPicker === 'end' && (
+        <DateTimePicker
+          testID="custom-range-end-picker"
+          value={endDay}
+          mode="date"
+          // Today is the latest day that can hold Records; Start is left
+          // unbounded, and their ordering is enforced by the Apply-time
+          // validation instead - constraining one picker against the other
+          // would make the selectable range shift as the user edits.
+          maximumDate={floorToDay(new Date())}
+          onChange={handlePicked(setEndDay)}
+        />
+      )}
 
-          <DayField
-            label="End"
-            endpoint="end"
-            value={endDay}
-            invalid={endBeforeStart}
-            onPress={() => setOpenPicker('end')}
-          />
-          {openPicker === 'end' && (
-            <DateTimePicker
-              testID="custom-range-end-picker"
-              value={endDay}
-              mode="date"
-              // Today is the latest day that can hold Records; Start is left
-              // unbounded, and their ordering is enforced by the Apply-time
-              // validation instead - constraining one picker against the other
-              // would make the selectable range shift as the user edits.
-              maximumDate={floorToDay(new Date())}
-              onChange={handlePicked(setEndDay)}
-            />
-          )}
-
-          {endBeforeStart && <Text style={styles.error}>{END_BEFORE_START_MESSAGE}</Text>}
-
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={onCancel}
-              accessibilityRole="button"
-              accessibilityLabel="Cancel custom time range"
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.applyButton, endBeforeStart && styles.applyButtonDisabled]}
-              onPress={handleApply}
-              disabled={endBeforeStart}
-              accessibilityRole="button"
-              accessibilityLabel="Apply custom time range"
-              accessibilityState={{disabled: endBeforeStart}}
-            >
-              <Text style={styles.applyButtonText}>Apply</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      {endBeforeStart && <Text style={styles.error}>{END_BEFORE_START_MESSAGE}</Text>}
+    </Dialog>
   );
 }
 
@@ -183,38 +166,6 @@ function DayField({label, endpoint, value, invalid, onPress}: DayFieldProps) {
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  content: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-    borderRadius: RADIUS.xl,
-    maxWidth: 340,
-    width: '100%',
-    padding: 24,
-    gap: 24,
-    ...ELEVATION.dialog,
-  },
-  textGroup: {
-    gap: 4,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.onSurface,
-    lineHeight: 28,
-  },
-  body: {
-    fontSize: 14,
-    color: COLORS.onSurfaceVariant,
-    lineHeight: 20,
-  },
   field: {
     gap: 8,
   },
@@ -243,33 +194,4 @@ const styles = StyleSheet.create({
   },
   // Pulled up against the field it refers to, out of the card's own 24pt gap.
   error: {...TYPOGRAPHY.error, marginTop: -8},
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-  },
-  cancelButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: RADIUS.pill,
-  },
-  cancelButtonText: {
-    color: COLORS.onSurface,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  applyButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.primaryContainer,
-  },
-  applyButtonDisabled: {
-    opacity: 0.6,
-  },
-  applyButtonText: {
-    color: COLORS.onPrimary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
 });

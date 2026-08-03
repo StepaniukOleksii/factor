@@ -1,14 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+import {KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
 import DateTimePicker, {type DateTimePickerEvent} from '@react-native-community/datetimepicker';
 import {MaterialIcons} from '@expo/vector-icons';
 import type {NavigationAction} from '@react-navigation/native';
@@ -24,6 +15,7 @@ import {Metric} from '../../domain/Metric';
 import {Record as DomainRecord} from '../../domain/Record';
 import {
     CenteredState,
+    Dialog,
     FooterBar,
     LabeledTextField,
     PrimaryActionButton,
@@ -32,7 +24,7 @@ import {
     SegmentedField,
 } from "@presentation/components";
 import {BOOLEAN_METRIC_OPTIONS} from "@presentation/metricDisplay";
-import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from "@presentation/theme";
+import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatShortDate, formatShortTime} from '@shared/formatTimeRange';
 import type {RootStackParamList} from '../navigation/routes';
 
@@ -427,46 +419,27 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                 </FooterBar>
             </KeyboardAvoidingView>
 
-            {/* Styled after the Observation Details screen's confirmation
-                dialogs, as `FieldHelpButton` already is - the shared modal
-                component that would replace all of them is a backlog refactor.
-                The form keeps its state throughout, so keeping the edit restores
-                nothing. */}
-            <Modal
+            {/* The form keeps its state throughout, so keeping the edit
+                restores nothing. */}
+            <Dialog
                 visible={pendingExit !== null}
-                transparent
-                animationType="fade"
-                statusBarTranslucent
-                navigationBarTranslucent
+                title="Discard changes?"
+                message="The changes you made to this record will be lost."
                 onRequestClose={handleKeepEditing}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalTextGroup}>
-                            <Text style={styles.modalTitle}>Discard changes?</Text>
-                            <Text style={styles.modalBody}>
-                                The changes you made to this record will be lost.
-                            </Text>
-                        </View>
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity
-                                style={styles.modalKeepButton}
-                                onPress={handleKeepEditing}
-                                accessibilityLabel="Keep editing this record"
-                            >
-                                <Text style={styles.modalKeepButtonText}>Keep editing</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.modalDiscardButton}
-                                onPress={handleDiscard}
-                                accessibilityLabel="Discard unsaved changes"
-                            >
-                                <Text style={styles.modalDiscardButtonText}>Discard</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+                actions={[
+                    {
+                        label: "Keep editing",
+                        onPress: handleKeepEditing,
+                        accessibilityLabel: "Keep editing this record",
+                    },
+                    {
+                        label: "Discard",
+                        onPress: handleDiscard,
+                        variant: "destructive",
+                        accessibilityLabel: "Discard unsaved changes",
+                    },
+                ]}
+            />
         </ScreenContainer>
     );
 }
@@ -548,63 +521,5 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
         padding: 16,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 16,
-    },
-    modalContent: {
-        backgroundColor: COLORS.surfaceContainerLow,
-        borderWidth: 1,
-        borderColor: COLORS.outlineVariant,
-        borderRadius: RADIUS.xl,
-        maxWidth: 320,
-        width: '100%',
-        padding: 24,
-        gap: 20,
-        ...ELEVATION.dialog,
-    },
-    modalTextGroup: {
-        gap: 8,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: COLORS.onSurface,
-        lineHeight: 28,
-    },
-    modalBody: {
-        fontSize: 16,
-        color: COLORS.onSurfaceVariant,
-        lineHeight: 24,
-    },
-    modalActions: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        gap: 12,
-    },
-    modalKeepButton: {
-        paddingHorizontal: 24,
-        paddingVertical: 10,
-        borderRadius: RADIUS.pill,
-    },
-    modalKeepButtonText: {
-        color: COLORS.onSurface,
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    modalDiscardButton: {
-        paddingHorizontal: 24,
-        paddingVertical: 10,
-        borderRadius: RADIUS.pill,
-        backgroundColor: COLORS.error,
-    },
-    modalDiscardButtonText: {
-        color: COLORS.onError,
-        fontSize: 14,
-        fontWeight: '500',
     },
 });

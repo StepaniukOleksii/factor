@@ -6,7 +6,7 @@ import {ViewStyle} from 'react-native';
  * shadow instead of each re-declaring the same five properties.
  */
 export const ELEVATION = {
-    /** Centered modal dialogs (confirmations, the record action sheet). */
+    /** Centered modal dialogs - in practice the `Dialog` component's card. */
     dialog: {
         shadowColor: '#000',
         shadowOffset: {width: 0, height: 8},

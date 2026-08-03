@@ -34,8 +34,9 @@ function button(root: any) {
     return root.root.findAllByProps({testID: 'field-help', accessibilityRole: 'button'})[0];
 }
 
+/** The dialog's card - `accessible` tells it from the `Dialog` it was passed to. */
 function dialogs(root: any) {
-    return root.root.findAllByProps({testID: 'field-help-dialog'});
+    return root.root.findAllByProps({testID: 'field-help-dialog', accessible: false});
 }
 
 /** The overlay is the outer of the dialog's two Pressables; the dialog is the inner. */

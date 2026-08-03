@@ -22,6 +22,10 @@ export {LabeledTextFieldProps} from './LabeledTextField';
 export {SegmentedField} from './SegmentedField';
 export {SegmentedFieldProps, SegmentedFieldOption} from './SegmentedField';
 
+/** Centered modal dialog - use when an action from user is needed */
+export {Dialog} from './Dialog';
+export {DialogProps, DialogAction} from './Dialog';
+
 /** Info button opening a dialog that explains the field it sits in - used inside a form field's label row */
 export {FieldHelpButton} from './FieldHelpButton';
 export {FieldHelpButtonProps} from './FieldHelpButton';

@@ -1,7 +1,8 @@
 import React, {useState} from "react";
-import {Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View} from "react-native";
+import {TouchableOpacity} from "react-native";
 import {MaterialIcons} from "@expo/vector-icons";
-import {COLORS, ELEVATION, RADIUS} from "@presentation/theme";
+import {COLORS} from "@presentation/theme";
+import {Dialog} from "./Dialog";
 
 export interface FieldHelpButtonProps {
     /** The dialog's heading - normally the label of the field this sits in. */
@@ -22,10 +23,6 @@ const HIT_SLOP = 11;
  *
  * A dialog rather than inline text, so nothing on the form reflows and a long
  * body needs no truncation or "more" affordance.
- *
- * Follows the Observation Details confirmation dialogs' styling rather than a
- * generic modal component; there isn't one, and creating it is tracked in the
- * backlog.
  */
 export function FieldHelpButton({title, text, testID}: FieldHelpButtonProps) {
     const [open, setOpen] = useState(false);
@@ -43,99 +40,18 @@ export function FieldHelpButton({title, text, testID}: FieldHelpButtonProps) {
                 <MaterialIcons name="info-outline" size={GLYPH_SIZE} color={COLORS.onSurfaceVariant}/>
             </TouchableOpacity>
 
-            <Modal
+            <Dialog
                 visible={open}
-                transparent
-                animationType="fade"
-                statusBarTranslucent
-                navigationBarTranslucent
+                title={title}
+                message={text}
                 onRequestClose={close}
-            >
-                <Pressable style={styles.overlay} onPress={close}>
-                    <Pressable
-                        testID={testID ? `${testID}-dialog` : undefined}
-                        style={styles.content}
-                        onPress={(e) => e.stopPropagation()}
-                    >
-                        <View style={styles.textGroup}>
-                            <Text style={styles.title}>{title}</Text>
-                            {/* One Text, so the newlines the user typed survive as
-                                line breaks. It scrolls rather than clips: 500
-                                characters fit comfortably at the default text size,
-                                but need not at the largest accessibility ones. */}
-                            <ScrollView style={styles.bodyScroll}>
-                                <Text style={styles.body}>{text}</Text>
-                            </ScrollView>
-                        </View>
-                        <View style={styles.actions}>
-                            <TouchableOpacity
-                                style={styles.closeButton}
-                                onPress={close}
-                                accessibilityLabel={`Close ${title} description`}
-                            >
-                                <Text style={styles.closeButtonText}>Close</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </Pressable>
-                </Pressable>
-            </Modal>
+                testID={testID ? `${testID}-dialog` : undefined}
+                actions={[{
+                    label: "Close",
+                    onPress: close,
+                    accessibilityLabel: `Close ${title} description`,
+                }]}
+            />
         </>
     );
 }
-
-const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 16,
-    },
-    content: {
-        backgroundColor: COLORS.surfaceContainerLow,
-        borderWidth: 1,
-        borderColor: COLORS.outlineVariant,
-        borderRadius: RADIUS.xl,
-        maxWidth: 384,
-        width: '100%',
-        // Shrinks to what the overlay leaves it, so a body long enough to
-        // outgrow the screen scrolls instead of pushing the dismiss action off.
-        flexShrink: 1,
-        padding: 24,
-        gap: 24,
-        ...ELEVATION.dialog,
-    },
-    textGroup: {
-        gap: 8,
-        flexShrink: 1,
-    },
-    bodyScroll: {
-        flexGrow: 0,
-        flexShrink: 1,
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: COLORS.onSurface,
-        lineHeight: 28,
-    },
-    body: {
-        fontSize: 16,
-        color: COLORS.onSurfaceVariant,
-        lineHeight: 24,
-    },
-    actions: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-    },
-    closeButton: {
-        paddingHorizontal: 24,
-        paddingVertical: 10,
-        borderRadius: RADIUS.pill,
-    },
-    closeButtonText: {
-        color: COLORS.onSurface,
-        fontSize: 14,
-        fontWeight: '500',
-    },
-});
