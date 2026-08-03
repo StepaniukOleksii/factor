@@ -222,6 +222,9 @@ this — the new dependencies ship native code.
 * **Trend window lifetime**, re-expressed against the stack rather than the deleted classifier: the
   window survives a push-and-pop through a Record screen, and is gone after popping to the list and
   reopening the same Observation.
-* **E2E:** None — the slice has no surface of its own. Every flow exercises the stack it introduces, and
-  `.maestro/3-10-back-to-unzoom-trend-chart.yaml` covers the push-and-pop-through-a-Record-screen
-  property directly.
+* **E2E:** `.maestro/0-1-navigation-foundation.yaml` — a Record added from the Observation list, saved,
+  and left by a back press that reaches the list rather than the form it was saved from. Declared `None`
+  when this spec was written, on the grounds that the slice has no surface of its own and that
+  `.maestro/3-10-back-to-unzoom-trend-chart.yaml` already covers the push-and-pop-through-a-Record-screen
+  property; that left the `popTo` behind the list route — the one place the two entry points genuinely
+  diverge — reachable from no flow at all.

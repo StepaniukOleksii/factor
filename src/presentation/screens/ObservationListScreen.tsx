@@ -77,6 +77,7 @@ export function ObservationListScreen({navigation}: ObservationListScreenProps) 
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.cardAddButton}
+                        accessibilityLabel={`Add record to ${item.observation.name}`}
                         onPress={() => navigation.navigate('CreateRecord', {observationId: item.observation.id})}
                     >
                         <MaterialIcons name="add" size={24} color={COLORS.primaryContainer}/>
