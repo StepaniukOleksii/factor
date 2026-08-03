@@ -47,8 +47,8 @@
 
 ## Documentation
 
-* Prefer self-explanatory code over comments.
-* Document intent, not implementation.
+* Do not comment code that explains itself. Where the reason behind the code cannot be read from the code, state that
+  reason and nothing else.
 * Update specifications and ADRs when behavior or decisions change.
 
 ---
