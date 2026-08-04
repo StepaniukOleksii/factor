@@ -95,6 +95,31 @@ describe('SQLiteObservationRepository', () => {
     );
   });
 
+  it('should persist each bound shape as JSON carrying exactly the bounds set', async () => {
+    const metrics = [
+      new Metric('metric-1', 'Level', 'Numeric', {min: 1, max: 5}),
+      new Metric('metric-2', 'Floor', 'Numeric', {min: -40}),
+      new Metric('metric-3', 'Ceiling', 'Numeric', {max: 0.5}),
+      new Metric('metric-4', 'Free', 'Numeric')
+    ];
+    const observation = new Observation('obs-1', 'Mood', metrics);
+
+    await repository.save(observation);
+
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      2, expect.any(String), 'metric-1', 'obs-1', 'Level', 'Numeric', '{"min":1,"max":5}', null
+    );
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      3, expect.any(String), 'metric-2', 'obs-1', 'Floor', 'Numeric', '{"min":-40}', null
+    );
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      4, expect.any(String), 'metric-3', 'obs-1', 'Ceiling', 'Numeric', '{"max":0.5}', null
+    );
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      5, expect.any(String), 'metric-4', 'obs-1', 'Free', 'Numeric', null, null
+    );
+  });
+
   it('should persist a null description', async () => {
     const observation = new Observation('obs-1', 'Weather', []);
 
@@ -197,6 +222,33 @@ describe('SQLiteObservationRepository', () => {
       const result = await repository.findAll();
 
       expect(result[0].metrics[0].constraint).toEqual({ min: -40, max: 60 });
+    });
+
+    it('should read back a bound on its own, and no constraint at all', async () => {
+      mockGetAllAsync
+        .mockResolvedValueOnce([
+          { id: 'obs-1', name: 'Mood', createdAt: 1000 }
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'm-1', observationId: 'obs-1', name: 'Floor', type: 'Numeric',
+            constraintJson: JSON.stringify({ min: 0 })
+          },
+          {
+            id: 'm-2', observationId: 'obs-1', name: 'Ceiling', type: 'Numeric',
+            constraintJson: JSON.stringify({ max: 100 })
+          },
+          {
+            id: 'm-3', observationId: 'obs-1', name: 'Free', type: 'Numeric',
+            constraintJson: null
+          }
+        ]);
+
+      const result = await repository.findAll();
+
+      expect(result[0].metrics[0].constraint).toEqual({ min: 0 });
+      expect(result[0].metrics[1].constraint).toEqual({ max: 100 });
+      expect(result[0].metrics[2].constraint).toBeNull();
     });
 
     it('should round-trip each metric description, including null and one with newlines', async () => {

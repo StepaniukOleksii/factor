@@ -273,4 +273,167 @@ describe('CreateObservationUseCase', () => {
       expect(savedMetrics()[1].description).toBeNull();
     });
   });
+
+  describe('metric bounds', () => {
+    const savedMetrics = () =>
+      ((mockRepository.save as any).mock.calls[0][0] as Observation).metrics;
+
+    it('should accept both bounds', async () => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'Level', type: 'Numeric', min: '1', max: '5'}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({min: 1, max: 5});
+    });
+
+    it('should accept a minimum alone', async () => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'Level', type: 'Numeric', min: '1'}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({min: 1});
+    });
+
+    it('should accept a maximum alone', async () => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'Level', type: 'Numeric', max: '5'}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({max: 5});
+    });
+
+    // `{}` would persist as a meaningless `"{}"` and read as "bounded" to
+    // anything testing the field for presence.
+    it('should leave a Metric given neither bound unconstrained rather than empty-constrained', async () => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'Level', type: 'Numeric'}]
+      });
+
+      expect(savedMetrics()[0].constraint).toBeNull();
+    });
+
+    it.each([
+      ['empty', ''],
+      ['whitespace-only', '   '],
+    ])('should treat an %s bound as unset', async (_kind, bound) => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'Level', type: 'Numeric', min: bound, max: bound}]
+      });
+
+      expect(savedMetrics()[0].constraint).toBeNull();
+    });
+
+    it('should keep the bound that was given when the other is blank', async () => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'Level', type: 'Numeric', min: '  ', max: '5'}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({max: 5});
+    });
+
+    it('should accept negative bounds', async () => {
+      await useCase.execute({
+        name: 'Weather',
+        metrics: [{name: 'Degrees', type: 'Numeric', min: '-40', max: '-5'}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({min: -40, max: -5});
+    });
+
+    it('should accept fractional bounds', async () => {
+      await useCase.execute({
+        name: 'Sleep',
+        metrics: [{name: 'Hours', type: 'Numeric', min: '0.5', max: '12.25'}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({min: 0.5, max: 12.25});
+    });
+
+    // The one-value range: a bound is inside the range it defines, so this
+    // accepts exactly that value rather than nothing at all.
+    it('should accept a minimum equal to its maximum', async () => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'Level', type: 'Numeric', min: '3', max: '3'}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({min: 3, max: 3});
+    });
+
+    it.each([
+      ['an unparseable', {min: 'low'}],
+      ['a non-finite', {max: 'Infinity'}],
+    ])('should reject %s bound', async (_kind, bounds) => {
+      const input = {
+        name: 'Mood',
+        metrics: [{name: 'Level', type: 'Numeric', ...bounds}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('Metric bounds must be numbers');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should reject a minimum above its maximum', async () => {
+      const input = {
+        name: 'Mood',
+        metrics: [{name: 'Level', type: 'Numeric', min: '5', max: '1'}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('Metric minimum cannot exceed its maximum');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it.each(['Text', 'Boolean', 'Enum'])('should reject a bound on a %s metric', async type => {
+      const input = {
+        name: 'Coffee',
+        metrics: [{name: 'Roast', type, max: '5'}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('Only a Numeric metric can have bounds');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should leave a non-Numeric metric given no bounds alone', async () => {
+      await useCase.execute({
+        name: 'Coffee',
+        metrics: [{name: 'Roast', type: 'Text', min: '', max: '   '}]
+      });
+
+      expect(savedMetrics()[0].constraint).toBeNull();
+    });
+
+    it('should validate each metric independently', async () => {
+      const input = {
+        name: 'Coffee',
+        metrics: [
+          {name: 'Cups', type: 'Numeric', min: '0', max: '10'},
+          {name: 'Strength', type: 'Numeric', min: '10', max: '0'}
+        ]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('Metric minimum cannot exceed its maximum');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should keep each metric to its own bounds', async () => {
+      await useCase.execute({
+        name: 'Coffee',
+        metrics: [
+          {name: 'Cups', type: 'Numeric', min: '0', max: '10'},
+          {name: 'Strength', type: 'Numeric'},
+          {name: 'Roast', type: 'Text'}
+        ]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({min: 0, max: 10});
+      expect(savedMetrics()[1].constraint).toBeNull();
+      expect(savedMetrics()[2].constraint).toBeNull();
+    });
+  });
 });

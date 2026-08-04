@@ -11,7 +11,7 @@ import {CreateRecordUseCase} from '../../application/CreateRecordUseCase';
 import {GetRecordByIdUseCase} from '../../application/GetRecordByIdUseCase';
 import {UpdateRecordUseCase} from '../../application/UpdateRecordUseCase';
 import {Observation} from '../../domain/Observation';
-import {Metric} from '../../domain/Metric';
+import {Metric, NumericConstraint} from '../../domain/Metric';
 import {Record as DomainRecord} from '../../domain/Record';
 import {RECORD_NOTE_MAX_LENGTH} from '../../domain/validationLimits';
 import {
@@ -24,7 +24,7 @@ import {
     ScreenHeader,
     SegmentedField,
 } from "@presentation/components";
-import {BOOLEAN_METRIC_OPTIONS} from "@presentation/metricDisplay";
+import {BOOLEAN_METRIC_OPTIONS, formatMetricRange, formatRangeError} from "@presentation/metricDisplay";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatShortDate, formatShortTime} from '@shared/formatTimeRange';
 import type {RootStackParamList} from '../navigation/routes';
@@ -236,7 +236,11 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                 continue;
             }
             if (!metric.validateValue(val)) {
-                newErrors[metric.id] = 'Invalid value';
+                // Text that never parsed to a number is not a range problem.
+                const rangeMessage = typeof val === 'number'
+                    ? formatRangeError(metric.constraint as NumericConstraint | null)
+                    : undefined;
+                newErrors[metric.id] = rangeMessage ?? 'Invalid value';
             }
         }
 
@@ -315,6 +319,9 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                     error={error}
                     helpText={metric.description ?? undefined}
                     keyboardType={isNumeric ? 'numeric' : undefined}
+                    placeholder={isNumeric
+                        ? formatMetricRange(metric.constraint as NumericConstraint | null)
+                        : undefined}
                     value={values[metric.id] !== undefined ? String(values[metric.id]) : ''}
                     onChangeText={(text) => {
                         if (isNumeric) {

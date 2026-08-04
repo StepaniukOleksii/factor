@@ -1026,4 +1026,121 @@ describe('RecordFormScreen', () => {
             expect(findAllByText(root.root, metric.name).length).toBeGreaterThan(1);
         });
     });
+
+    // All four bound shapes on one Observation, so a single form covers each
+    // placeholder and each refusal message - and the unbounded Metric proves
+    // nothing is enforced where nothing was declared.
+    describe('metric bounds', () => {
+        const closed = new Metric('metric-5', 'dense', 'Numeric', {min: 0, max: 100});
+        const floor = new Metric('metric-6', 'yearly', 'Numeric', {min: 0});
+        const ceiling = new Metric('metric-7', 'insufficient', 'Numeric', {max: 100});
+        const unbounded = new Metric('metric-8', 'sparse', 'Numeric');
+        const bounded = new Observation('obs-1', 'mixed metrics', [closed, floor, ceiling, unbounded]);
+
+        /** Both routes reach the same form - every rule here holds on each. */
+        const ROUTES: [string, string | undefined][] = [
+            ['create', undefined],
+            ['edit', 'record-1'],
+        ];
+
+        const field = (root: any, metricId: string) =>
+            root.root.findByProps({testID: `record-metric-${metricId}`});
+
+        async function type(root: any, metricId: string, text: string) {
+            await act(async () => {
+                field(root, metricId).props.onChangeText(text);
+            });
+        }
+
+        async function save(root: any, recordId?: string) {
+            const button = findTouchableWithText(root.root, recordId ? 'Save Record' : 'Add Record');
+            await act(async () => {
+                await button!.props.onPress();
+            });
+        }
+
+        beforeEach(() => {
+            mockGetObservationByIdExecute.mockResolvedValue(bounded);
+            // No stored values, so each route starts from the same empty form.
+            mockGetRecordByIdExecute.mockResolvedValue(new DomainRecord(
+                'record-1',
+                'obs-1',
+                new Date('2024-01-15T08:15:00'),
+                new Map<string, any>(),
+            ));
+        });
+
+        it.each(ROUTES)('states each Metric\'s range before anything is typed on the %s route', async (_route, recordId) => {
+            const {root} = await renderScreen({recordId});
+
+            expect(field(root, 'metric-5').props.placeholder).toBe('0-100');
+            expect(field(root, 'metric-6').props.placeholder).toBe('Min 0');
+            expect(field(root, 'metric-7').props.placeholder).toBe('Max 100');
+            expect(field(root, 'metric-8').props.placeholder).toBeUndefined();
+        });
+
+        it.each(ROUTES)('refuses out-of-range values, naming the bound each broke, on the %s route', async (_route, recordId) => {
+            const {root} = await renderScreen({recordId});
+
+            await type(root, 'metric-5', '150');
+            await type(root, 'metric-6', '-1');
+            await type(root, 'metric-7', '101');
+            await type(root, 'metric-8', '9999');
+            await save(root, recordId);
+
+            expect(findAllByText(root.root, 'Must be between 0 and 100').length).toBe(1);
+            expect(findAllByText(root.root, 'Must be at least 0').length).toBe(1);
+            expect(findAllByText(root.root, 'Must be at most 100').length).toBe(1);
+            expect(field(root, 'metric-8').props.error).toBeUndefined();
+            expect(mockCreateRecordExecute).not.toHaveBeenCalled();
+            expect(mockUpdateRecordExecute).not.toHaveBeenCalled();
+        });
+
+        it.each(ROUTES)('accepts a value sitting exactly on a bound on the %s route', async (_route, recordId) => {
+            const {root} = await renderScreen({recordId});
+
+            await type(root, 'metric-5', '100');
+            await type(root, 'metric-6', '0');
+            await save(root, recordId);
+
+            const execute = recordId ? mockUpdateRecordExecute : mockCreateRecordExecute;
+            expect(execute).toHaveBeenCalledWith(expect.objectContaining({
+                values: [
+                    {metricId: 'metric-5', value: 100},
+                    {metricId: 'metric-6', value: 0},
+                ],
+            }));
+        });
+
+        it.each(ROUTES)('reports text that never parsed to a number as an invalid value on the %s route', async (_route, recordId) => {
+            const {root} = await renderScreen({recordId});
+
+            await type(root, 'metric-5', 'lots');
+            await save(root, recordId);
+
+            expect(findAllByText(root.root, 'Invalid value').length).toBe(1);
+            expect(findAllByText(root.root, 'Must be between 0 and 100').length).toBe(0);
+            expect(mockCreateRecordExecute).not.toHaveBeenCalled();
+            expect(mockUpdateRecordExecute).not.toHaveBeenCalled();
+        });
+
+        it('leaves an unbounded Metric taking any number, and an empty form raising nothing', async () => {
+            const {root} = await renderScreen();
+
+            await type(root, 'metric-8', '9999');
+            await save(root);
+
+            expect(mockCreateRecordExecute).toHaveBeenCalledWith(expect.objectContaining({
+                values: [{metricId: 'metric-8', value: 9999}],
+            }));
+        });
+
+        it('creates a Record from an untouched form, where no bound applies', async () => {
+            const {root} = await renderScreen();
+
+            await save(root);
+
+            expect(mockCreateRecordExecute).toHaveBeenCalledWith(expect.objectContaining({values: []}));
+        });
+    });
 });

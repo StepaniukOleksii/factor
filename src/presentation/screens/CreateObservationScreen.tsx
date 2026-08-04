@@ -43,7 +43,13 @@ interface MetricDraft {
     name: string;
     type: MetricValueType;
     description: string;
+    /** Lower bound, as typed; empty leaves it unset. Numeric Metrics only. */
+    min: string;
+    /** Upper bound, as typed; empty leaves it unset. Numeric Metrics only. */
+    max: string;
 }
+
+const EMPTY_METRIC: MetricDraft = {name: '', type: 'Numeric', description: '', min: '', max: ''};
 
 /** The Metric types this screen offers, in the order the dropdown lists them. */
 const METRIC_TYPE_CHOICES: MetricValueType[] = ['Numeric', 'Text', 'Boolean'];
@@ -51,13 +57,13 @@ const METRIC_TYPE_CHOICES: MetricValueType[] = ['Numeric', 'Text', 'Boolean'];
 export function CreateObservationScreen({navigation}: CreateObservationScreenProps) {
     const [observationName, setObservationName] = useState('');
     const [description, setDescription] = useState('');
-    const [metrics, setMetrics] = useState<MetricDraft[]>([{name: '', type: 'Numeric', description: ''}]);
+    const [metrics, setMetrics] = useState<MetricDraft[]>([EMPTY_METRIC]);
 
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const [activeMetricIndex, setActiveMetricIndex] = useState<number | null>(null);
 
     const handleAddMetric = () => {
-        setMetrics([...metrics, {name: '', type: 'Numeric', description: ''}]);
+        setMetrics([...metrics, EMPTY_METRIC]);
     };
 
     const handleMetricChange = <K extends keyof MetricDraft>(index: number, key: K, value: MetricDraft[K]) => {
@@ -76,7 +82,13 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
             await useCase.execute({
                 name: observationName,
                 description: description.trim(),
-                metrics: metrics.map(m => ({name: m.name, type: m.type, description: m.description}))
+                metrics: metrics.map(m => ({
+                    name: m.name,
+                    type: m.type,
+                    description: m.description,
+                    min: m.min,
+                    max: m.max
+                }))
             });
             navigation.goBack();
         } catch (error: any) {
@@ -91,7 +103,14 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
 
     const selectType = (type: MetricValueType) => {
         if (activeMetricIndex !== null) {
-            handleMetricChange(activeMetricIndex, 'type', type);
+            const newMetrics = [...metrics];
+            const metric = newMetrics[activeMetricIndex];
+            // Only a Numeric Metric shows the bound fields, so anything typed
+            // into them goes when the type does - never submitted unseen.
+            newMetrics[activeMetricIndex] = type === 'Numeric'
+                ? {...metric, type}
+                : {...metric, type, min: '', max: ''};
+            setMetrics(newMetrics);
         }
         setDropdownVisible(false);
     };
@@ -169,6 +188,29 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                                             <MaterialIcons name="expand-more" size={20} color={COLORS.outline}/>
                                         </TouchableOpacity>
                                     </View>
+
+                                    {metric.type === 'Numeric' && (
+                                        <View style={styles.boundsRow}>
+                                            <View style={styles.boundField}>
+                                                <LabeledTextField
+                                                    label="MIN"
+                                                    testID={`metric-min-${index}`}
+                                                    value={metric.min}
+                                                    onChangeText={(val) => handleMetricChange(index, 'min', val)}
+                                                    keyboardType="numeric"
+                                                />
+                                            </View>
+                                            <View style={styles.boundField}>
+                                                <LabeledTextField
+                                                    label="MAX"
+                                                    testID={`metric-max-${index}`}
+                                                    value={metric.max}
+                                                    onChangeText={(val) => handleMetricChange(index, 'max', val)}
+                                                    keyboardType="numeric"
+                                                />
+                                            </View>
+                                        </View>
+                                    )}
 
                                     <View style={styles.metricField}>
                                         <LabeledTextField
@@ -273,6 +315,13 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     metricField: {
+        flex: 1,
+    },
+    boundsRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    boundField: {
         flex: 1,
     },
     // Label for the TYPE selector, which can't use LabeledTextField directly.

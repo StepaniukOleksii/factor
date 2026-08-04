@@ -64,10 +64,10 @@ card, where nothing should invite confusing them.
 | Observation     | Metrics                                              | Record pattern                                     | What it's for                                                                                                                 |
 |-----------------|------------------------------------------------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | `mixed metrics` | Numeric `dense` (0-100)                              | one point per day, 45 days                         | A densely-populated trend chart                                                                                               |
-|                 | Numeric `sparse` (min 0)                             | one point every ~3 days, 60 days                   | A trend chart with visible gaps between points                                                                                |
+|                 | Numeric `sparse` (unbounded)                         | one point every ~3 days, 60 days                   | A trend chart with visible gaps between points                                                                                |
 |                 | Numeric `hourly` (0-100)                             | every 3h over the last 21h, then daily for 12 days — of which the day 3 back also carries a 09:30 and a 15:00 | The only metric dense enough to fill the hour-bucketed `1D` window; its extra day-3 pair is the only hour anywhere holding two Records |
 |                 | Numeric `yearly` (min 0)                             | one point every 14 days, 350 days                  | Fills the 30-day-bucketed `1Y` window instead of clumping at its right edge                                                   |
-|                 | Numeric `insufficient` (0-100)                       | exactly 1 point, 5 days ago                        | Both sides of the placeholder-vs-dot boundary: "Not enough data yet" at `1D`, a single dot at every wider preset             |
+|                 | Numeric `insufficient` (max 100)                     | exactly 1 point, 5 days ago                        | Both sides of the placeholder-vs-dot boundary: "Not enough data yet" at `1D`, a single dot at every wider preset             |
 |                 | Boolean `flag`, Enum `category` (a/b/c), Text `note` | shared records, every other day, 20 days           | Non-numeric metrics never chart; one record carrying several value types at once                                              |
 | `no numeric`    | Enum `mood` (low/ok/high), Boolean `done`            | shared records, every other day, 8 days            | No Numeric metric at all, so neither the TRENDS section nor the time range selector renders                                   |
 | `stale records` | Numeric `value` (min 0)                              | 3 points, all 40-60 days ago                       | "Not enough data yet" at `1D`/`1W`/`1M`, and a single dot labelled "3" at `1Y` (where the 3 points share one bucket), alongside a *stale* last-record time |
@@ -134,6 +134,9 @@ Still on **`mixed metrics`**, tap **Add Record** (and again via **Edit Record** 
 
 - `dense`, `hourly`, `yearly` and `flag` show a description info button beside their label; the other four
   show none, and leave no gap where one would be.
+- every shape a Numeric bound comes in is on this one form, stated by each empty input: `0-100` on `dense`
+  and `hourly`, `Min 0` on `yearly`, `Max 100` on `insufficient`, and no placeholder at all on the unbounded
+  `sparse`, which leaves no gap where one would be.
 - Each button opens a dialog headed by its metric's name — `hourly`'s keeps its line breaks, `yearly`'s
   longest body fits or scrolls without clipping.
 - a NOTE field comes last, below a rule and outside any metric card, and carries no info button. On the

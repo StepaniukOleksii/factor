@@ -2,12 +2,13 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {buildSeedData} from './devSeedData';
 import {GetMetricSeriesUseCase} from '../application/GetMetricSeriesUseCase';
 import {
-    getAggregationForPreset,
-    getTimeRangeForPreset,
-    TIME_RANGE_PRESETS,
-    type TimeRangePreset,
+  getAggregationForPreset,
+  getTimeRangeForPreset,
+  TIME_RANGE_PRESETS,
+  type TimeRangePreset,
 } from '../presentation/charts/chartDefaults';
 import {METRIC_DESCRIPTION_MAX_LENGTH, RECORD_NOTE_MAX_LENGTH} from '../domain/validationLimits';
+import type {NumericConstraint} from '../domain/Metric';
 
 vi.mock('expo-crypto', () => {
   let counter = 0;
@@ -183,6 +184,39 @@ describe('seeded Metric descriptions', () => {
           metric.description?.length ?? 0,
           `"${metric.name}" on "${observation.name}"`,
         ).toBeLessThanOrEqual(METRIC_DESCRIPTION_MAX_LENGTH);
+      }
+    }
+  });
+});
+
+// One Record form has to carry every shape a Numeric bound comes in, so the
+// placeholders and the refusal messages can all be eyeballed at once - the claim
+// testing-data.md makes.
+describe('seeded Metric bounds', () => {
+  const BOUNDS: [string, NumericConstraint | null][] = [
+    ['dense', {min: 0, max: 100}],
+    ['yearly', {min: 0}],
+    ['insufficient', {max: 100}],
+    ['sparse', null],
+  ];
+
+  it.each(BOUNDS)('bounds %s as intended', (name, constraint) => {
+    const {observation} = entry('mixed metrics');
+    const metric = observation.metrics.find(candidate => candidate.name === name);
+
+    expect(metric!.constraint).toEqual(constraint);
+  });
+
+  // `reseedDevData()` builds entities and calls the repository directly, so
+  // CreateObservationUseCase never sees this data - an incoherent range, which
+  // makes `validateValue` reject every value, would reach the device unnoticed.
+  it('keeps every seeded range coherent', () => {
+    for (const {observation} of buildSeedData()) {
+      for (const metric of observation.metrics) {
+        if (metric.type !== 'Numeric' || !metric.constraint) continue;
+        const {min, max} = metric.constraint as NumericConstraint;
+        if (min === undefined || max === undefined) continue;
+        expect(min, `"${metric.name}" on "${observation.name}"`).toBeLessThanOrEqual(max);
       }
     }
   });

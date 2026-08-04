@@ -1,11 +1,11 @@
 import * as Crypto from 'expo-crypto';
 import {Observation} from '../domain/Observation';
-import {Metric, MetricValueType} from '../domain/Metric';
+import {Metric, MetricValueType, NumericConstraint} from '../domain/Metric';
 import {
-    METRIC_DESCRIPTION_MAX_LENGTH,
-    METRIC_NAME_MAX_LENGTH,
-    OBSERVATION_DESCRIPTION_MAX_LENGTH,
-    OBSERVATION_NAME_MAX_LENGTH,
+  METRIC_DESCRIPTION_MAX_LENGTH,
+  METRIC_NAME_MAX_LENGTH,
+  OBSERVATION_DESCRIPTION_MAX_LENGTH,
+  OBSERVATION_NAME_MAX_LENGTH,
 } from '../domain/validationLimits';
 import {ObservationRepository} from './ObservationRepository';
 
@@ -16,7 +16,51 @@ export interface CreateObservationInput {
     name: string;
     type: string;
     description?: string;
+    /** Lower bound, as typed; blank or absent leaves it unset. */
+    min?: string;
+    /** Upper bound, as typed; blank or absent leaves it unset. */
+    max?: string;
   }[];
+}
+
+function parseBound(text: string): number {
+  const value = Number(text);
+  if (!Number.isFinite(value)) {
+    throw new Error('Metric bounds must be numbers');
+  }
+  return value;
+}
+
+/**
+ * The bounds a Metric was declared with, or `null` when it was given none -
+ * never `{}`, which would persist as a meaningless `"{}"` and read as "bounded"
+ * to anything testing the field for presence.
+ */
+function toNumericConstraint(type: string, min?: string, max?: string): NumericConstraint | null {
+  const hasMin = (min ?? '').trim() !== '';
+  const hasMax = (max ?? '').trim() !== '';
+  if (!hasMin && !hasMax) {
+    return null;
+  }
+  // The screen never offers these fields for another type, so a bound arriving
+  // on one is a caller bug rather than something to drop quietly.
+  if (type !== 'Numeric') {
+    throw new Error('Only a Numeric metric can have bounds');
+  }
+
+  const constraint: NumericConstraint = {};
+  if (hasMin) {
+    constraint.min = parseBound(min!);
+  }
+  if (hasMax) {
+    constraint.max = parseBound(max!);
+  }
+  // An incoherent range makes `validateValue` reject every value, so it is
+  // caught where the user's input enters the system.
+  if (constraint.min !== undefined && constraint.max !== undefined && constraint.min > constraint.max) {
+    throw new Error('Metric minimum cannot exceed its maximum');
+  }
+  return constraint;
 }
 
 export class CreateObservationUseCase {
@@ -62,7 +106,7 @@ export class CreateObservationUseCase {
         Crypto.randomUUID(),
         trimmedMetricName,
         m.type as MetricValueType,
-        null,
+        toNumericConstraint(m.type, m.min, m.max),
         trimmedMetricDescription === '' ? null : trimmedMetricDescription
       );
     });

@@ -109,10 +109,12 @@ export function buildSeedData(): SeedEntry[] {
   // correctly.
   {
     // Four of the eight carry a description and four deliberately don't, so one
-    // Record form shows every state of the info button at once.
+    // Record form shows every state of the info button at once. The four bound
+    // shapes are spread the same way: a closed range on `dense` and `hourly`, a
+    // floor on `yearly`, a ceiling on `insufficient`, and none on `sparse`.
     const denseMetric = new Metric(Crypto.randomUUID(), 'dense', 'Numeric', {min: 0, max: 100},
       'One point per day for 45 days — the densely-populated trend chart.');
-    const sparseMetric = new Metric(Crypto.randomUUID(), 'sparse', 'Numeric', {min: 0});
+    const sparseMetric = new Metric(Crypto.randomUUID(), 'sparse', 'Numeric');
     // Several lines, so the dialog has line breaks to preserve.
     const hourlyMetric = new Metric(Crypto.randomUUID(), 'hourly', 'Numeric', {min: 0, max: 100},
       'Every 3 hours over the last 21, then one point per day for 12 days.\n' +
@@ -127,7 +129,7 @@ export function buildSeedData(): SeedEntry[] {
       'very different charts, without a single record having moved. This text runs close to the ' +
       '500-character limit deliberately, so the longest body the dialog can show is on the form every ' +
       'time the fixtures are reseeded.');
-    const insufficientMetric = new Metric(Crypto.randomUUID(), 'insufficient', 'Numeric', {min: 0, max: 100});
+    const insufficientMetric = new Metric(Crypto.randomUUID(), 'insufficient', 'Numeric', {max: 100});
     // The only described non-Numeric Metric, covering the SegmentedField path.
     const flagMetric = new Metric(Crypto.randomUUID(), 'flag', 'Boolean', null,
       'Boolean, so it never charts — and the segmented control this button sits in.');

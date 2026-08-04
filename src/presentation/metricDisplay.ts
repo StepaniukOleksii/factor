@@ -1,4 +1,4 @@
-import type {MetricValueType} from '../domain/Metric';
+import type {MetricValueType, NumericConstraint} from '../domain/Metric';
 import type {SegmentedFieldOption} from './components';
 
 /**
@@ -49,4 +49,43 @@ export function formatMetricValue(type: MetricValueType, value: unknown): string
         return option ? option.label : String(value);
     }
     return String(value);
+}
+
+/**
+ * The range a Numeric Metric accepts, as its input states it before anything is
+ * typed - or `undefined` when the Metric declares no bounds, so no placeholder
+ * is shown at all.
+ */
+export function formatMetricRange(constraint: NumericConstraint | null): string | undefined {
+    const min = constraint?.min;
+    const max = constraint?.max;
+    if (min !== undefined && max !== undefined) {
+        return `${min}-${max}`;
+    }
+    if (min !== undefined) {
+        return `Min ${min}`;
+    }
+    if (max !== undefined) {
+        return `Max ${max}`;
+    }
+    return undefined;
+}
+
+/**
+ * Why a value was refused, naming the bound it broke - or `undefined` for an
+ * unbounded Metric, whose values break none.
+ */
+export function formatRangeError(constraint: NumericConstraint | null): string | undefined {
+    const min = constraint?.min;
+    const max = constraint?.max;
+    if (min !== undefined && max !== undefined) {
+        return `Must be between ${min} and ${max}`;
+    }
+    if (min !== undefined) {
+        return `Must be at least ${min}`;
+    }
+    if (max !== undefined) {
+        return `Must be at most ${max}`;
+    }
+    return undefined;
 }
