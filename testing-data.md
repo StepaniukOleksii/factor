@@ -51,6 +51,16 @@ Four of `mixed metrics`' metrics carry an optional Metric **description**, each 
 one line on `dense`, several lines on `hourly`, close to the 500-character limit on `yearly`, and one line on
 the Boolean `flag`. Its other four metrics, and every metric on the other observations, carry none.
 
+Two of `mixed metrics`' records carry an optional Record **note** — free text about that one occasion, which is
+not a metric. The most recent sub-day `hourly` record (3 hours back) carries a short single-line one; today's
+shared record (09:00, the one `dense`, `flag`, `category` and `note` all write to) carries one close to the
+150-character limit containing a line break, so wrapping and newline preservation are both on screen. Every
+other seeded record, here and on the other observations, carries none. Those two because RECENT RECORDS shows
+the three most recent records and which those are shifts with the hour you reseed: the sub-day one moves with
+the clock while today's is pinned at 09:00, so at any time of day the list holds at least one record with a
+note and one without. Today's also puts the `note` metric's own value and the record's note on one expanded
+card, where nothing should invite confusing them.
+
 | Observation     | Metrics                                              | Record pattern                                     | What it's for                                                                                                                 |
 |-----------------|------------------------------------------------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | `mixed metrics` | Numeric `dense` (0-100)                              | one point per day, 45 days                         | A densely-populated trend chart                                                                                               |
@@ -105,6 +115,11 @@ Open **`mixed metrics`** details screen (time range selector defaults to `1M`):
   gradient fill (its one record falls inside the 30-day window).
 - `flag`/`category`/`note` — none get a trend card (non-numeric); RECENT RECORDS shows entries with a
   boolean, an enum value, and a note together on the same record.
+- record notes — under RECENT RECORDS at least one collapsed row shows a note glyph beside its time and at
+  least one shows none, with no gap in its place and no difference in row height. Expanding the noted row
+  that also holds a value for the `note` metric shows that metric's `NOTE` chip in the horizontal strip
+  and the record's own note as a wrapping paragraph below it; the longer note is not truncated and its
+  line break shows as a line break. Expanding an un-noted row leaves nothing where the paragraph would be.
 
 Still on **`mixed metrics`**, tap through the time range selector and check against the table above:
 
@@ -121,6 +136,9 @@ Still on **`mixed metrics`**, tap **Add Record** (and again via **Edit Record** 
   show none, and leave no gap where one would be.
 - Each button opens a dialog headed by its metric's name — `hourly`'s keeps its line breaks, `yearly`'s
   longest body fits or scrolls without clipping.
+- a NOTE field comes last, below a rule and outside any metric card, and carries no info button. On the
+  edit route it is pre-populated from the record; typing past 150 characters stops the input and leaves
+  the counter reading "150/150".
 
 Open **`no numeric`** details screen:
 

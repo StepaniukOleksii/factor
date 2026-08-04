@@ -6,6 +6,7 @@ import {RecordFormScreen} from './RecordFormScreen';
 import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
 import {Record as DomainRecord} from '../../domain/Record';
+import {RECORD_NOTE_MAX_LENGTH} from '../../domain/validationLimits';
 import {formatShortDate, formatShortTime} from '@shared/formatTimeRange';
 
 const {
@@ -264,6 +265,7 @@ describe('RecordFormScreen', () => {
                     {metricId: 'metric-1', value: 8},
                     {metricId: 'metric-2', value: true},
                 ],
+                note: '',
             });
             expect(mockUpdateRecordExecute).not.toHaveBeenCalled();
             expect(onCreated).toHaveBeenCalledTimes(1);
@@ -294,6 +296,7 @@ describe('RecordFormScreen', () => {
                     {metricId: 'metric-1', value: 8},
                     {metricId: 'metric-2', value: false},
                 ],
+                note: '',
             });
         });
 
@@ -313,6 +316,7 @@ describe('RecordFormScreen', () => {
             expect(mockCreateRecordExecute).toHaveBeenCalledWith({
                 observationId: 'obs-1',
                 values: [{metricId: 'metric-1', value: 8}],
+                note: '',
             });
         });
 
@@ -339,6 +343,7 @@ describe('RecordFormScreen', () => {
             expect(mockCreateRecordExecute).toHaveBeenCalledWith({
                 observationId: 'obs-1',
                 values: [{metricId: 'metric-1', value: 8}],
+                note: '',
             });
             expect(findAllByText(root.root, 'Invalid value').length).toBe(0);
             expect(globalThis.alert).not.toHaveBeenCalled();
@@ -355,6 +360,7 @@ describe('RecordFormScreen', () => {
             expect(mockCreateRecordExecute).toHaveBeenCalledWith({
                 observationId: 'obs-1',
                 values: [],
+                note: '',
             });
         });
 
@@ -377,6 +383,7 @@ describe('RecordFormScreen', () => {
             expect(mockCreateRecordExecute).toHaveBeenCalledWith({
                 observationId: 'obs-1',
                 values: [],
+                note: '',
             });
             expect(findAllByText(root.root, 'Invalid value').length).toBe(0);
         });
@@ -547,6 +554,7 @@ describe('RecordFormScreen', () => {
                     {metricId: 'metric-1', value: 8},
                     {metricId: 'metric-2', value: true},
                 ],
+                note: '',
             });
             expect(mockCreateRecordExecute).not.toHaveBeenCalled();
             expect(onCreated).toHaveBeenCalledTimes(1);
@@ -571,6 +579,7 @@ describe('RecordFormScreen', () => {
                     {metricId: 'metric-1', value: 7.2},
                     {metricId: 'metric-2', value: false},
                 ],
+                note: '',
             });
         });
 
@@ -591,6 +600,7 @@ describe('RecordFormScreen', () => {
                 observationId: 'obs-1',
                 timestamp,
                 values: [{metricId: 'metric-1', value: 7.2}],
+                note: '',
             });
         });
 
@@ -853,6 +863,109 @@ describe('RecordFormScreen', () => {
 
             expect(await leaveScreen(listeners)).toBe(true);
             expect(dialogVisible(root)).toBe(true);
+        });
+    });
+
+    describe('record note', () => {
+        const timestamp = new Date('2024-01-15T08:15:00');
+
+        const noteField = (root: any) => root.root.findByProps({testID: 'record-note'});
+
+        async function typeNote(root: any, text: string) {
+            await act(async () => {
+                noteField(root).props.onChangeText(text);
+            });
+        }
+
+        /** A Record whose values match the form's, so only its note can make it dirty. */
+        function storedRecord(note: string | null) {
+            return new DomainRecord(
+                'record-1',
+                'obs-1',
+                timestamp,
+                new Map<string, any>([['metric-1', 7.2]]),
+                note,
+            );
+        }
+
+        const dialogVisible = (root: any) => findAllByText(root.root, 'Discard changes?').length > 0;
+
+        it('renders after every Metric field', async () => {
+            const {root} = await renderScreen();
+
+            expect(root.root.findAllByType('TextInput').map((input: any) => input.props.testID))
+                .toEqual(['record-metric-metric-1', 'record-note']);
+        });
+
+        it('caps the field at the note length limit and counts towards it', async () => {
+            const {root} = await renderScreen();
+
+            expect(noteField(root).props.maxLength).toBe(RECORD_NOTE_MAX_LENGTH);
+            expect(noteField(root).props.showCounter).toBe(true);
+        });
+
+        it('starts empty on the create route', async () => {
+            const {root} = await renderScreen();
+
+            expect(noteField(root).props.value).toBe('');
+        });
+
+        it('pre-populates from the loaded Record on the edit route', async () => {
+            mockGetRecordByIdExecute.mockResolvedValue(storedRecord('the hotel bed'));
+
+            const {root} = await renderScreen({recordId: 'record-1'});
+
+            expect(noteField(root).props.value).toBe('the hotel bed');
+        });
+
+        it('submits the note to the create use case', async () => {
+            const {root} = await renderScreen();
+
+            await typeNote(root, 'the hotel bed');
+            const saveButton = findTouchableWithText(root.root, 'Add Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+
+            expect(mockCreateRecordExecute).toHaveBeenCalledWith(
+                expect.objectContaining({note: 'the hotel bed'}),
+            );
+        });
+
+        it('submits a cleared note to the update use case', async () => {
+            mockGetRecordByIdExecute.mockResolvedValue(storedRecord('the hotel bed'));
+            const {root} = await renderScreen({recordId: 'record-1'});
+
+            await typeNote(root, '');
+            const saveButton = findTouchableWithText(root.root, 'Save Record');
+            await act(async () => {
+                await saveButton!.props.onPress();
+            });
+
+            expect(mockUpdateRecordExecute).toHaveBeenCalledWith(
+                expect.objectContaining({recordId: 'record-1', note: ''}),
+            );
+        });
+
+        it('opens the dialog instead of leaving when only the note was changed', async () => {
+            mockGetRecordByIdExecute.mockResolvedValue(storedRecord(null));
+            const {root, listeners} = await renderScreen({recordId: 'record-1'});
+
+            await typeNote(root, 'the hotel bed');
+
+            expect(await leaveScreen(listeners)).toBe(true);
+            expect(dialogVisible(root)).toBe(true);
+        });
+
+        it.each([
+            ['whose note is empty', null],
+            ['carrying a note', 'the hotel bed'],
+        ])('lets an untouched Record %s leave with no dialog', async (_kind, note) => {
+            mockGetRecordByIdExecute.mockResolvedValue(storedRecord(note));
+            const {root, listeners} = await renderScreen({recordId: 'record-1'});
+
+            expect(await leaveScreen(listeners)).toBe(false);
+            expect(dialogVisible(root)).toBe(false);
         });
     });
 

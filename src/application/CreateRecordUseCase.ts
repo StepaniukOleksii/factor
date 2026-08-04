@@ -6,6 +6,7 @@ import {Record} from '../domain/Record';
 export interface CreateRecordCommand {
   observationId: string;
   values: { metricId: string; value: any }[];
+  note?: string;
 }
 
 export class CreateRecordUseCase {
@@ -30,7 +31,7 @@ export class CreateRecordUseCase {
     const id = Crypto.randomUUID();
     const timestamp = new Date();
 
-    const record = observation.createRecord(id, timestamp, valueMap);
+    const record = observation.createRecord(id, timestamp, valueMap, Record.normalizeNote(command.note));
 
     await this.recordRepository.save(record);
 

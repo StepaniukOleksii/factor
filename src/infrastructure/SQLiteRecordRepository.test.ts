@@ -42,8 +42,8 @@ describe('SQLiteRecordRepository', () => {
     
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       1,
-      'INSERT INTO records (id, observationId, timestamp) VALUES (?, ?, ?)',
-      ['record-1', 'obs-1', timestamp.getTime()]
+      'INSERT INTO records (id, observationId, timestamp, note) VALUES (?, ?, ?, ?)',
+      ['record-1', 'obs-1', timestamp.getTime(), null]
     );
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
@@ -76,7 +76,7 @@ describe('SQLiteRecordRepository', () => {
 
     expect(mockGetAllAsync).toHaveBeenNthCalledWith(
       1,
-      'SELECT id, timestamp FROM records WHERE observationId = ? AND timestamp >= ? AND timestamp < ? ORDER BY timestamp ASC',
+      'SELECT id, timestamp, note FROM records WHERE observationId = ? AND timestamp >= ? AND timestamp < ? ORDER BY timestamp ASC',
       'obs-1',
       range.start.getTime(),
       range.end.getTime()
@@ -142,7 +142,7 @@ describe('SQLiteRecordRepository', () => {
 
     expect(mockGetAllAsync).toHaveBeenNthCalledWith(
       1,
-      'SELECT id, observationId, timestamp FROM records WHERE id = ?',
+      'SELECT id, observationId, timestamp, note FROM records WHERE id = ?',
       'record-1'
     );
     expect(mockGetAllAsync).toHaveBeenNthCalledWith(
@@ -172,8 +172,8 @@ describe('SQLiteRecordRepository', () => {
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       1,
-      'UPDATE records SET timestamp = ? WHERE id = ?',
-      [record.timestamp.getTime(), 'record-1']
+      'UPDATE records SET timestamp = ?, note = ? WHERE id = ?',
+      [record.timestamp.getTime(), null, 'record-1']
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       2,
@@ -203,8 +203,80 @@ describe('SQLiteRecordRepository', () => {
     await repository.update(record);
 
     expect(mockRunAsync).toHaveBeenCalledWith(
-      'UPDATE records SET timestamp = ? WHERE id = ?',
-      [changedTimestamp.getTime(), 'record-1']
+      'UPDATE records SET timestamp = ?, note = ? WHERE id = ?',
+      [changedTimestamp.getTime(), null, 'record-1']
+    );
+  });
+
+  describe('note', () => {
+    const timestamp = new Date('2026-03-04T10:15:00.000Z');
+    const MULTILINE = 'first line\nsecond line';
+
+    function recordRow(note: string | null) {
+      return {id: 'record-1', observationId: 'obs-1', timestamp: timestamp.getTime(), note};
+    }
+
+    it.each([['a note', 'the hotel bed'], ['a multi-line note', MULTILINE], ['no note', null]])(
+      'round-trips %s through save and getById',
+      async (_kind, note) => {
+        const record = new Record('record-1', 'obs-1', timestamp, new Map(), note);
+
+        await repository.save(record);
+        expect(mockRunAsync).toHaveBeenCalledWith(
+          'INSERT INTO records (id, observationId, timestamp, note) VALUES (?, ?, ?, ?)',
+          ['record-1', 'obs-1', timestamp.getTime(), note]
+        );
+
+        mockGetAllAsync
+          .mockResolvedValueOnce([recordRow(note)])
+          .mockResolvedValueOnce([]);
+
+        expect((await repository.getById('record-1'))!.note).toBe(note);
+      },
+    );
+
+    it('reads the note back from getRecentRecords', async () => {
+      mockGetAllAsync
+        .mockResolvedValueOnce([{id: 'record-1', timestamp: timestamp.getTime(), note: MULTILINE}])
+        .mockResolvedValueOnce([]);
+
+      const [record] = await repository.getRecentRecords('obs-1', 3);
+
+      expect(mockGetAllAsync).toHaveBeenNthCalledWith(
+        1,
+        'SELECT id, timestamp, note FROM records WHERE observationId = ? ORDER BY timestamp DESC LIMIT ?',
+        'obs-1',
+        3
+      );
+      expect(record.note).toBe(MULTILINE);
+    });
+
+    it('reads the note back from getByObservationId', async () => {
+      mockGetAllAsync
+        .mockResolvedValueOnce([{id: 'record-1', timestamp: timestamp.getTime(), note: 'the hotel bed'}])
+        .mockResolvedValueOnce([]);
+
+      const [record] = await repository.getByObservationId('obs-1', {
+        start: new Date(0),
+        end: new Date(timestamp.getTime() + 1),
+      });
+
+      expect(record.note).toBe('the hotel bed');
+    });
+
+    it.each([['overwrites a stored note', 'the illness'], ['clears one', null]])(
+      'update %s',
+      async (_kind, note) => {
+        const record = new Record('record-1', 'obs-1', timestamp, new Map(), note);
+
+        await repository.update(record);
+
+        expect(mockRunAsync).toHaveBeenNthCalledWith(
+          1,
+          'UPDATE records SET timestamp = ?, note = ? WHERE id = ?',
+          [timestamp.getTime(), note, 'record-1']
+        );
+      },
     );
   });
 });

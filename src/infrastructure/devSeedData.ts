@@ -67,6 +67,9 @@ function hoursAgo(n: number): Date {
 /** record timestamp -> metricId -> value. Lets several metrics on the same observation share a record wherever their points coincide. */
 type TimestampValues = Map<number, Map<string, any>>;
 
+/** record timestamp -> note. */
+type TimestampNotes = Map<number, string>;
+
 function setValueAt(timestampValues: TimestampValues, at: Date, metricId: string, value: any): void {
   const timestamp = at.getTime();
   if (!timestampValues.has(timestamp)) {
@@ -75,11 +78,15 @@ function setValueAt(timestampValues: TimestampValues, at: Date, metricId: string
   timestampValues.get(timestamp)!.set(metricId, value);
 }
 
-function buildRecords(observation: Observation, timestampValues: TimestampValues): Record[] {
+function buildRecords(
+  observation: Observation,
+  timestampValues: TimestampValues,
+  notes: TimestampNotes = new Map()
+): Record[] {
   return Array.from(timestampValues.entries())
     .sort((a, b) => b[0] - a[0])
     .map(([timestamp, values]) =>
-      observation.createRecord(Crypto.randomUUID(), new Date(timestamp), values)
+      observation.createRecord(Crypto.randomUUID(), new Date(timestamp), values, notes.get(timestamp) ?? null)
     );
 }
 
@@ -191,7 +198,19 @@ export function buildSeedData(): SeedEntry[] {
       setValueAt(recordValues, daysAgo(i), noteMetric.id, `note ${i}`);
     }
 
-    entries.push({observation, records: buildRecords(observation, recordValues)});
+    // RECENT RECORDS shows the three most recent records, and which those are
+    // shifts with the hour the seed runs: hoursAgo(3) moves with the clock while
+    // daysAgo(0) is pinned at 09:00, so noting both puts one noted and one
+    // un-noted record on that list at any time of day. The daysAgo(0) one also
+    // carries the `note` metric's own value, so both appear on one expanded card.
+    const recordNotes: TimestampNotes = new Map([
+      [hoursAgo(3).getTime(), 'The most recent sub-day record: a short note on one line.'],
+      [daysAgo(0).getTime(),
+        "Today's shared record: dense, flag, category and note all write to it.\n" +
+        'Its note carries a line break and runs close to the limit.'],
+    ]);
+
+    entries.push({observation, records: buildRecords(observation, recordValues, recordNotes)});
   }
 
   // "no numeric" - non-numeric metrics only => the details screen renders neither the

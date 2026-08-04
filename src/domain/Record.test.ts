@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {Observation} from './Observation';
 import {Metric} from './Metric';
 import {Record} from './Record';
+import {RECORD_NOTE_MAX_LENGTH} from './validationLimits';
 
 describe('Record', () => {
   it('should initialize with values', () => {
@@ -12,6 +13,18 @@ describe('Record', () => {
     expect(record.observationId).toBe('o1');
     expect(record.timestamp).toBe(date);
     expect(record.values.get('m1')).toBe(10);
+  });
+
+  it('should default its note to null', () => {
+    const record = new Record('r1', 'o1', new Date(), new Map());
+
+    expect(record.note).toBeNull();
+  });
+
+  it('should keep the note it was constructed with', () => {
+    const record = new Record('r1', 'o1', new Date(), new Map(), 'the hotel bed');
+
+    expect(record.note).toBe('the hotel bed');
   });
 
   it('should allow getting and removing values', () => {
@@ -70,11 +83,43 @@ describe('Record', () => {
     it('should throw an error if values are invalid according to the observation', () => {
       const metric1 = new Metric('m1', 'Duration', 'Numeric');
       const obs = new Observation('o1', 'Sleep', [metric1]);
-      
+
       const record = new Record('r1', 'o1', new Date(), new Map());
       const newValues = new Map<string, any>([['m1', 'invalid_string']]);
-      
+
       expect(() => record.updateValues(newValues, obs)).toThrow(/Invalid value/);
+    });
+  });
+
+  describe('normalizeNote', () => {
+    it('should trim surrounding whitespace', () => {
+      expect(Record.normalizeNote('  the hotel bed  ')).toBe('the hotel bed');
+    });
+
+    it.each([undefined, null, '', '   ', '\n \n'])('should map %j to null', value => {
+      expect(Record.normalizeNote(value)).toBeNull();
+    });
+
+    it('should keep interior line breaks', () => {
+      expect(Record.normalizeNote(' first line\nsecond line ')).toBe('first line\nsecond line');
+    });
+
+    it('should accept a note of exactly the maximum length', () => {
+      const note = 'x'.repeat(RECORD_NOTE_MAX_LENGTH);
+
+      expect(Record.normalizeNote(note)).toBe(note);
+    });
+
+    it('should reject a note one character over the maximum', () => {
+      expect(() => Record.normalizeNote('x'.repeat(RECORD_NOTE_MAX_LENGTH + 1)))
+        .toThrow('Record note cannot exceed 150 characters');
+    });
+
+    // The input's own `maxLength` counts them, so the use case has to agree.
+    it('should count newline characters towards the limit', () => {
+      const note = 'x'.repeat(RECORD_NOTE_MAX_LENGTH - 1) + '\nx';
+
+      expect(() => Record.normalizeNote(note)).toThrow(/cannot exceed/);
     });
   });
 });

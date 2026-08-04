@@ -32,6 +32,7 @@ export async function initDatabase(): Promise<void> {
         id TEXT PRIMARY KEY NOT NULL,
         observationId TEXT NOT NULL,
         timestamp INTEGER NOT NULL,
+        note TEXT,
         FOREIGN KEY (observationId) REFERENCES observations (id) ON DELETE CASCADE
       );
 

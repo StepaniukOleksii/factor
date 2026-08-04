@@ -9,8 +9,8 @@ export class SQLiteRecordRepository implements RecordRepository {
 
     await db.withTransactionAsync(async () => {
       await db.runAsync(
-        'INSERT INTO records (id, observationId, timestamp) VALUES (?, ?, ?)',
-        [record.id, record.observationId, record.timestamp.getTime()]
+        'INSERT INTO records (id, observationId, timestamp, note) VALUES (?, ?, ?, ?)',
+        [record.id, record.observationId, record.timestamp.getTime(), record.note]
       );
 
       for (const [metricId, value] of record.values.entries()) {
@@ -42,8 +42,8 @@ export class SQLiteRecordRepository implements RecordRepository {
   }
   async getRecentRecords(observationId: string, limit: number): Promise<Record[]> {
     const db = await getDatabase();
-    const rows = await db.getAllAsync<{ id: string, timestamp: number }>(
-      'SELECT id, timestamp FROM records WHERE observationId = ? ORDER BY timestamp DESC LIMIT ?',
+    const rows = await db.getAllAsync<{ id: string, timestamp: number, note: string | null }>(
+      'SELECT id, timestamp, note FROM records WHERE observationId = ? ORDER BY timestamp DESC LIMIT ?',
       observationId,
       limit
     );
@@ -64,7 +64,8 @@ export class SQLiteRecordRepository implements RecordRepository {
         row.id,
         observationId,
         new Date(row.timestamp),
-        valuesMap
+        valuesMap,
+        row.note
       );
 
       records.push(record);
@@ -75,8 +76,8 @@ export class SQLiteRecordRepository implements RecordRepository {
 
   async getByObservationId(observationId: string, range: TimeRange): Promise<Record[]> {
     const db = await getDatabase();
-    const rows = await db.getAllAsync<{ id: string, timestamp: number }>(
-      'SELECT id, timestamp FROM records WHERE observationId = ? AND timestamp >= ? AND timestamp < ? ORDER BY timestamp ASC',
+    const rows = await db.getAllAsync<{ id: string, timestamp: number, note: string | null }>(
+      'SELECT id, timestamp, note FROM records WHERE observationId = ? AND timestamp >= ? AND timestamp < ? ORDER BY timestamp ASC',
       observationId,
       range.start.getTime(),
       range.end.getTime()
@@ -94,7 +95,7 @@ export class SQLiteRecordRepository implements RecordRepository {
         valuesMap.set(valueRow.metricId, JSON.parse(valueRow.valueJson));
       }
 
-      records.push(new Record(row.id, observationId, new Date(row.timestamp), valuesMap));
+      records.push(new Record(row.id, observationId, new Date(row.timestamp), valuesMap, row.note));
     }
 
     return records;
@@ -118,8 +119,8 @@ export class SQLiteRecordRepository implements RecordRepository {
 
   async getById(recordId: string): Promise<Record | null> {
     const db = await getDatabase();
-    const rows = await db.getAllAsync<{ id: string, observationId: string, timestamp: number }>(
-      'SELECT id, observationId, timestamp FROM records WHERE id = ?',
+    const rows = await db.getAllAsync<{ id: string, observationId: string, timestamp: number, note: string | null }>(
+      'SELECT id, observationId, timestamp, note FROM records WHERE id = ?',
       recordId
     );
 
@@ -136,7 +137,7 @@ export class SQLiteRecordRepository implements RecordRepository {
       valuesMap.set(valueRow.metricId, JSON.parse(valueRow.valueJson));
     }
 
-    return new Record(row.id, row.observationId, new Date(row.timestamp), valuesMap);
+    return new Record(row.id, row.observationId, new Date(row.timestamp), valuesMap, row.note);
   }
 
   async update(record: Record): Promise<void> {
@@ -144,8 +145,8 @@ export class SQLiteRecordRepository implements RecordRepository {
 
     await db.withTransactionAsync(async () => {
       await db.runAsync(
-        'UPDATE records SET timestamp = ? WHERE id = ?',
-        [record.timestamp.getTime(), record.id]
+        'UPDATE records SET timestamp = ?, note = ? WHERE id = ?',
+        [record.timestamp.getTime(), record.note, record.id]
       );
 
       await db.runAsync(

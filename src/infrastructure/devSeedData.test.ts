@@ -1,4 +1,4 @@
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {buildSeedData} from './devSeedData';
 import {GetMetricSeriesUseCase} from '../application/GetMetricSeriesUseCase';
 import {
@@ -7,7 +7,7 @@ import {
     TIME_RANGE_PRESETS,
     type TimeRangePreset,
 } from '../presentation/charts/chartDefaults';
-import {METRIC_DESCRIPTION_MAX_LENGTH} from '../domain/validationLimits';
+import {METRIC_DESCRIPTION_MAX_LENGTH, RECORD_NOTE_MAX_LENGTH} from '../domain/validationLimits';
 
 vi.mock('expo-crypto', () => {
   let counter = 0;
@@ -184,6 +184,66 @@ describe('seeded Metric descriptions', () => {
           `"${metric.name}" on "${observation.name}"`,
         ).toBeLessThanOrEqual(METRIC_DESCRIPTION_MAX_LENGTH);
       }
+    }
+  });
+});
+
+// The details screen's noted-and-un-noted states are eyeballed on these two
+// Records alone - the claim testing-data.md makes.
+describe('seeded Record notes', () => {
+  // The seed reads the wall clock, and `hoursAgo(3)` lands on 09:00 - the hour
+  // `daysAgo(0)` is pinned to - for the hour either side of midday, merging the
+  // two noted Records into one. Pinning the clock keeps the count below
+  // independent of when the suite runs.
+  const NOW = new Date(2026, 7, 4, 14, 20);
+  const SHARED_RECORD_AT = new Date(2026, 7, 4, 9, 0);
+
+  function seededNotes(): string[] {
+    return buildSeedData()
+      .flatMap(({records}) => records)
+      .map(record => record.note)
+      .filter((note): note is string => note !== null);
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('notes exactly two Records of mixed metrics: the newest, and today\'s shared one', () => {
+    const {records} = entry('mixed metrics');
+
+    const noted = records.filter(record => record.note !== null);
+
+    expect(noted).toHaveLength(2);
+    // Records come back newest first, and the sub-day one is the newest of all.
+    expect(noted[0]).toBe(records[0]);
+    expect(noted[1].timestamp).toEqual(SHARED_RECORD_AT);
+  });
+
+  it('leaves every Record of every other Observation without one', () => {
+    for (const {observation, records} of buildSeedData()) {
+      if (observation.name === 'mixed metrics') continue;
+      for (const record of records) {
+        expect(record.note, `a Record of "${observation.name}"`).toBeNull();
+      }
+    }
+  });
+
+  it('gives the longer note a line break for the details screen to preserve', () => {
+    const [longest] = seededNotes().sort((a, b) => b.length - a.length);
+
+    expect(longest).toContain('\n');
+  });
+
+  // Nothing else enforces the limit: the seed never runs a use case.
+  it('keeps every seeded note within the length limit', () => {
+    for (const note of seededNotes()) {
+      expect(note.length, note).toBeLessThanOrEqual(RECORD_NOTE_MAX_LENGTH);
     }
   });
 });

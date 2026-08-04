@@ -588,6 +588,56 @@ describe('ObservationDetailsScreen Record Values', () => {
 
         expect(findAllByText(root.root, '-').length).toBeGreaterThan(0);
     });
+
+    // Against an Observation whose Metric is itself named "Note" - the collision
+    // the note has to stay legible through.
+    describe('record note', () => {
+        const NOTE = 'The bed was terrible';
+
+        function noteGlyphs(root: any) {
+            return root.root.findAllByProps({name: 'sticky-note-2'});
+        }
+
+        function noted(note: string | null): DomainRecord {
+            return new DomainRecord(
+                'rec-1',
+                'obs-1',
+                new Date('2026-07-04T12:00:00Z'),
+                new Map([['m1', 'slept badly']]),
+                note,
+            );
+        }
+
+        it('marks a noted Record\'s collapsed row with a glyph, labelled for a screen reader', async () => {
+            mockGetRecentRecordsExecute.mockResolvedValue([noted(NOTE)]);
+            const root = await renderScreen();
+
+            const glyphs = noteGlyphs(root);
+            expect(glyphs.length).toBe(1);
+            expect(glyphs[0].props.accessibilityLabel).toBe('Has a note');
+            expect(findAllByText(root.root, NOTE).length).toBe(0);
+        });
+
+        it('leaves nothing in its place on an un-noted Record', async () => {
+            mockGetRecentRecordsExecute.mockResolvedValue([noted(null)]);
+            const root = await renderScreen();
+
+            expect(noteGlyphs(root).length).toBe(0);
+
+            await expandRecord(root);
+
+            expect(noteGlyphs(root).length).toBe(0);
+        });
+
+        it('shows the note itself once the Record is expanded', async () => {
+            mockGetRecentRecordsExecute.mockResolvedValue([noted(NOTE)]);
+            const root = await renderScreen();
+
+            await expandRecord(root);
+
+            expect(findAllByText(root.root, NOTE).length).toBe(1);
+        });
+    });
 });
 
 describe('ObservationDetailsScreen Trends', () => {

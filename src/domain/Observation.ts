@@ -38,8 +38,13 @@ export class Observation extends Entity<string> {
     }
   }
 
-  public createRecord(id: string, timestamp: Date, values: Map<string, any>): Record {
+  public createRecord(
+    id: string,
+    timestamp: Date,
+    values: Map<string, any>,
+    note: string | null = null
+  ): Record {
     this.validateValues(values);
-    return new Record(id, this.id, timestamp, new Map(values));
+    return new Record(id, this.id, timestamp, new Map(values), note);
   }
 }

@@ -47,6 +47,20 @@ describe('Observation', () => {
       expect(record.values.get('m2')).toBe('Good');
     });
 
+    it('should pass a note through to the record it creates', () => {
+      const obs = new Observation('o1', 'Sleep');
+
+      const record = obs.createRecord('r1', new Date(), new Map(), 'the hotel bed');
+
+      expect(record.note).toBe('the hotel bed');
+    });
+
+    it('should leave the record without a note when given none', () => {
+      const obs = new Observation('o1', 'Sleep');
+
+      expect(obs.createRecord('r1', new Date(), new Map()).note).toBeNull();
+    });
+
     it('should throw an error if a metric is not defined in the observation', () => {
       const obs = new Observation('o1', 'Sleep');
       const values = new Map<string, any>([

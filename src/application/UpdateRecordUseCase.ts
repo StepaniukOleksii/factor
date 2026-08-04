@@ -7,6 +7,7 @@ export interface UpdateRecordCommand {
   observationId: string;
   timestamp: Date;
   values: { metricId: string; value: any }[];
+  note?: string | null;
 }
 
 export class UpdateRecordUseCase {
@@ -30,6 +31,7 @@ export class UpdateRecordUseCase {
     }
 
     record.timestamp = command.timestamp;
+    record.note = Record.normalizeNote(command.note);
 
     const valueMap = new Map<string, any>();
     for (const v of command.values) {

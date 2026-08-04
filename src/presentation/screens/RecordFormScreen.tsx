@@ -13,6 +13,7 @@ import {UpdateRecordUseCase} from '../../application/UpdateRecordUseCase';
 import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
 import {Record as DomainRecord} from '../../domain/Record';
+import {RECORD_NOTE_MAX_LENGTH} from '../../domain/validationLimits';
 import {
     CenteredState,
     Dialog,
@@ -106,6 +107,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [values, setValues] = useState<Record<string, any>>({});
+    const [note, setNote] = useState('');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [timestamp, setTimestamp] = useState<Date | null>(null);
     const [openPicker, setOpenPicker] = useState<'date' | 'time' | null>(null);
@@ -126,8 +128,12 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
     // snapshot to take or keep in sync. Create mode has no Record and renders no
     // Date/Time fields, so its baseline is the empty value set and its timestamp
     // never counts.
+    //
+    // A Record with no note holds `null` where the form holds `''`, so comparing
+    // the two raw would call an untouched form dirty the moment it loaded.
     const isDirty =
         valuesDiffer(values, record ? record.values : NO_STORED_VALUES)
+        || note.trim() !== (record?.note ?? '')
         || (!!record && !!timestamp && timestamp.getTime() !== record.timestamp.getTime());
 
     // One listener covers every route off this screen - the header arrow, the
@@ -173,6 +179,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                         initialValues[metricId] = value;
                     }
                     setValues(initialValues);
+                    setNote(rec.note ?? '');
                     setTimestamp(rec.timestamp);
                 }
             }
@@ -253,12 +260,14 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                     recordId: record.id,
                     observationId: observation.id,
                     timestamp,
-                    values: commandValues
+                    values: commandValues,
+                    note
                 });
             } else {
                 await createRecordUseCase.execute({
                     observationId: observation.id,
-                    values: commandValues
+                    values: commandValues,
+                    note
                 });
             }
             // Only the success path stands the listener down, so a save that
@@ -409,6 +418,25 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                     <View style={styles.metricsList}>
                         {observation.metrics.map(renderMetricInput)}
                     </View>
+
+                    {/* An Observation may define a Metric named "note", so what
+                        separates the two here is position rather than any wording
+                        on screen. */}
+                    <View style={styles.noteSection}>
+                        <View style={styles.noteRule}/>
+                        <LabeledTextField
+                            label="NOTE"
+                            testID="record-note"
+                            accessibilityLabel="Note"
+                            value={note}
+                            onChangeText={setNote}
+                            multiline
+                            numberOfLines={3}
+                            maxLength={RECORD_NOTE_MAX_LENGTH}
+                            showCounter
+                            placeholder="Optional — about this record, not a metric"
+                        />
+                    </View>
                 </ScrollView>
 
                 <FooterBar>
@@ -521,5 +549,13 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: COLORS.outlineVariant,
         padding: 16,
+    },
+    noteSection: {
+        marginTop: 28,
+    },
+    noteRule: {
+        height: 1,
+        backgroundColor: COLORS.outlineVariant,
+        marginBottom: 28,
     },
 });

@@ -5,6 +5,7 @@ import {ObservationRepository} from './ObservationRepository';
 import {Observation} from '../domain/Observation';
 import {Metric} from '../domain/Metric';
 import {Record} from '../domain/Record';
+import {RECORD_NOTE_MAX_LENGTH} from '../domain/validationLimits';
 
 function createMockRecordRepo(overrides: Partial<RecordRepository> = {}): RecordRepository {
   return {
@@ -84,6 +85,65 @@ describe('UpdateRecordUseCase', () => {
     expect(mockRecordRepo.update).toHaveBeenCalledWith(
       expect.objectContaining({timestamp: newTimestamp}),
     );
+  });
+
+  describe('note', () => {
+    const metric = new Metric('metric-1', 'Duration', 'Numeric');
+    const observation = new Observation('obs-1', 'Sleep', [metric]);
+    const timestamp = new Date('2026-01-01T09:00:00');
+
+    /** Values matching the command below, so only the note varies across these cases. */
+    function noted(note: string | null) {
+      return new Record('record-1', 'obs-1', timestamp, new Map([['metric-1', 7]]), note);
+    }
+
+    function runWith(existingRecord: Record, command: Partial<UpdateRecordCommand>) {
+      const mockObservationRepo: ObservationRepository = {
+        save: vi.fn(),
+        findAll: vi.fn().mockResolvedValue([observation]),
+        delete: vi.fn(),
+      };
+      const mockRecordRepo = createMockRecordRepo({
+        getById: vi.fn().mockResolvedValue(existingRecord),
+      });
+      const useCase = new UpdateRecordUseCase(mockRecordRepo, mockObservationRepo);
+      return useCase.execute({
+        recordId: 'record-1',
+        observationId: 'obs-1',
+        timestamp,
+        values: [{metricId: 'metric-1', value: 7}],
+        ...command,
+      });
+    }
+
+    it('replaces an existing note', async () => {
+      const result = await runWith(noted('the hotel bed'), {note: '  the illness  '});
+
+      expect(result.note).toBe('the illness');
+    });
+
+    it.each([['an empty string', ''], ['null', null]])(
+      'clears an existing note given %s',
+      async (_kind, note) => {
+        const result = await runWith(noted('the hotel bed'), {note});
+
+        expect(result.note).toBeNull();
+      },
+    );
+
+    it('leaves the values and timestamp alone when only the note changes', async () => {
+      const changedTimestamp = new Date('2026-02-15T08:30:00');
+
+      const result = await runWith(noted(null), {timestamp: changedTimestamp, note: 'a note'});
+
+      expect(result.getValue('metric-1')).toBe(7);
+      expect(result.timestamp).toBe(changedTimestamp);
+    });
+
+    it('rejects a note over the length limit', async () => {
+      await expect(runWith(noted(null), {note: 'x'.repeat(RECORD_NOTE_MAX_LENGTH + 1)}))
+        .rejects.toThrow('Record note cannot exceed 150 characters');
+    });
   });
 
   it('throws an error if observation is not found', async () => {

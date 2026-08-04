@@ -464,6 +464,15 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                                                style={styles.timeIcon}/>
                                                 <Text
                                                     style={styles.recordTimeText}>{formatRelativeTime(record.timestamp)}</Text>
+                                                {record.note ? (
+                                                    <MaterialIcons
+                                                        name="sticky-note-2"
+                                                        size={16}
+                                                        color={COLORS.onSurfaceVariant}
+                                                        style={styles.noteIcon}
+                                                        accessibilityLabel="Has a note"
+                                                    />
+                                                ) : null}
                                             </View>
                                             <MaterialIcons
                                                 name={isExpanded ? "expand-less" : "chevron-right"}
@@ -535,6 +544,19 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                                     <MaterialIcons name="arrow-right" size={16}
                                                                    color={COLORS.outlineVariant}/>
                                                 </View>
+
+                                                {/* Deliberately uncaptioned: on an Observation
+                                                    whose Metric is named "note", a "NOTE"
+                                                    caption here would put that word on screen
+                                                    twice. */}
+                                                {record.note ? (
+                                                    <View style={styles.recordNote}>
+                                                        <MaterialIcons name="sticky-note-2" size={16}
+                                                                       color={COLORS.onSurfaceVariant}
+                                                                       style={styles.recordNoteIcon}/>
+                                                        <Text style={styles.recordNoteText}>{record.note}</Text>
+                                                    </View>
+                                                ) : null}
                                             </View>
                                         )}
                                     </View>
@@ -750,6 +772,23 @@ const styles = StyleSheet.create({
         color: COLORS.onSurface,
         fontSize: 14,
         fontWeight: '500',
+    },
+    noteIcon: {
+        marginLeft: 8,
+    },
+    recordNote: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 16,
+    },
+    recordNoteIcon: {
+        marginTop: 2,
+    },
+    recordNoteText: {
+        flex: 1,
+        color: COLORS.onSurfaceVariant,
+        fontSize: 14,
+        lineHeight: 20,
     },
     recordDetailsContainer: {
         paddingTop: 8,
