@@ -38,7 +38,9 @@ to take or keep in sync. Dirty is derived on each render:
 
 * **Values.** `values` is keyed by metric id with a cleared Metric's key *absent*, so the comparison spans both
   key sets: dirty when a key is present on one side only, or when a shared key's values differ by `!==` —
-  strict equality suffices, since every stored value is a number, a string or a boolean.
+  strict equality suffices, since every stored value is a number, a string or a boolean. A Numeric Metric's
+  field holds the text that was typed rather than the number it parses to, so the form's values are compared
+  after the parse they already go through at save, and `7.20` typed over a stored `7.2` is not a change.
 * **Timestamp.** Dirty when `timestamp.getTime()` differs from `record.timestamp.getTime()`.
 * **Create mode** has no `record` and renders no Date/Time fields: its baseline is the empty value set, and it
   is dirty as soon as any Metric holds a value.

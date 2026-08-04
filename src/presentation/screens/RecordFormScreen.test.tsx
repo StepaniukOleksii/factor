@@ -1143,4 +1143,100 @@ describe('RecordFormScreen', () => {
             expect(mockCreateRecordExecute).toHaveBeenCalledWith(expect.objectContaining({values: []}));
         });
     });
+
+    // Text delivered in one shot - as every other test here and the Maestro
+    // flows deliver it - never reaches the states no number can represent.
+    describe('numeric text entry', () => {
+        const timestamp = new Date('2024-01-15T08:15:00');
+        const storedFraction = new DomainRecord(
+            'record-1',
+            'obs-1',
+            timestamp,
+            new Map<string, any>([['metric-1', 0.5]]),
+        );
+
+        const field = (root: any) => root.root.findByProps({testID: 'record-metric-metric-1'});
+
+        /** Types `text` one keystroke at a time, returning what the field read back after each. */
+        async function typeKeystrokes(root: any, text: string): Promise<string[]> {
+            const readBack: string[] = [];
+            for (let end = 1; end <= text.length; end++) {
+                await act(async () => {
+                    field(root).props.onChangeText(text.slice(0, end));
+                });
+                readBack.push(field(root).props.value);
+            }
+            return readBack;
+        }
+
+        /** What a field holding the text that was typed reads back, keystroke by keystroke. */
+        function keystrokes(text: string): string[] {
+            return [...text].map((_character, index) => text.slice(0, index + 1));
+        }
+
+        async function save(root: any, recordId?: string) {
+            const button = findTouchableWithText(root.root, recordId ? 'Save Record' : 'Add Record');
+            await act(async () => {
+                await button!.props.onPress();
+            });
+        }
+
+        it.each(['0.5', '.5', '1.50', '12.75'])('reads back every keystroke of %s as it is typed', async text => {
+            const {root} = await renderScreen();
+
+            expect(await typeKeystrokes(root, text)).toEqual(keystrokes(text));
+        });
+
+        it('saves the number a typed fraction spells', async () => {
+            const {root} = await renderScreen();
+
+            await typeKeystrokes(root, '0.5');
+            await save(root);
+
+            expect(mockCreateRecordExecute).toHaveBeenCalledWith(expect.objectContaining({
+                values: [{metricId: 'metric-1', value: 0.5}],
+            }));
+        });
+
+        it('saves a value typed with a trailing zero as the number without it', async () => {
+            const {root} = await renderScreen();
+
+            await typeKeystrokes(root, '1.50');
+            await save(root);
+
+            expect(mockCreateRecordExecute).toHaveBeenCalledWith(expect.objectContaining({
+                values: [{metricId: 'metric-1', value: 1.5}],
+            }));
+        });
+
+        it('refuses a comma-separated fraction rather than saving the number it starts with', async () => {
+            const {root} = await renderScreen();
+
+            await typeKeystrokes(root, '0,5');
+            await save(root);
+
+            expect(findAllByText(root.root, 'Invalid value').length).toBe(1);
+            expect(mockCreateRecordExecute).not.toHaveBeenCalled();
+        });
+
+        it('renders a stored fraction as text, leaving an untouched form undirty', async () => {
+            mockGetRecordByIdExecute.mockResolvedValue(storedFraction);
+            const {root, listeners} = await renderScreen({recordId: 'record-1'});
+
+            expect(field(root).props.value).toBe('0.5');
+            expect(await leaveScreen(listeners)).toBe(false);
+            expect(findAllByText(root.root, 'Discard changes?').length).toBe(0);
+        });
+
+        it('saves a stored fraction back unchanged', async () => {
+            mockGetRecordByIdExecute.mockResolvedValue(storedFraction);
+            const {root} = await renderScreen({recordId: 'record-1'});
+
+            await save(root, 'record-1');
+
+            expect(mockUpdateRecordExecute).toHaveBeenCalledWith(expect.objectContaining({
+                values: [{metricId: 'metric-1', value: 0.5}],
+            }));
+        });
+    });
 });

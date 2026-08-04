@@ -54,20 +54,50 @@ function withTime(base: Date, picked: Date): Date {
 const NO_STORED_VALUES: ReadonlyMap<string, any> = new Map<string, any>();
 
 /**
- * Whether the form's values differ from the ones stored on the Record.
+ * The number `text` spells, or `text` unchanged when it spells none - which
+ * `Metric.validateValue` reports rather than it being dropped as `NaN`.
  *
- * A cleared Metric's key is *absent* from the form's set rather than holding an
- * empty value, so the comparison spans both key sets: a key on one side only is
- * a change. For a key on both, `!==` suffices - every stored value is a number,
- * a string or a boolean.
+ * Not `parseFloat`, which reads `'0,5'` as `0`: a comma decimal separator has to
+ * be refused, never saved as the digits before it.
  */
-function valuesDiffer(values: Record<string, any>, stored: ReadonlyMap<string, any>): boolean {
-    const keys = new Set([...Object.keys(values), ...stored.keys()]);
-    for (const key of keys) {
-        if (!(key in values) || !stored.has(key)) {
-            return true;
+function parseNumericValue(text: string): number | string {
+    const value = Number(text);
+    return text.trim() === '' || !Number.isFinite(value) ? text : value;
+}
+
+/**
+ * What the form's fields would put on the Record.
+ *
+ * A Numeric Metric's field holds the text that was typed and is parsed only
+ * here: no number can represent `0.` or `1.50`, so a field rendering one back
+ * loses the keystroke that made it.
+ */
+function enteredValues(metrics: ReadonlyArray<Metric>, values: Record<string, any>): Map<string, any> {
+    const entered = new Map<string, any>();
+    for (const metric of metrics) {
+        const value = values[metric.id];
+        if (value === undefined || value === null || value === '') {
+            continue;
         }
-        if (values[key] !== stored.get(key)) {
+        entered.set(metric.id, metric.type === 'Numeric' ? parseNumericValue(value) : value);
+    }
+    return entered;
+}
+
+/**
+ * Whether what the form would save differs from what the Record holds.
+ *
+ * Neither side carries a key for a Metric with no value, so equal sizes and a
+ * match on every entered key is equality - an absent key reads back as
+ * `undefined`, which no entered value equals. `!==` suffices for the values
+ * themselves: every one is a number, a string or a boolean.
+ */
+function valuesDiffer(entered: ReadonlyMap<string, any>, stored: ReadonlyMap<string, any>): boolean {
+    if (entered.size !== stored.size) {
+        return true;
+    }
+    for (const [metricId, value] of entered) {
+        if (stored.get(metricId) !== value) {
             return true;
         }
     }
@@ -132,7 +162,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
     // A Record with no note holds `null` where the form holds `''`, so comparing
     // the two raw would call an untouched form dirty the moment it loaded.
     const isDirty =
-        valuesDiffer(values, record ? record.values : NO_STORED_VALUES)
+        valuesDiffer(enteredValues(observation?.metrics ?? [], values), record ? record.values : NO_STORED_VALUES)
         || note.trim() !== (record?.note ?? '')
         || (!!record && !!timestamp && timestamp.getTime() !== record.timestamp.getTime());
 
@@ -175,8 +205,12 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                 setRecord(rec);
                 if (rec) {
                     const initialValues: Record<string, any> = {};
-                    for (const [metricId, value] of rec.values.entries()) {
-                        initialValues[metricId] = value;
+                    for (const metric of data?.metrics ?? []) {
+                        const stored = rec.values.get(metric.id);
+                        if (stored === undefined) {
+                            continue;
+                        }
+                        initialValues[metric.id] = metric.type === 'Numeric' ? String(stored) : stored;
                     }
                     setValues(initialValues);
                     setNote(rec.note ?? '');
@@ -229,12 +263,13 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
         if (isEditMode && (!record || !timestamp)) return;
 
         // Values are optional (ADR-3) - only what was entered is validated.
+        const entered = enteredValues(observation.metrics, values);
         const newErrors: Record<string, string> = {};
         for (const metric of observation.metrics) {
-            const val = values[metric.id];
-            if (val === undefined || val === null || val === '') {
+            if (!entered.has(metric.id)) {
                 continue;
             }
+            const val = entered.get(metric.id);
             if (!metric.validateValue(val)) {
                 // Text that never parsed to a number is not a range problem.
                 const rangeMessage = typeof val === 'number'
@@ -252,12 +287,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
         try {
             setSaving(true);
             // The Record's whole value set, not a delta - what is left out is cleared.
-            const commandValues = Object.keys(values)
-                .filter(key => values[key] !== undefined && values[key] !== null && values[key] !== '')
-                .map(key => ({
-                    metricId: key,
-                    value: values[key]
-                }));
+            const commandValues = [...entered].map(([metricId, value]) => ({metricId, value}));
 
             if (isEditMode && record && timestamp) {
                 await updateRecordUseCase.execute({
@@ -323,17 +353,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                         ? formatMetricRange(metric.constraint as NumericConstraint | null)
                         : undefined}
                     value={values[metric.id] !== undefined ? String(values[metric.id]) : ''}
-                    onChangeText={(text) => {
-                        if (isNumeric) {
-                            const num = parseFloat(text);
-                            // Unparseable input is submitted as the raw string, so
-                            // `Metric.validateValue` reports it rather than it being
-                            // silently dropped as `NaN`.
-                            handleValueChange(metric.id, isNaN(num) ? text : num);
-                        } else {
-                            handleValueChange(metric.id, text);
-                        }
-                    }}
+                    onChangeText={(text) => handleValueChange(metric.id, text)}
                 />
             </View>
         );
