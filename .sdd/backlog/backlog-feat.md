@@ -19,7 +19,5 @@ until they're ready to become a real spec.
       single-Observation slices above are built and proven.
 2. On failure, the record isn't removed, the modal stays open, and an error is surfaced via alert(...) (same pattern
    already used in CreateRecordScreen), with a deletingRecord loading state disabling the buttons meanwhile.
-3. on the ObservationListScreen should an observation be removed/edited via long press button like it is done on the
-   ObservationDetailsScreen for the Records?
-4. Metric units. An attribute set by user that contains unit information. Limit to three chars. Should be displayed in
+3. Metric units. An attribute set by user that contains unit information. Limit to three chars. Should be displayed in
    paratheses above the chart after the metric name.
