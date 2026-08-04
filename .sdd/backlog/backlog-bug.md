@@ -18,3 +18,19 @@ they're ready to become a real spec.
    set the same way, so the presets likely have the same gap (not driven on-device, inferred from the code).
    Guarding on `loadingTrends` alone cannot close it; the tap handler would need to notice that the rendered
    window no longer matches the active selection, or the flag would have to be set before the render commits.
+4. A fraction cannot be typed into a Numeric Metric's value on the Record form. Typing `0`, `.`, `5` leaves
+   the field reading `5`: the separator is dropped on the keystroke that enters it, and the leading zero goes
+   with the next digit. Trailing zeros die the same way — `1.50` collapses to `1.5` while it is still being
+   typed. `renderMetricInput` in `RecordFormScreen` parses on every keystroke and renders the parsed number
+   back (`value={String(values[metric.id])}` against an `onChangeText` that stores `parseFloat(text)`), and
+   `String(number)` cannot represent input mid-typing. A comma is worse than a dot: `parseFloat('0,5')` is
+   `0` rather than `NaN`, so on a keyboard whose decimal separator is a comma the value saves as **0** with
+   no error — wrong data rather than a refusal. Nothing catches it automatically because both the screen
+   tests and the Maestro flows deliver text in one shot, which parses cleanly; only keystroke-by-keystroke
+   entry reproduces it. Found while verifying Numeric Metric Boundaries, whose §4 step 4 (`0.5` into `dense`)
+   cannot be performed until this is fixed. The fix is the model the authoring screen already uses — the form
+   holds the text that was typed and parses once at save, with `Number(...)` rather than `parseFloat` so
+   `0,5` is refused instead of truncated. The non-trivial part is the dirty check: `valuesDiffer` compares
+   form values against the loaded Record's numbers, so `'7.2'` against `7.2` would read as an edit and raise
+   the unsaved-changes dialog on an untouched form. The MIN and MAX fields on Create Observation are
+   unaffected — they hold raw text and are parsed once, in `CreateObservationUseCase`.
