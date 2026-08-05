@@ -17,22 +17,19 @@ appId: com.anonymous.factor
 - tapOn: "Edit Record"
 - assertVisible: "Save Record"
 
-# The fixture picks `mood` at random, so the change is to a word the Metric cannot
-# already hold - nothing else guarantees the form comes out dirty.
-- tapOn: "mood value"
-- eraseText
-- inputText: "elated"
-- hideKeyboard
+# The fixture picks `mood` at random, so the change is to the one state it cannot
+# already be in - nothing else guarantees the form comes out dirty.
+- tapOn: "mood: .*"
+- tapOn: "None"
 - tapOn: "Cancel editing"
 - assertVisible: "Discard changes?"
 
 # Kept
 - tapOn: "Keep editing this record"
 - assertNotVisible: "Discard changes?"
-- assertVisible: "elated"
+- assertVisible: "mood: None.*"
 
 # Discarded
 - tapOn: "Cancel editing"
 - tapOn: "Discard unsaved changes"
 - assertVisible: "RECENT RECORDS"
-- assertNotVisible: "elated"

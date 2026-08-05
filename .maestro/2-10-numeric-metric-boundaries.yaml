@@ -1,0 +1,33 @@
+appId: com.anonymous.factor
+---
+# A Numeric Metric's declared range: stated by its empty input, refused on save
+# with the bound it broke, and accepted once the value is corrected onto it.
+
+- runFlow:
+    file: subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "mixed metrics"
+
+# The only fixture carrying a closed range, so a message naming both bounds is
+# reachable only here.
+- tapOn: "mixed metrics"
+- tapOn: "Add Record"
+- assertVisible: "0-100"
+
+- tapOn: "dense value"
+- inputText: "150"
+- hideKeyboard
+- tapOn: "Add Record"
+- assertVisible: "Must be between 0 and 100"
+
+- tapOn: "dense value"
+- eraseText
+- inputText: "100"
+- hideKeyboard
+- assertNotVisible: "Must be between 0 and 100"
+- tapOn: "Add Record"
+
+# The form is left only by a save the range accepted, so landing back on the
+# Details screen is what shows a value sitting exactly on a bound is legal.
+- assertVisible: "TRENDS"

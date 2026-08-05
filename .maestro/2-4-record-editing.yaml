@@ -18,10 +18,8 @@ appId: com.anonymous.factor
 - longPressOn: "Today.*"
 - tapOn: "Edit Record"
 - assertVisible: "Save Record"
-- tapOn: "mood value"
-- eraseText
-- inputText: "low"
-- hideKeyboard
+- tapOn: "mood: .*"
+- tapOn: "low"
 - tapOn: "Save Record"
 
 - tapOn: "Today.*"
@@ -30,10 +28,8 @@ appId: com.anonymous.factor
 - longPressOn: "Today.*"
 - tapOn: "Edit Record"
 - assertVisible: "low"
-- tapOn: "mood value"
-- eraseText
-- inputText: "high"
-- hideKeyboard
+- tapOn: "mood: low.*"
+- tapOn: "high"
 - tapOn: "Save Record"
 
 - assertVisible: "high"
@@ -42,10 +38,8 @@ appId: com.anonymous.factor
 # Abandoned
 - longPressOn: "Today.*"
 - tapOn: "Edit Record"
-- tapOn: "mood value"
-- eraseText
-- inputText: "ok"
-- hideKeyboard
+- tapOn: "mood: high.*"
+- tapOn: "ok"
 - tapOn: "Cancel editing"
 - tapOn: "Discard unsaved changes"
 

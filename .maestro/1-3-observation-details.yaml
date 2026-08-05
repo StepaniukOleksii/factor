@@ -26,7 +26,7 @@ appId: com.anonymous.factor
 - assertNotVisible: "MOOD"
 
 - tapOn: "Add Record"
-- assertVisible: "mood value"
+- assertVisible: "mood: None.*"
 - back
 
 # The header arrow rather than a back press: this screen swallows one while its

@@ -1,0 +1,31 @@
+appId: com.anonymous.factor
+---
+# The list an Enum Metric's field opens: unanswered to begin with, one of the
+# declared values chosen from it, and what that value reads back as.
+
+- runFlow:
+    file: subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no numeric"
+
+# `no numeric` because its values are words: single-letter ones would collide
+# with other text on screen.
+- tapOn: "no numeric"
+- tapOn: "Add Record"
+
+- assertVisible: "mood: None.*"
+- tapOn: "mood: None.*"
+- assertVisible: "low"
+- assertVisible: "ok"
+- tapOn: "high"
+- assertVisible: "mood: high.*"
+
+- tapOn: "Add Record"
+
+# Newest first, so the Record just added is the first row; a collapsed row shows
+# no values, so `high` can only be coming from this one.
+- tapOn:
+    text: "Today.*"
+    index: 0
+- assertVisible: "high"
