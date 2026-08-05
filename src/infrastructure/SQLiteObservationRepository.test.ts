@@ -251,6 +251,28 @@ describe('SQLiteObservationRepository', () => {
       expect(result[0].metrics[2].constraint).toBeNull();
     });
 
+    // The one path a constraint takes end to end: what `save` wrote is exactly
+    // what `findAll` is handed to parse back.
+    it('should round-trip a choice metric\'s values in order, beside a bounded Numeric metric', async () => {
+      const observation = new Observation('obs-1', 'Mood', [
+        new Metric('m-1', 'level', 'Enum', {allowedValues: ['low', 'ok', 'high']}),
+        new Metric('m-2', 'hours', 'Numeric', {min: 0, max: 12})
+      ]);
+      await repository.save(observation);
+      const metricRows = mockRunAsync.mock.calls
+        .slice(1)
+        .map(([, id, observationId, name, type, constraintJson, description]) =>
+          ({id, observationId, name, type, constraintJson, description}));
+
+      mockGetAllAsync
+        .mockResolvedValueOnce([{ id: 'obs-1', name: 'Mood', description: null, createdAt: 1000 }])
+        .mockResolvedValueOnce(metricRows);
+      const result = await repository.findAll();
+
+      expect(result[0].metrics[0].constraint).toEqual({ allowedValues: ['low', 'ok', 'high'] });
+      expect(result[0].metrics[1].constraint).toEqual({ min: 0, max: 12 });
+    });
+
     it('should round-trip each metric description, including null and one with newlines', async () => {
       mockGetAllAsync
         .mockResolvedValueOnce([

@@ -2,13 +2,11 @@ import React, {useState} from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
-    Modal,
     Platform,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    TouchableWithoutFeedback,
     View
 } from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -17,6 +15,8 @@ import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservatio
 import {MetricValueType} from '../../domain/Metric';
 import {
     METRIC_DESCRIPTION_MAX_LENGTH,
+    METRIC_ENUM_MAX_VALUES,
+    METRIC_ENUM_VALUE_MAX_LENGTH,
     METRIC_NAME_MAX_LENGTH,
     OBSERVATION_DESCRIPTION_MAX_LENGTH,
     OBSERVATION_NAME_MAX_LENGTH,
@@ -27,7 +27,9 @@ import {
     LabeledTextField,
     PrimaryActionButton,
     ScreenContainer,
-    ScreenHeader
+    ScreenHeader,
+    SelectField,
+    type SelectFieldOption,
 } from "@presentation/components";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatMetricType} from "@presentation/metricDisplay";
@@ -47,20 +49,31 @@ interface MetricDraft {
     min: string;
     /** Upper bound, as typed; empty leaves it unset. Numeric Metrics only. */
     max: string;
+    /** The values offered, as typed and in declaration order. Enum Metrics only. */
+    values: string[];
 }
 
-const EMPTY_METRIC: MetricDraft = {name: '', type: 'Numeric', description: '', min: '', max: ''};
+/** Two rows, the fewest a Choice Metric may declare - so the minimum is visible rather than discovered on save. */
+const EMPTY_METRIC_VALUES: string[] = ['', ''];
 
-/** The Metric types this screen offers, in the order the dropdown lists them. */
-const METRIC_TYPE_CHOICES: MetricValueType[] = ['Numeric', 'Text', 'Boolean'];
+const EMPTY_METRIC: MetricDraft = {
+    name: '',
+    type: 'Numeric',
+    description: '',
+    min: '',
+    max: '',
+    values: EMPTY_METRIC_VALUES,
+};
+
+/** The Metric types this screen offers, in the order the picker lists them. */
+const METRIC_TYPE_CHOICES: SelectFieldOption<MetricValueType>[] =
+    (['Numeric', 'Text', 'Boolean', 'Enum'] as MetricValueType[])
+        .map(type => ({value: type, label: formatMetricType(type)}));
 
 export function CreateObservationScreen({navigation}: CreateObservationScreenProps) {
     const [observationName, setObservationName] = useState('');
     const [description, setDescription] = useState('');
     const [metrics, setMetrics] = useState<MetricDraft[]>([EMPTY_METRIC]);
-
-    const [dropdownVisible, setDropdownVisible] = useState(false);
-    const [activeMetricIndex, setActiveMetricIndex] = useState<number | null>(null);
 
     const handleAddMetric = () => {
         setMetrics([...metrics, EMPTY_METRIC]);
@@ -77,6 +90,19 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
         setMetrics(newMetrics);
     };
 
+    const handleValueChange = (index: number, valueIndex: number, value: string) => {
+        handleMetricChange(index, 'values',
+            metrics[index].values.map((existing, i) => i === valueIndex ? value : existing));
+    };
+
+    const handleAddValue = (index: number) => {
+        handleMetricChange(index, 'values', [...metrics[index].values, '']);
+    };
+
+    const handleRemoveValue = (index: number, valueIndex: number) => {
+        handleMetricChange(index, 'values', metrics[index].values.filter((_, i) => i !== valueIndex));
+    };
+
     const handleSave = async () => {
         try {
             await useCase.execute({
@@ -87,7 +113,8 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                     type: m.type,
                     description: m.description,
                     min: m.min,
-                    max: m.max
+                    max: m.max,
+                    values: m.values
                 }))
             });
             navigation.goBack();
@@ -96,23 +123,19 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
         }
     };
 
-    const openDropdown = (index: number) => {
-        setActiveMetricIndex(index);
-        setDropdownVisible(true);
-    };
-
-    const selectType = (type: MetricValueType) => {
-        if (activeMetricIndex !== null) {
-            const newMetrics = [...metrics];
-            const metric = newMetrics[activeMetricIndex];
-            // Only a Numeric Metric shows the bound fields, so anything typed
-            // into them goes when the type does - never submitted unseen.
-            newMetrics[activeMetricIndex] = type === 'Numeric'
-                ? {...metric, type}
-                : {...metric, type, min: '', max: ''};
-            setMetrics(newMetrics);
-        }
-        setDropdownVisible(false);
+    const selectType = (index: number, type: MetricValueType) => {
+        const newMetrics = [...metrics];
+        const metric = newMetrics[index];
+        // Each editor belongs to a single type, so anything typed into one goes
+        // when the type does - never submitted unseen.
+        newMetrics[index] = {
+            ...metric,
+            type,
+            min: type === 'Numeric' ? metric.min : '',
+            max: type === 'Numeric' ? metric.max : '',
+            values: type === 'Enum' ? metric.values : EMPTY_METRIC_VALUES,
+        };
+        setMetrics(newMetrics);
     };
 
     return (
@@ -179,14 +202,15 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                                     </View>
 
                                     <View style={styles.metricField}>
-                                        <Text style={styles.metricLabel}>TYPE</Text>
-                                        <TouchableOpacity
-                                            style={styles.typeSelector}
-                                            onPress={() => openDropdown(index)}
-                                        >
-                                            <Text style={styles.typeText}>{formatMetricType(metric.type)}</Text>
-                                            <MaterialIcons name="expand-more" size={20} color={COLORS.outline}/>
-                                        </TouchableOpacity>
+                                        <SelectField<MetricValueType>
+                                            label="TYPE"
+                                            testID={`metric-type-${index}`}
+                                            options={METRIC_TYPE_CHOICES}
+                                            selected={metric.type}
+                                            // A Metric always has a type, so the
+                                            // picker offers no way back to none.
+                                            onSelect={(type) => selectType(index, type!)}
+                                        />
                                     </View>
 
                                     {metric.type === 'Numeric' && (
@@ -212,6 +236,43 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                                         </View>
                                     )}
 
+                                    {metric.type === 'Enum' && (
+                                        <View>
+                                            <View style={styles.valueRows}>
+                                                {metric.values.map((value, valueIndex) => (
+                                                    <LabeledTextField
+                                                        key={valueIndex}
+                                                        label={`VALUE ${valueIndex + 1}`}
+                                                        testID={`metric-value-${index}-${valueIndex}`}
+                                                        labelAccessory={metric.values.length > EMPTY_METRIC_VALUES.length ? (
+                                                            <TouchableOpacity
+                                                                onPress={() => handleRemoveValue(index, valueIndex)}
+                                                                style={styles.deleteButton}>
+                                                                <MaterialIcons name="delete" size={20}
+                                                                               color={COLORS.outline}/>
+                                                            </TouchableOpacity>
+                                                        ) : undefined}
+                                                        value={value}
+                                                        onChangeText={(val) => handleValueChange(index, valueIndex, val)}
+                                                        maxLength={METRIC_ENUM_VALUE_MAX_LENGTH}
+                                                        showCounter
+                                                    />
+                                                ))}
+                                            </View>
+
+                                            {metric.values.length < METRIC_ENUM_MAX_VALUES && (
+                                                <TouchableOpacity
+                                                    style={[styles.dashedButton, styles.addValueButton]}
+                                                    onPress={() => handleAddValue(index)}
+                                                >
+                                                    <MaterialIcons name="add" size={20}
+                                                                   color={COLORS.onSurfaceVariant}/>
+                                                    <Text style={styles.dashedButtonText}>Add Value</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+                                    )}
+
                                     <View style={styles.metricField}>
                                         <LabeledTextField
                                             label="DESCRIPTION"
@@ -228,9 +289,9 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                             </View>
                         ))}
 
-                        <TouchableOpacity style={styles.addMetricButton} onPress={handleAddMetric}>
+                        <TouchableOpacity style={styles.dashedButton} onPress={handleAddMetric}>
                             <MaterialIcons name="add" size={20} color={COLORS.onSurfaceVariant}/>
-                            <Text style={styles.addMetricText}>Add Metric</Text>
+                            <Text style={styles.dashedButtonText}>Add Metric</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -238,26 +299,6 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                 <FooterBar>
                     <PrimaryActionButton label="Create Observation" onPress={handleSave}/>
                 </FooterBar>
-
-                <Modal visible={dropdownVisible} transparent animationType="fade">
-                    <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
-                        <View style={styles.modalOverlay}>
-                            <TouchableWithoutFeedback>
-                                <View style={styles.modalContent}>
-                                    {METRIC_TYPE_CHOICES.map(type => (
-                                        <TouchableOpacity
-                                            key={type}
-                                            style={styles.modalOption}
-                                            onPress={() => selectType(type)}
-                                        >
-                                            <Text style={styles.modalOptionText}>{formatMetricType(type)}</Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            </TouchableWithoutFeedback>
-                        </View>
-                    </TouchableWithoutFeedback>
-                </Modal>
 
             </KeyboardAvoidingView>
         </ScreenContainer>
@@ -324,27 +365,16 @@ const styles = StyleSheet.create({
     boundField: {
         flex: 1,
     },
-    // Label for the TYPE selector, which can't use LabeledTextField directly.
-    metricLabel: {...TYPOGRAPHY.fieldLabel, marginBottom: 8},
-    typeSelector: {
-        backgroundColor: COLORS.surfaceContainerLowest,
-        borderRadius: RADIUS.sm,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: 44, // Approximately a LabeledTextField's input height.
-    },
-    typeText: {
-        color: COLORS.onSurface,
-        fontSize: 16,
+    // Tighter than the card's own 16px field spacing: the rows are one list
+    // inside a field rather than fields in their own right.
+    valueRows: {
+        gap: 12,
     },
     deleteButton: {
         padding: 4,
         marginRight: -4,
     },
-    addMetricButton: {
+    dashedButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -356,31 +386,12 @@ const styles = StyleSheet.create({
         borderRadius: RADIUS.md,
         gap: 8,
     },
-    addMetricText: {
+    dashedButtonText: {
         fontSize: 14,
         fontWeight: '500',
         color: COLORS.onSurfaceVariant,
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContent: {
-        backgroundColor: COLORS.surfaceContainerLow,
-        width: '80%',
-        borderRadius: RADIUS.md,
-        borderWidth: 1,
-        borderColor: COLORS.outlineVariant,
-        paddingVertical: 8,
-    },
-    modalOption: {
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-    },
-    modalOptionText: {
-        color: COLORS.onSurface,
-        fontSize: 16,
+    addValueButton: {
+        marginTop: 12,
     },
 });

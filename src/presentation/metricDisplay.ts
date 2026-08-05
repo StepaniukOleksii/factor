@@ -1,4 +1,4 @@
-import type {MetricValueType, NumericConstraint} from '../domain/Metric';
+import type {EnumConstraint, MetricValueType, NumericConstraint} from '../domain/Metric';
 import type {SegmentedFieldOption} from './components';
 
 /**
@@ -13,18 +13,37 @@ export const BOOLEAN_METRIC_OPTIONS: SegmentedFieldOption<boolean>[] = [
     {value: false, label: 'No'},
 ];
 
+/**
+ * The choices an Enum Metric offers, in the order they were declared - and none
+ * at all for a Metric holding no constraint, which accepts no value either.
+ *
+ * Beside `BOOLEAN_METRIC_OPTIONS` for the reason stated there: one source for
+ * the words a Record can read back as.
+ */
+export function toEnumOptions(constraint: EnumConstraint | null): SegmentedFieldOption<string>[] {
+    return (constraint?.allowedValues ?? []).map(value => ({value, label: value}));
+}
+
 /** Shown in place of a Metric a Record holds no value for. */
 const MISSING_VALUE = '-';
 
 /**
+ * The picker row returning a Metric to unanswered, and what its field reads
+ * while it is. A word rather than `MISSING_VALUE`'s dash, because this one is
+ * tapped and read as a choice, where that one only ever fills a column.
+ */
+export const NO_METRIC_VALUE = 'None';
+
+/**
  * How each Metric type is named to the user. The domain's own names are
- * developer vocabulary; `Boolean` in particular names a data type rather than
- * the choice it presents, so it is offered as "Yes/No" instead.
+ * developer vocabulary; `Boolean` and `Enum` in particular name data types
+ * rather than what they offer, so they are offered as "Yes/No" and "Choice"
+ * instead.
  */
 const METRIC_TYPE_LABELS: Record<MetricValueType, string> = {
     Numeric: 'Numeric',
     Boolean: 'Yes/No',
-    Enum: 'Enum',
+    Enum: 'Choice',
     Text: 'Text',
 };
 

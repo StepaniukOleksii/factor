@@ -22,6 +22,10 @@ export {LabeledTextFieldProps} from './LabeledTextField';
 export {SegmentedField} from './SegmentedField';
 export {SegmentedFieldProps, SegmentedFieldOption} from './SegmentedField';
 
+/** Labeled field opening a modal list of options - used for form fields choosing one value from more options than segments can hold */
+export {SelectField} from './SelectField';
+export {SelectFieldProps, SelectFieldOption} from './SelectField';
+
 /** Centered modal dialog - use when an action from user is needed */
 export {Dialog} from './Dialog';
 export {DialogProps, DialogAction} from './Dialog';

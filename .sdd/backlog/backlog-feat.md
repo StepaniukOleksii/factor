@@ -17,7 +17,11 @@ until they're ready to become a real spec.
       winning value lies in the second). Color is an ordinal one-hue ramp on the existing green rather than a
       categorical palette, since lane position already carries identity; validated at 3 and 5 steps, fails at
       7. Lane geometry caps at the same ~5 values for a 108px card. Open: a bucket's Record count has nowhere
-      to go in a swimlane, so 12 unanimous Records look like 1.
+      to go in a swimlane, so 12 unanimous Records look like 1. Open: the exploration's 34px lane-label gutter
+      holds about six narrow characters at 10px type, but
+      [Enum Metric Input](../epics/2-record-management/2-11-enum-metric-input/spec.md) lets a value run to 12 —
+      `outstanding` measures 53px there and twelve wide characters 114px, so this slice picks between a wider
+      gutter, labels above the lanes, and tightening that limit.
     - Boolean metric chart — folds into the Enum renderer above rather than needing a tick/step one of its own:
       `done` is a two-value enum in all but name, and two lanes serve it.
     - Both of the above need `MetricSeriesPoint` widened first — `y: number` cannot carry per-value shares, and

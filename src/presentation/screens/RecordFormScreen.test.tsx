@@ -1144,6 +1144,157 @@ describe('RecordFormScreen', () => {
         });
     });
 
+    // A Choice Metric is picked from a list rather than a row of segments: four
+    // values divided across one row leave too little width to read. What is
+    // tested here is the rows it offers and the values they report back.
+    describe('choice metrics', () => {
+        const MOOD_VALUES = ['low', 'ok', 'high'];
+        const moodMetric = new Metric('metric-9', 'mood', 'Enum', {allowedValues: MOOD_VALUES});
+        const choices = new Observation('obs-1', 'no numeric', [moodMetric, restedMetric]);
+        const timestamp = new Date('2024-01-15T08:15:00');
+
+        /** Both routes reach the same form - every rule here holds on each. */
+        const ROUTES: [string, string | undefined][] = [
+            ['create', undefined],
+            ['edit', 'record-1'],
+        ];
+
+        /** The touchable itself - the testID is also on the component it was passed to. */
+        const field = (root: any) =>
+            root.root.findAllByProps({testID: 'record-metric-metric-9', accessibilityRole: 'button'})[0];
+
+        const row = (root: any, key: string) =>
+            root.root.findAllByProps({testID: `record-metric-metric-9-${key}`})[0];
+
+        async function openPicker(root: any) {
+            await act(async () => {
+                field(root).props.onPress();
+            });
+        }
+
+        /** Opens the picker and taps a row, as choosing a value takes two taps. */
+        async function choose(root: any, key: string) {
+            await openPicker(root);
+            await act(async () => {
+                row(root, key).props.onPress();
+            });
+        }
+
+        /** What the closed field reads - the list is unmounted, so this is the only copy on screen. */
+        const shows = (root: any, text: string) => findAllByText(root.root, text).length === 1;
+
+        async function save(root: any, recordId?: string) {
+            const button = findTouchableWithText(root.root, recordId ? 'Save Record' : 'Add Record');
+            await act(async () => {
+                await button!.props.onPress();
+            });
+        }
+
+        beforeEach(() => {
+            mockGetObservationByIdExecute.mockResolvedValue(choices);
+            // No stored values, so each route starts from the same empty form.
+            mockGetRecordByIdExecute.mockResolvedValue(new DomainRecord(
+                'record-1',
+                'obs-1',
+                timestamp,
+                new Map<string, any>(),
+            ));
+        });
+
+        it.each(ROUTES)('reads as unanswered, over a closed list and no text field, on the %s route', async (_route, recordId) => {
+            const {root} = await renderScreen({recordId});
+
+            expect(shows(root, 'None')).toBe(true);
+            expect(root.root.findAllByProps({testID: 'record-metric-metric-9-low'})).toHaveLength(0);
+            expect(root.root.findAllByType('TextInput').map((input: any) => input.props.testID))
+                .toEqual(['record-note']);
+        });
+
+        it.each(ROUTES)('lists every declared value in order, under the row that means no answer, on the %s route', async (_route, recordId) => {
+            const {root} = await renderScreen({recordId});
+
+            await openPicker(root);
+
+            const list = root.root.findAllByProps({testID: 'record-metric-metric-9-options'})[0];
+            const labels = list
+                .findAll((node: any) => node.children?.length === 1 && typeof node.children[0] === 'string')
+                .map((node: any) => node.children[0]);
+            expect(labels).toEqual(['None', ...MOOD_VALUES]);
+        });
+
+        it.each(ROUTES)('reads back the value that was chosen, and saves it, on the %s route', async (_route, recordId) => {
+            const {root} = await renderScreen({recordId});
+
+            await choose(root, 'high');
+            expect(shows(root, 'high')).toBe(true);
+
+            await save(root, recordId);
+
+            const execute = recordId ? mockUpdateRecordExecute : mockCreateRecordExecute;
+            expect(execute).toHaveBeenCalledWith(expect.objectContaining({
+                values: [{metricId: 'metric-9', value: 'high'}],
+            }));
+        });
+
+        // "Not answered yet" stays reachable, which is what the clearing row is for.
+        it.each(ROUTES)('returns the Metric to unanswered through that row, on the %s route', async (_route, recordId) => {
+            const {root} = await renderScreen({recordId});
+
+            await choose(root, 'high');
+            await choose(root, 'clear');
+
+            expect(shows(root, 'None')).toBe(true);
+            await save(root, recordId);
+
+            const execute = recordId ? mockUpdateRecordExecute : mockCreateRecordExecute;
+            expect(execute).toHaveBeenCalledWith(expect.objectContaining({values: []}));
+        });
+
+        it('marks the row holding the current value, and the clearing row while there is none', async () => {
+            const {root} = await renderScreen();
+
+            await openPicker(root);
+            expect(row(root, 'clear').props.accessibilityState.selected).toBe(true);
+            expect(row(root, 'high').props.accessibilityState.selected).toBe(false);
+
+            await choose(root, 'high');
+            await openPicker(root);
+            expect(row(root, 'high').props.accessibilityState.selected).toBe(true);
+            expect(row(root, 'clear').props.accessibilityState.selected).toBe(false);
+        });
+
+        it('pre-fills from the stored value on the edit route, and saves the one it is changed to', async () => {
+            mockGetRecordByIdExecute.mockResolvedValue(new DomainRecord(
+                'record-1',
+                'obs-1',
+                timestamp,
+                new Map<string, any>([['metric-9', 'high']]),
+            ));
+
+            const {root} = await renderScreen({recordId: 'record-1'});
+            expect(shows(root, 'high')).toBe(true);
+
+            await choose(root, 'low');
+            await save(root, 'record-1');
+
+            expect(mockUpdateRecordExecute).toHaveBeenCalledWith(expect.objectContaining({
+                values: [{metricId: 'metric-9', value: 'low'}],
+            }));
+        });
+
+        // Two options fit the row, so a Boolean keeps its single-tap segments.
+        it('leaves the Boolean Metric beside it on segments', async () => {
+            const {root} = await renderScreen();
+
+            expect(booleanSelectedStates(root.root, 'metric-2')).toEqual([false, false]);
+
+            await pressBooleanSegment(root.root, 'metric-2', false);
+
+            expect(booleanSelectedStates(root.root, 'metric-2')).toEqual([false, true]);
+            expect(shows(root, 'None')).toBe(true);
+        });
+    });
+
     // Text delivered in one shot - as every other test here and the Maestro
     // flows deliver it - never reaches the states no number can represent.
     describe('numeric text entry', () => {

@@ -118,12 +118,11 @@
     .segments { display: flex; gap: 8px; }
     .segment {
         /* `flex: 1 1 0`, not CSS's default `flex: 1 1 auto`: React Native's
-           `flex: 1` zeroes the basis, so segments divide the row evenly and a
-           long label wraps instead of stealing width from its neighbours. */
+           `flex: 1` zeroes the basis, so segments divide the row evenly. This is
+           why only Yes/No is rendered this way - dividing a row between four
+           values leaves under five characters each, and the rest wraps. */
         flex: 1 1 0;
         min-width: 0;
-        /* React Native breaks a word too long for its box; CSS lets it overflow.
-           Without this the worst case reads as fitting when it does not. */
         overflow-wrap: anywhere;
         text-align: center;
         padding: 12px 16px;
@@ -170,18 +169,23 @@
     }
     .metric-grid { display: flex; flex-direction: column; gap: 16px; }
 
-    /* Borderless by design - `styles.typeSelector` sets no border. */
-    .type-selector {
+    /* `SelectField`: the same fill, border, radius and padding as `.input`, so a
+       field chosen from weighs the same as the fields typed into beside it. */
+    .select-field {
         background: var(--surface-container-lowest);
-        border-radius: 4px;
-        height: 44px;
-        padding: 0 12px;
+        border: 1px solid var(--outline-variant);
+        border-radius: 8px;
+        padding: 12px 16px;
+        min-height: 48px;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 8px;
         font-size: 16px;
         color: var(--on-surface);
     }
+    /* An unanswered field has to read as unanswered rather than as a value. */
+    .select-field.empty { color: var(--outline); }
 
     /* The value rows and their Add button, one level down from the METRICS list
        they copy. Rows sit closer together than the card's own 16px fields. */
@@ -209,16 +213,29 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 16px;
         z-index: 20;
     }
     .modal-content {
-        width: 80%;
+        width: 100%;
+        max-width: 384px;
         background: var(--surface-container-low);
         border: 1px solid var(--outline-variant);
         border-radius: 8px;
         padding: 8px 0;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
     }
-    .modal-option { padding: 16px 20px; font-size: 16px; color: var(--on-surface); }
+    /* A row gets the whole width, so a value wraps only past ~30 characters -
+       where a quarter-row segment wrapped past four. */
+    .modal-option {
+        padding: 16px 20px;
+        font-size: 16px;
+        color: var(--on-surface);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
 
     /* ---------- Record form ---------- */
     .metrics-list { display: flex; flex-direction: column; gap: 12px; }
@@ -296,7 +313,7 @@
 
                         <div>
                             <div class="field-label-row"><span class="field-label">TYPE</span></div>
-                            <div class="type-selector">
+                            <div class="select-field">
                                 <span>Choice</span>
                                 <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="#8c9385"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
                             </div>
@@ -310,6 +327,7 @@
                                         <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="#8c9385"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                                     </div>
                                     <div class="input">low</div>
+                                    <div class="counter">3/12</div>
                                 </div>
                                 <div>
                                     <div class="field-label-row with-accessory">
@@ -317,6 +335,7 @@
                                         <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="#8c9385"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                                     </div>
                                     <div class="input">ok</div>
+                                    <div class="counter">2/12</div>
                                 </div>
                                 <div>
                                     <div class="field-label-row with-accessory">
@@ -324,6 +343,7 @@
                                         <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="#8c9385"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                                     </div>
                                     <div class="input">high</div>
+                                    <div class="counter">4/12</div>
                                 </div>
                             </div>
 
@@ -393,7 +413,7 @@
 
                         <div>
                             <div class="field-label-row"><span class="field-label">TYPE</span></div>
-                            <div class="type-selector">
+                            <div class="select-field">
                                 <span>Numeric</span>
                                 <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="#8c9385"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
                             </div>
@@ -417,10 +437,13 @@
 
             <div class="modal-overlay">
                 <div class="modal-content">
-                    <div class="modal-option">Numeric</div>
-                    <div class="modal-option">Text</div>
-                    <div class="modal-option">Yes/No</div>
-                    <div class="modal-option">Choice</div>
+                    <div class="modal-option">
+                        <span>Numeric</span>
+                        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="#b6f09c"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </div>
+                    <div class="modal-option"><span>Text</span></div>
+                    <div class="modal-option"><span>Yes/No</span></div>
+                    <div class="modal-option"><span>Choice</span></div>
                 </div>
             </div>
         </div>
@@ -443,13 +466,14 @@
 
                     <div class="metric-card" style="margin-bottom:0;">
                         <div class="field-label-row"><span class="field-label">mood</span></div>
-                        <div class="segments">
-                            <div class="segment">low</div>
-                            <div class="segment">ok</div>
-                            <div class="segment">high</div>
+                        <div class="select-field empty">
+                            <span>None</span>
+                            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="#8c9385"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
                         </div>
                     </div>
 
+                    <!-- Two answers fit the row, so a Yes/No Metric keeps its
+                         segments and its single-tap answer. -->
                     <div class="metric-card" style="margin-bottom:0;">
                         <div class="field-label-row"><span class="field-label">done</span></div>
                         <div class="segments">
@@ -477,9 +501,9 @@
         </div>
     </div>
 
-    <!-- ================= ADD RECORD - FOUR VALUES ================= -->
+    <!-- ================= ADD RECORD - PICKER OPEN ================= -->
     <div class="screen">
-        <div class="screen-title">Add Record — Four Values</div>
+        <div class="screen-title">Add Record — Picker Open, Four Values</div>
         <div class="frame">
             <div class="header">
                 <div class="header-action">
@@ -494,11 +518,9 @@
 
                     <div class="metric-card" style="margin-bottom:0;">
                         <div class="field-label-row"><span class="field-label">rating</span></div>
-                        <div class="segments">
-                            <div class="segment">poor</div>
-                            <div class="segment">fair</div>
-                            <div class="segment selected">good</div>
-                            <div class="segment">outstanding</div>
+                        <div class="select-field">
+                            <span>good</span>
+                            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="#8c9385"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
                         </div>
                     </div>
 
@@ -524,6 +546,22 @@
                 <div class="primary-button">
                     <span>Add Record</span>
                     <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="#0b3900"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+            </div>
+
+            <!-- The worst case the segments could not hold: four values, the
+                 longest of them at the 12-character limit. Each gets its own
+                 line here, so none of them wraps. -->
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-option"><span>None</span></div>
+                    <div class="modal-option"><span>poor</span></div>
+                    <div class="modal-option"><span>fair</span></div>
+                    <div class="modal-option">
+                        <span>good</span>
+                        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="#b6f09c"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </div>
+                    <div class="modal-option"><span>outstanding</span></div>
                 </div>
             </div>
         </div>

@@ -11,7 +11,7 @@ import {CreateRecordUseCase} from '../../application/CreateRecordUseCase';
 import {GetRecordByIdUseCase} from '../../application/GetRecordByIdUseCase';
 import {UpdateRecordUseCase} from '../../application/UpdateRecordUseCase';
 import {Observation} from '../../domain/Observation';
-import {Metric, NumericConstraint} from '../../domain/Metric';
+import {EnumConstraint, Metric, NumericConstraint} from '../../domain/Metric';
 import {Record as DomainRecord} from '../../domain/Record';
 import {RECORD_NOTE_MAX_LENGTH} from '../../domain/validationLimits';
 import {
@@ -23,8 +23,15 @@ import {
     ScreenContainer,
     ScreenHeader,
     SegmentedField,
+    SelectField,
 } from "@presentation/components";
-import {BOOLEAN_METRIC_OPTIONS, formatMetricRange, formatRangeError} from "@presentation/metricDisplay";
+import {
+    BOOLEAN_METRIC_OPTIONS,
+    formatMetricRange,
+    formatRangeError,
+    NO_METRIC_VALUE,
+    toEnumOptions,
+} from "@presentation/metricDisplay";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatShortDate, formatShortTime} from '@shared/formatTimeRange';
 import type {RootStackParamList} from '../navigation/routes';
@@ -319,8 +326,9 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
     const renderMetricInput = (metric: Metric) => {
         const error = errors[metric.id];
 
-        // Boolean picks between two segments, which is not a text field. Both
-        // start unselected, so "not answered yet" reads differently from "No".
+        // Two answers fit the row inline, so a Boolean is answered in one tap and
+        // never opens anything. Both segments start unselected, so "not answered
+        // yet" reads differently from "No".
         if (metric.type === 'Boolean') {
             return (
                 <View key={metric.id} style={styles.inputContainer}>
@@ -337,7 +345,27 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
             );
         }
 
-        // Enum would ideally use a picker; per spec a standard input is fine for now.
+        // Up to four values, each its own words: segments would divide the row
+        // between them and wrap anything past a few characters, so these get a
+        // line apiece in a picker instead. `NO_METRIC_VALUE` is a row there like
+        // any other, keeping "not answered yet" reachable and named.
+        if (metric.type === 'Enum') {
+            return (
+                <View key={metric.id} style={styles.inputContainer}>
+                    <SelectField<string>
+                        label={metric.name}
+                        testID={`record-metric-${metric.id}`}
+                        options={toEnumOptions(metric.constraint as EnumConstraint | null)}
+                        selected={values[metric.id]}
+                        onSelect={(val) => handleValueChange(metric.id, val)}
+                        clearLabel={NO_METRIC_VALUE}
+                        error={error}
+                        helpText={metric.description ?? undefined}
+                    />
+                </View>
+            );
+        }
+
         const isNumeric = metric.type === 'Numeric';
 
         return (

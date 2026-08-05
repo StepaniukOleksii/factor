@@ -436,4 +436,179 @@ describe('CreateObservationUseCase', () => {
       expect(savedMetrics()[2].constraint).toBeNull();
     });
   });
+
+  describe('metric values', () => {
+    const savedMetrics = () =>
+      ((mockRepository.save as any).mock.calls[0][0] as Observation).metrics;
+
+    /** A Metric offering fewer than two values would refuse every value forever. */
+    const TOO_FEW: [string, string[] | undefined][] = [
+      ['none at all', undefined],
+      ['an empty list', []],
+      ['a single value', ['low']],
+      ['a single surviving value', ['low', '   ']],
+    ];
+
+    it('should accept the values in the order they were declared', async () => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'level', type: 'Enum', values: ['low', 'ok', 'high']}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({allowedValues: ['low', 'ok', 'high']});
+    });
+
+    it('should trim each value', async () => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'level', type: 'Enum', values: ['  low  ', 'high ']}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({allowedValues: ['low', 'high']});
+    });
+
+    it('should store the casing that was typed', async () => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'level', type: 'Enum', values: ['Low', 'HIGH']}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({allowedValues: ['Low', 'HIGH']});
+    });
+
+    // A blank row is the value editor's own affordance, not something the user typed.
+    it.each([
+      ['empty', ''],
+      ['whitespace-only', '   '],
+    ])('should drop an %s value rather than refusing it', async (_kind, blank) => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'level', type: 'Enum', values: ['low', blank, 'high']}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({allowedValues: ['low', 'high']});
+    });
+
+    it('should accept the largest set the control can render', async () => {
+      const values = ['poor', 'fair', 'good', 'outstanding'];
+
+      await useCase.execute({
+        name: 'Sleep',
+        metrics: [{name: 'rating', type: 'Enum', values}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({allowedValues: values});
+    });
+
+    it('should accept a value of exactly 12 characters', async () => {
+      const value = 'a'.repeat(12);
+
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [{name: 'level', type: 'Enum', values: ['low', value]}]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({allowedValues: ['low', value]});
+    });
+
+    it.each(TOO_FEW)('should reject a choice metric declaring %s', async (_kind, values) => {
+      const input = {
+        name: 'Mood',
+        metrics: [{name: 'level', type: 'Enum', values}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('A choice metric needs at least 2 values');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should reject more values than the control can render', async () => {
+      const input = {
+        name: 'Mood',
+        metrics: [{name: 'level', type: 'Enum', values: ['a', 'b', 'c', 'd', 'e']}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('A choice metric can have at most 4 values');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should reject a value longer than 12 characters', async () => {
+      const input = {
+        name: 'Mood',
+        metrics: [{name: 'level', type: 'Enum', values: ['low', 'a'.repeat(13)]}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('A choice value cannot exceed 12 characters');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    // The segments are what the values are told apart by, and `Low` beside `low`
+    // is a distinction the control cannot show.
+    it('should reject two values differing only in case', async () => {
+      const input = {
+        name: 'Mood',
+        metrics: [{name: 'level', type: 'Enum', values: ['Low', 'low']}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('Choice values must be unique');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it.each(['Numeric', 'Text', 'Boolean'])('should reject a value on a %s metric', async type => {
+      const input = {
+        name: 'Coffee',
+        metrics: [{name: 'Roast', type, values: ['light', 'dark']}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('Only a choice metric can have values');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    // Every draft carries the editor's two blank rows, whatever type it is.
+    it('should leave a non-Enum metric carrying only blank values alone', async () => {
+      await useCase.execute({
+        name: 'Coffee',
+        metrics: [{name: 'Roast', type: 'Text', values: ['', '   ']}]
+      });
+
+      expect(savedMetrics()[0].constraint).toBeNull();
+    });
+
+    it('should reject a bound on a choice metric', async () => {
+      const input = {
+        name: 'Mood',
+        metrics: [{name: 'level', type: 'Enum', values: ['low', 'high'], max: '5'}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('Only a Numeric metric can have bounds');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should validate each metric independently', async () => {
+      const input = {
+        name: 'Mood',
+        metrics: [
+          {name: 'level', type: 'Enum', values: ['low', 'high']},
+          {name: 'energy', type: 'Enum', values: ['low']}
+        ]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('A choice metric needs at least 2 values');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should keep each metric to its own kind of constraint', async () => {
+      await useCase.execute({
+        name: 'Mood',
+        metrics: [
+          {name: 'level', type: 'Enum', values: ['low', 'high']},
+          {name: 'hours', type: 'Numeric', min: '0', max: '12'},
+          {name: 'note', type: 'Text'}
+        ]
+      });
+
+      expect(savedMetrics()[0].constraint).toEqual({allowedValues: ['low', 'high']});
+      expect(savedMetrics()[1].constraint).toEqual({min: 0, max: 12});
+      expect(savedMetrics()[2].constraint).toBeNull();
+    });
+  });
 });

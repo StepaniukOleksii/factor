@@ -5,15 +5,33 @@ import {
     formatMetricType,
     formatMetricValue,
     formatRangeError,
+    toEnumOptions,
 } from './metricDisplay';
 
 describe('formatMetricType', () => {
-    it('names a Boolean Metric after the choice it offers, not its data type', () => {
-        expect(formatMetricType('Boolean')).toBe('Yes/No');
+    it.each([
+        ['Boolean' as const, 'Yes/No'],
+        ['Enum' as const, 'Choice'],
+    ])('names a %s Metric after what it offers, not its data type', (type, expected) => {
+        expect(formatMetricType(type)).toBe(expected);
     });
 
-    it.each(['Numeric', 'Enum', 'Text'] as const)('leaves %s as it is', type => {
+    it.each(['Numeric', 'Text'] as const)('leaves %s as it is', type => {
         expect(formatMetricType(type)).toBe(type);
+    });
+});
+
+describe('toEnumOptions', () => {
+    it('offers each declared value, as both the label and the value, in declaration order', () => {
+        expect(toEnumOptions({allowedValues: ['low', 'ok', 'high']})).toEqual([
+            {value: 'low', label: 'low'},
+            {value: 'ok', label: 'ok'},
+            {value: 'high', label: 'high'},
+        ]);
+    });
+
+    it('offers nothing for a Metric holding no constraint, which accepts no value either', () => {
+        expect(toEnumOptions(null)).toEqual([]);
     });
 });
 

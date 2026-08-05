@@ -2,6 +2,7 @@ import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
 import {CreateObservationScreen} from './CreateObservationScreen';
+import {METRIC_ENUM_VALUE_MAX_LENGTH} from '../../domain/validationLimits';
 
 const {mockCreateObservationExecute} = vi.hoisted(() => {
     return {mockCreateObservationExecute: vi.fn()};
@@ -207,6 +208,166 @@ describe('CreateObservationScreen', () => {
 
             expect(field(root, 'metric-min-0').props.value).toBe('1');
             expect(field(root, 'metric-min-1').props.value).toBe('');
+        });
+    });
+
+    describe('metric values', () => {
+        /** With a single Metric the card's own delete button is hidden, so every one of these belongs to a value row. */
+        const deleteButtons = (root: any) => root.root.findAllByProps({name: 'delete'});
+
+        const addValueButton = (root: any) => findTouchableWithText(root.root, 'Add Value');
+
+        async function addValue(root: any) {
+            await act(async () => {
+                addValueButton(root)!.props.onPress();
+            });
+        }
+
+        /** Deletes the first row, the first `delete` icon on screen belonging to it. */
+        async function deleteValue(root: any) {
+            await act(async () => {
+                findTouchableWithIconName(root.root, 'delete')!.props.onPress();
+            });
+        }
+
+        function rowExists(root: any, valueIndex: number) {
+            return root.root.findAllByProps({testID: `metric-value-0-${valueIndex}`}).length > 0;
+        }
+
+        it('offers every Metric type in the dropdown, the choice last', async () => {
+            const {root} = await renderScreen();
+
+            await act(async () => {
+                findTouchableWithIconName(root.root, 'expand-more')!.props.onPress();
+            });
+            const dropdown = root.root.findAllByProps({testID: 'modal'})[0];
+
+            const options = dropdown
+                .findAll((node: any) => node.children?.length === 1 && typeof node.children[0] === 'string')
+                .map((node: any) => node.children[0]);
+            expect(options).toEqual(['Numeric', 'Text', 'Yes/No', 'Choice']);
+        });
+
+        it('starts a Choice Metric on two empty rows, with no MIN/MAX beside them', async () => {
+            const {root} = await renderScreen();
+
+            await chooseType(root, 'Choice');
+
+            expect(field(root, 'metric-value-0-0').props.value).toBe('');
+            expect(field(root, 'metric-value-0-1').props.value).toBe('');
+            expect(rowExists(root, 2)).toBe(false);
+            expect(root.root.findAllByProps({testID: 'metric-min-0'})).toHaveLength(0);
+            expect(root.root.findAllByProps({testID: 'metric-max-0'})).toHaveLength(0);
+        });
+
+        // The cap belongs on the input rather than on save alone: a limit the
+        // user only meets when an Observation is refused is one the control
+        // should have shown them.
+        it('caps every row at the value length limit and counts towards it', async () => {
+            const {root} = await renderScreen();
+
+            await chooseType(root, 'Choice');
+            await addValue(root);
+
+            for (const valueIndex of [0, 1, 2]) {
+                expect(field(root, `metric-value-0-${valueIndex}`).props.maxLength)
+                    .toBe(METRIC_ENUM_VALUE_MAX_LENGTH);
+                expect(field(root, `metric-value-0-${valueIndex}`).props.showCounter).toBe(true);
+            }
+        });
+
+        it.each(['Numeric', 'Text', 'Yes/No'])('offers no value editor on a %s Metric', async label => {
+            const {root} = await renderScreen();
+
+            await chooseType(root, 'Choice');
+            await chooseType(root, label);
+
+            expect(rowExists(root, 0)).toBe(false);
+            expect(addValueButton(root)).toBeNull();
+        });
+
+        it('discards what was typed when the Metric changes type, leaving empty rows on return', async () => {
+            const {root} = await renderScreen();
+
+            await chooseType(root, 'Choice');
+            await typeInto(root, 'metric-value-0-0', 'low');
+            await addValue(root);
+            await chooseType(root, 'Numeric');
+            await chooseType(root, 'Choice');
+
+            expect(field(root, 'metric-value-0-0').props.value).toBe('');
+            expect(rowExists(root, 2)).toBe(false);
+        });
+
+        it('shows a delete button per row only while more than the minimum two exist', async () => {
+            const {root} = await renderScreen();
+
+            await chooseType(root, 'Choice');
+            expect(deleteButtons(root)).toHaveLength(0);
+
+            await addValue(root);
+            expect(deleteButtons(root)).toHaveLength(3);
+        });
+
+        it('hides Add Value at the cap of four rows, and offers it again once one is deleted', async () => {
+            const {root} = await renderScreen();
+
+            await chooseType(root, 'Choice');
+            await addValue(root);
+            await addValue(root);
+
+            expect(field(root, 'metric-value-0-3').props.value).toBe('');
+            expect(addValueButton(root)).toBeNull();
+
+            await deleteValue(root);
+
+            expect(addValueButton(root)).toBeTruthy();
+            expect(rowExists(root, 3)).toBe(false);
+        });
+
+        it('removes the row that was deleted, moving the rest up', async () => {
+            const {root} = await renderScreen();
+
+            await chooseType(root, 'Choice');
+            await addValue(root);
+            await typeInto(root, 'metric-value-0-0', 'low');
+            await typeInto(root, 'metric-value-0-1', 'ok');
+            await typeInto(root, 'metric-value-0-2', 'high');
+
+            await deleteValue(root);
+
+            expect(field(root, 'metric-value-0-0').props.value).toBe('ok');
+            expect(field(root, 'metric-value-0-1').props.value).toBe('high');
+        });
+
+        it('passes the values through as typed, in the order they were declared', async () => {
+            const {root} = await renderScreen();
+
+            await nameMetric(root, 'mood');
+            await chooseType(root, 'Choice');
+            await typeInto(root, 'metric-value-0-0', 'low');
+            await typeInto(root, 'metric-value-0-1', 'high');
+            await saveObservation(root);
+
+            expect(submittedMetrics()).toEqual([
+                expect.objectContaining({name: 'mood', type: 'Enum', values: ['low', 'high']}),
+            ]);
+        });
+
+        // The use case rejects a value on a non-Enum Metric, so an abandoned one
+        // reaching it would refuse an Observation the screen showed as valid.
+        it('sends no value for a Metric switched away from Choice', async () => {
+            const {root} = await renderScreen();
+
+            await nameMetric(root, 'mood');
+            await chooseType(root, 'Choice');
+            await typeInto(root, 'metric-value-0-0', 'low');
+            await chooseType(root, 'Text');
+            await saveObservation(root);
+
+            expect(submittedMetrics()).toEqual([
+                expect.objectContaining({type: 'Text', values: ['', '']}),
+            ]);
         });
     });
 });

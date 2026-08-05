@@ -1,8 +1,10 @@
 import * as Crypto from 'expo-crypto';
 import {Observation} from '../domain/Observation';
-import {Metric, MetricValueType, NumericConstraint} from '../domain/Metric';
+import {EnumConstraint, Metric, MetricConstraint, MetricValueType, NumericConstraint} from '../domain/Metric';
 import {
   METRIC_DESCRIPTION_MAX_LENGTH,
+  METRIC_ENUM_MAX_VALUES,
+  METRIC_ENUM_VALUE_MAX_LENGTH,
   METRIC_NAME_MAX_LENGTH,
   OBSERVATION_DESCRIPTION_MAX_LENGTH,
   OBSERVATION_NAME_MAX_LENGTH,
@@ -20,6 +22,8 @@ export interface CreateObservationInput {
     min?: string;
     /** Upper bound, as typed; blank or absent leaves it unset. */
     max?: string;
+    /** The values a choice offers, as typed and in the order declared. */
+    values?: string[];
   }[];
 }
 
@@ -31,28 +35,16 @@ function parseBound(text: string): number {
   return value;
 }
 
-/**
- * The bounds a Metric was declared with, or `null` when it was given none -
- * never `{}`, which would persist as a meaningless `"{}"` and read as "bounded"
- * to anything testing the field for presence.
- */
-function toNumericConstraint(type: string, min?: string, max?: string): NumericConstraint | null {
-  const hasMin = (min ?? '').trim() !== '';
-  const hasMax = (max ?? '').trim() !== '';
-  if (!hasMin && !hasMax) {
-    return null;
-  }
-  // The screen never offers these fields for another type, so a bound arriving
-  // on one is a caller bug rather than something to drop quietly.
-  if (type !== 'Numeric') {
-    throw new Error('Only a Numeric metric can have bounds');
-  }
+function isDeclared(text?: string): boolean {
+  return (text ?? '').trim() !== '';
+}
 
+function toNumericConstraint(min?: string, max?: string): NumericConstraint {
   const constraint: NumericConstraint = {};
-  if (hasMin) {
+  if (isDeclared(min)) {
     constraint.min = parseBound(min!);
   }
-  if (hasMax) {
+  if (isDeclared(max)) {
     constraint.max = parseBound(max!);
   }
   // An incoherent range makes `validateValue` reject every value, so it is
@@ -61,6 +53,60 @@ function toNumericConstraint(type: string, min?: string, max?: string): NumericC
     throw new Error('Metric minimum cannot exceed its maximum');
   }
   return constraint;
+}
+
+/**
+ * `values` are already trimmed and stripped of blanks. Every rule here is what
+ * makes the type safe to offer: a Metric whose values are missing, or too few to
+ * choose between, would refuse every value forever.
+ */
+function toEnumConstraint(values: string[]): EnumConstraint {
+  if (values.length < 2) {
+    throw new Error('A choice metric needs at least 2 values');
+  }
+  if (values.length > METRIC_ENUM_MAX_VALUES) {
+    throw new Error(`A choice metric can have at most ${METRIC_ENUM_MAX_VALUES} values`);
+  }
+  if (values.some(value => value.length > METRIC_ENUM_VALUE_MAX_LENGTH)) {
+    throw new Error(`A choice value cannot exceed ${METRIC_ENUM_VALUE_MAX_LENGTH} characters`);
+  }
+  // The segments are what the user tells the values apart by, and `Low` beside
+  // `low` is a distinction the control cannot show. The casing that was typed is
+  // still what gets stored.
+  const distinct = new Set(values.map(value => value.toLowerCase()));
+  if (distinct.size !== values.length) {
+    throw new Error('Choice values must be unique');
+  }
+  return {allowedValues: values};
+}
+
+/**
+ * The one constraint a Metric holds, its type deciding which rule set builds it -
+ * so a range and a set of values can never both be built for one Metric.
+ *
+ * A Numeric Metric given neither bound is left unconstrained rather than holding
+ * `{}`, which would persist as a meaningless `"{}"` and read as "bounded" to
+ * anything testing the field for presence.
+ */
+function toMetricConstraint(type: string, min?: string, max?: string, values?: string[]): MetricConstraint {
+  // A blank row is the value editor's own affordance rather than something the
+  // user typed, so it is dropped before anything is counted.
+  const declaredValues = (values ?? []).map(value => value.trim()).filter(value => value !== '');
+  const bounded = isDeclared(min) || isDeclared(max);
+
+  // The screen offers each of these for one type only, so either arriving on
+  // another is a caller bug rather than something to drop quietly.
+  if (bounded && type !== 'Numeric') {
+    throw new Error('Only a Numeric metric can have bounds');
+  }
+  if (declaredValues.length > 0 && type !== 'Enum') {
+    throw new Error('Only a choice metric can have values');
+  }
+
+  if (type === 'Enum') {
+    return toEnumConstraint(declaredValues);
+  }
+  return bounded ? toNumericConstraint(min, max) : null;
 }
 
 export class CreateObservationUseCase {
@@ -106,7 +152,7 @@ export class CreateObservationUseCase {
         Crypto.randomUUID(),
         trimmedMetricName,
         m.type as MetricValueType,
-        toNumericConstraint(m.type, m.min, m.max),
+        toMetricConstraint(m.type, m.min, m.max, m.values),
         trimmedMetricDescription === '' ? null : trimmedMetricDescription
       );
     });

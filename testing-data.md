@@ -137,6 +137,8 @@ Still on **`mixed metrics`**, tap **Add Record** (and again via **Edit Record** 
 - every shape a Numeric bound comes in is on this one form, stated by each empty input: `0-100` on `dense`
   and `hourly`, `Min 0` on `yearly`, `Max 100` on `insufficient`, and no placeholder at all on the unbounded
   `sparse`, which leaves no gap where one would be.
+- `category` reads `None` in a field carrying a chevron, which opens a list of `None`, `a`, `b` and `c` with
+  `None` ticked — while `flag` beside it still shows Yes/No segments and `note` is still a text field.
 - Each button opens a dialog headed by its metric's name — `hourly`'s keeps its line breaks, `yearly`'s
   longest body fits or scrolls without clipping.
 - a NOTE field comes last, below a rule and outside any metric card, and carries no info button. On the
@@ -147,6 +149,14 @@ Open **`no numeric`** details screen:
 
 - no TRENDS section and no time range selector appear anywhere on the screen.
 - RECENT RECORDS shows entries carrying an enum value and a boolean together.
+
+Still on **`no numeric`**, tap **Add Record** (and again via **Edit Record** — identical on both routes):
+
+- `mood` reads `None` on the create route and the stored value on the edit route. Opening it lists `None`,
+  `low`, `ok` and `high`, in that order, with the current one ticked; choosing `None` returns it to unanswered,
+  and saving with nothing chosen is accepted.
+- `done` beneath it still shows Yes/No segments — two answers fit a row where three do not.
+- neither metric renders a text input; the only one on the screen is the NOTE field below the rule.
 
 Open **`stale records`** details screen:
 
