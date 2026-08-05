@@ -4,10 +4,12 @@
 # boots + builds + installs + launches the app via emulator-setup.sh, runs the
 # flows with Maestro, then tears the environment down via emulator-teardown.sh.
 #
-# Usage:
-#   bash scripts/e2e.sh                 # run every flow in .maestro/
-#   bash scripts/e2e.sh <flow-path>     # run a single flow or dir (repo-relative)
-#   E2E_KEEP_EMULATOR=1 bash scripts/e2e.sh   # leave the emulator + Metro up
+# Usage — `npm run e2e` is this script, and `bash scripts/e2e.sh` takes the same
+# arguments directly. Passing a flow path through npm needs the `--`:
+#
+#   npm run e2e                          # run every flow in .maestro/
+#   npm run e2e -- <flow-path>           # a single flow or dir (repo-relative)
+#   E2E_KEEP_EMULATOR=1 npm run e2e      # leave the emulator + Metro up
 #
 # Exits with Maestro's own exit code (0 = all flows passed), so it can gate CI.
 set -uo pipefail
@@ -47,8 +49,18 @@ fi
 teardown() {
   if [ -n "${E2E_KEEP_EMULATOR:-}" ]; then
     log "E2E_KEEP_EMULATOR set — leaving the emulator and Metro running"
-    log "Re-run flows without a rebuild:  maestro test --debug-output . $FLOW"
-    return
+    # Printed carrying both fixes this script makes for itself, since neither
+    # reaches the user's own shell: their profile is what exports the broken
+    # JAVA_HOME in the first place, and a bare `maestro test` can pick a
+    # physical device connected alongside the emulator. No device means setup
+    # never got that far, so there is nothing to re-run against.
+    if [ -n "${device:-}" ]; then
+      java_prefix=""
+      [ -n "${JAVA_HOME:-}" ] && java_prefix="JAVA_HOME='$JAVA_HOME' "
+      log "Re-run flows without a rebuild:"
+      log "  ${java_prefix}maestro test --device $device --debug-output '$REPO_ROOT' $FLOW"
+    fi
+    return 0
   fi
   bash "$SCRIPT_DIR/emulator-teardown.sh"
 }
