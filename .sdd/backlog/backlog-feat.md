@@ -10,23 +10,24 @@ until they're ready to become a real spec.
       that time position; a second tap navigates to the Record detail view. Replaces 3-3's immediate-navigate-
       on-tap behavior and needs state shared across every chart on screen rather than per card; needs its own
       pass on exact tap semantics (what counts as "the second tap", how/when it resets) once picked up.
-    - Enum metric chart (swimlane renderer) — explored in
-      [enum-metric-chart-exploration.html](enum-metric-chart-exploration.html): one lane per allowed value,
-      last-declared on top, each bucket's mark sized by that value's share so the chart survives both bucket
-      regimes (one Record per bucket at 1D, a dozen mixed ones at 1Y — anything reducing a bucket to a single
-      winning value lies in the second). Color is an ordinal one-hue ramp on the existing green rather than a
-      categorical palette, since lane position already carries identity; validated at 3 and 5 steps, fails at
-      7. Lane geometry caps at the same ~5 values for a 108px card. Open: a bucket's Record count has nowhere
-      to go in a swimlane, so 12 unanimous Records look like 1. Open: the exploration's 34px lane-label gutter
-      holds about six narrow characters at 10px type, but
-      [Enum Metric Input](../epics/2-record-management/2-11-enum-metric-input/spec.md) lets a value run to 12 —
-      `outstanding` measures 53px there and twelve wide characters 114px, so this slice picks between a wider
-      gutter, labels above the lanes, and tightening that limit.
-    - Boolean metric chart — folds into the Enum renderer above rather than needing a tick/step one of its own:
-      `done` is a two-value enum in all but name, and two lanes serve it.
-    - Both of the above need `MetricSeriesPoint` widened first — `y: number` cannot carry per-value shares, and
-      this is the first renderer that doesn't fit the shape the visualization foundation shipped. Charting
-      `no numeric` also falsifies that fixture's seeded description, so it and `testing-data.md` change with it.
+    - Tap an Enum swimlane. [Enum Metric Chart](../epics/3-observation-visualization/3-11-enum-metric-chart/spec.md)
+      ships the renderer inert: it reports no point and a tap does nothing, while every Numeric chart beside it
+      navigates or zooms. The screen's `handleChartPointPress` is already renderer-agnostic and reads only base
+      fields of the point, so wiring it up is mostly hit-testing — but what a tap *means* on a swimlane needs its
+      own pass first. A bucket column is the obvious target (nearest by x, ignoring y, since every mark in a
+      column belongs to one bucket), which would make zoom the way to resolve a mixed bucket into its Records;
+      whether a tap on one *lane* should mean something narrower is the open question.
+    - A swimlane bucket's Record count. The Enum chart draws nothing for it, so twelve unanimous Records look
+      like one — the state [Aggregated Point Record Count](../epics/3-observation-visualization/3-8-aggregated-point-record-count/spec.md)
+      exists to prevent on the Numeric chart. Its answer doesn't transfer: it labels one mark per bucket where
+      a swimlane has up to four, in 22px lanes at four values. Needs something belonging to the column rather
+      than the mark, or an admission that share already says enough.
+    - Boolean metric chart — folds into the Enum swimlane renderer rather than needing a tick/step one of its
+      own: `done` is a two-value enum in all but name, and two lanes serve it. The 2-lane ramp and the
+      `CategorySeriesPoint` shape are already there; what it needs is the `Boolean` branch of
+      `GetMetricSeriesUseCase.reduce`, a registry entry, and decisions on lane wording (`Yes`/`No` from
+      `BOOLEAN_METRIC_OPTIONS`?) and which of the two sits on top. `mixed metrics`' `flag` and `no numeric`'s
+      `done` both start charting, so `testing-data.md` changes with it.
     - Text metric markers (sparse markers, not a real trend — annotation only).
     - Per-metric visibility toggle, persisted per Observation (first real "customization" slice).
     - Not yet ready to spec: cross-Observation overlay/comparison (compare a metric from one Observation against

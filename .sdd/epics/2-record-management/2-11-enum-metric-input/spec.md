@@ -131,20 +131,18 @@ keeps today's generic message rather than gaining wording nothing can show.
 
 **Why 4 values, 12 characters.** Not a limit of the input: a picker gives each value its own line and would
 take forty values of forty characters without complaint. The binding constraint is the chart that will read
-these values back. The swimlane renderer sketched in
-[`enum-metric-chart-exploration.html`](../../../backlog/enum-metric-chart-exploration.html) draws one lane per
+these values back. The swimlane renderer explored for it — since built as
+[Enum Metric Chart](../../3-observation-visualization/3-11-enum-metric-chart/spec.md) — draws one lane per
 allowed value, so a Metric declaring more values than that chart can lane is one this app could never
-visualize — and the values are set when the Metric is defined, with no editing feature to correct them later.
+visualize, and the values are set when the Metric is defined, with no editing feature to correct them later.
 
-Four, because that exploration caps lane geometry at about five values on a 108px card, and its one-hue ordinal
-ramp validates at 3 and 5 steps and fails at 7. Four sits inside both with a lane to spare.
+Four, because lane geometry caps at about five values on a 108px card and the one-hue ordinal ramp validates
+at 3 and 5 steps and fails at 7. Four sits inside both with a lane to spare.
 
-12 is the looser of the two, and does not currently fit. Those lane labels sit in a 34px gutter at 10px type,
-which holds about six narrow characters: `high` measures 20px there, where `outstanding` measures 53px and
-twelve wide characters measure 114px. Whichever spec picks up the chart chooses between widening the gutter
-(34px of the card's 348 is a tenth of the plot), setting labels above the lanes rather than beside them, and
-tightening this limit. The measurement is recorded here so that choice is made deliberately rather than
-discovered.
+12 is the looser of the two, and did not fit the gutter that exploration drew: at 10px type its 34px held
+about six narrow characters, where `outstanding` measured 53px and twelve wide ones 114px. Recorded here so
+the chart's spec would resolve it deliberately rather than discover it, which it did — the gutter widened and
+long values truncate, leaving this limit where it is.
 
 ## 4. Verification
 
