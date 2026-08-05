@@ -18,3 +18,7 @@ they're ready to become a real spec.
    set the same way, so the presets likely have the same gap (not driven on-device, inferred from the code).
    Guarding on `loadingTrends` alone cannot close it; the tap handler would need to notice that the rendered
    window no longer matches the active selection, or the flag would have to be set before the render commits.
+4. Saving a new Observation without mandatory fields results in a system error modal.
+5. On the Create Observation screen when there are more elements to display than the device screen can fit, the Add
+   Metric button is overlapped by the Create Observation button.
+6. It is possible to create multiple Observations with the same name.
