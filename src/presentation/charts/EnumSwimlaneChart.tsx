@@ -63,8 +63,6 @@ export const EnumSwimlaneChart = ({metric, points, timeRange, aggregation, width
   }
 
   const plot = toPlotRect(width, height, LANE_LABEL_GUTTER);
-  // Over the lane count rather than a fixed height, so two, three and four lanes
-  // each fill the same card.
   const laneHeight = (plot.bottom - plot.top) / laneValues.length;
   const laneColors = getLaneColors(laneValues.length);
   const swimlane: Swimlane = {

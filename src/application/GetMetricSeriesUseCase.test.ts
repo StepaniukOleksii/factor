@@ -1,12 +1,12 @@
 import {describe, expect, it} from 'vitest';
 import {
-    AggregationStrategy,
-    type CategoryCount,
-    type CategorySeriesPoint,
-    GetMetricSeriesUseCase,
-    isCategoryPoint,
-    type MetricSeriesPoint,
-    TimeRange,
+  AggregationStrategy,
+  type CategoryCount,
+  type CategorySeriesPoint,
+  GetMetricSeriesUseCase,
+  isCategoryPoint,
+  type MetricSeriesPoint,
+  TimeRange,
 } from './GetMetricSeriesUseCase';
 import {Metric} from '../domain/Metric';
 import {Record} from '../domain/Record';
@@ -281,8 +281,8 @@ describe('GetMetricSeriesUseCase', () => {
 
 describe('GetMetricSeriesUseCase Enum reduction', () => {
   const useCase = new GetMetricSeriesUseCase();
-  // Three values, declared low to high, since a lane's order is what the chart
-  // paints its ramp along.
+  // Three values, so a bucket can hold a mixture and the declared order is
+  // something the result can be read against.
   const MOODS = ['low', 'ok', 'high'];
   const TIME_RANGE: TimeRange = {start: new Date(0), end: new Date(2000)};
   const ONE_BUCKET: AggregationStrategy = {bucketSizeMs: 1000};
@@ -333,7 +333,6 @@ describe('GetMetricSeriesUseCase Enum reduction', () => {
     const counts = countsOf(series);
 
     expect(counts.map(({value}) => value)).toEqual(['low', 'high']);
-    // Everything the point stands for is accounted for by some value.
     expect(counts.reduce((total, {count}) => total + count, 0)).toBe(series[0].recordCount);
   });
 

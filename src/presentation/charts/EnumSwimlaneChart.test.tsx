@@ -132,7 +132,6 @@ describe('EnumSwimlaneChart', () => {
     const root = render([bucket(0, ['low', 1], ['high', 1])]);
 
     expect(marks(root)).toHaveLength(2);
-    // `low` is declared first, so it takes the top lane and `high` the bottom.
     const [low, high] = marks(root);
     expect(low.y + low.height).toBeCloseTo(laneFloor(0) - 3);
     expect(high.y + high.height).toBeCloseTo(laneFloor(2) - 3);
@@ -151,17 +150,15 @@ describe('EnumSwimlaneChart', () => {
   it('fills a lane with the largest count anywhere in the series', () => {
     const [half, largest] = marks(render([bucket(0, ['ok', 2]), bucket(5, ['ok', 4])]));
 
-    // The lane less the 3px inset it keeps from its separators, top and bottom.
+    // A mark is its lane less the 3px inset it keeps at each end, so adding that
+    // inset back is what leaves the lane the scale actually gave it.
     expect(largest.height).toBeCloseTo(LANE_HEIGHT - 6);
     expect(largest.y).toBeCloseTo(laneFloor(1) - 3 - largest.height);
-    // And every other mark against that same scale, so half the count of the
-    // largest takes half the lane.
     expect(half.height + 6).toBeCloseTo((largest.height + 6) / 2);
   });
 
-  // The reason heights are counts rather than shares of their own bucket: a lone
-  // Record used to fill its lane, drawing more ink than the ten behind the mark
-  // beside it.
+  // One Record against thirty: measured against its own bucket's total the lone
+  // one would be the whole of it, and out-ink the ten in the lane beside it.
   it('draws a bucket of one Record shorter than a busy bucket beside it', () => {
     const root = render([bucket(0, ['low', 1]), bucket(5, ['low', 10], ['high', 20])]);
 
@@ -249,8 +246,6 @@ describe('EnumSwimlaneChart', () => {
 
     const root = render([bucket(0, ['ok', 1])]);
 
-    // Every line is a lane boundary, and every label is either a lane's or the
-    // time axis's - there is no value scale to label.
     expect(separators(root)).toHaveLength(MOODS.length + 1);
     expect(laneLabels(root)).toHaveLength(MOODS.length);
     expect(timeLabels(root).length).toBeGreaterThan(0);
@@ -264,8 +259,6 @@ describe('EnumSwimlaneChart', () => {
     const loaded = render(points);
 
     expect(labels(loading)).toHaveLength(0);
-    // The lanes are laid out the same either way, so nothing shifts once the
-    // labels arrive.
     expect(marks(loading)).toEqual(marks(loaded));
     expect(separators(loading)).toEqual(separators(loaded));
   });

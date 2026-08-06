@@ -167,10 +167,19 @@ take a third of the plot, and lane position and the ramp already carry a lane's 
 `ObservationDetailsScreen` stops asking which Metrics are Numeric and starts asking which ones something can
 draw: the Trends filter becomes `rendererRegistry.has(metric.type)`, and the renderer is looked up per Metric
 inside the map rather than once outside it. The Observation's Metric order is preserved, so cards interleave
-by declaration. Each renderer additionally receives the `aggregation` the screen already computes. Everything
-else — the `hasEnoughData` gate, the inline placeholder, `TimeRangeSelector`, `CustomTimeRangeModal`,
-`TREND_CHART_HEIGHT`, the single measured `trendChartWidth` — is unchanged, `handleChartPointPress` included:
-it reads only base fields and the Enum chart never calls it.
+by declaration.
+
+Each renderer additionally receives the `aggregation` the window was fetched at. `chartRange` becomes
+`chartWindow`, a `{range, aggregation}` pair set together when the Records land, rather than a range in state
+beside a bucket size derived from the selection at render time. The two disagree for as long as a fetch takes:
+a tapped preset lands on the selection at once, so that render would bucket the window still on screen by the
+size the incoming one asked for — one bucket wide whenever the new size is the old window's whole span, which
+draws every lane of a swimlane as a single full-width mark. The Numeric chart has the same gap today and shows
+it only as a curve briefly collapsing to one point; a mark whose width *is* its bucket makes it plain.
+
+Everything else — the `hasEnoughData` gate, the inline placeholder, `TimeRangeSelector`,
+`CustomTimeRangeModal`, `TREND_CHART_HEIGHT`, the single measured `trendChartWidth` — is unchanged,
+`handleChartPointPress` included: it reads only base fields and the Enum chart never calls it.
 
 `NUMERIC_TREND_INSUFFICIENT_MESSAGE` in `chartDefaults.ts` is renamed `TREND_INSUFFICIENT_MESSAGE`, value
 unchanged. A second chart type now shows it, and a name saying "numeric" would be the only thing on screen

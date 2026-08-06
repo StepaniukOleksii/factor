@@ -19,8 +19,8 @@ describe('getLaneColors', () => {
     expect(getLaneColors(4)).toEqual([DIM_END, '#75a85b', '#95ce79', LIGHT_END]);
   });
 
-  // A lane's colour says where in the declared order it sits, so the darkest
-  // green belongs to the first-declared value - drawn in the top lane.
+  // An entry's index is also its lane counted from the chart's top, so the first
+  // one is what the top lane is painted with.
   it.each([2, 3, 4])('spans the shared endpoints at %i lanes, darkest first', laneCount => {
     const ramp = getLaneColors(laneCount);
 

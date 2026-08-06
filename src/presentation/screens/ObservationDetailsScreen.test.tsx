@@ -944,6 +944,36 @@ describe('ObservationDetailsScreen Time Range Selector', () => {
         expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(0);
     });
 
+    // Three Records spread across a 30-day window, then a switch to 1Y left
+    // hanging: bucketing them by the incoming size while the old window is still
+    // on screen puts all three in one 30-day bucket.
+    it('keeps the charts on the fetched window while the next one is in flight', async () => {
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 20, [['m1', 5]]),
+            chartRecord('b', 10, [['m1', 5]]),
+            chartRecord('c', 2, [['m1', 5]]),
+        ]);
+        const root = await renderScreen();
+        expect(recordDots(root).length).toBe(3);
+
+        let arrive: (records: DomainRecord[]) => void = () => {};
+        mockGetRecordsByTimeRangeExecute.mockReturnValue(
+            new Promise<DomainRecord[]>(resolve => {
+                arrive = resolve;
+            }),
+        );
+        await selectPreset(root, '1Y');
+
+        expect(recordDots(root).length).toBe(3);
+
+        // Ten months apart, so the year's 30-day buckets hold one each.
+        await act(async () => {
+            arrive([chartRecord('a', 300, [['m1', 5]]), chartRecord('b', 2, [['m1', 5]])]);
+        });
+
+        expect(recordDots(root).length).toBe(2);
+    });
+
     it('drives every Numeric chart from the one selection', async () => {
         mockGetObservationByIdExecute.mockResolvedValue(
             numericObservation({id: 'm1', name: 'Duration'}, {id: 'm2', name: 'Quality'}),

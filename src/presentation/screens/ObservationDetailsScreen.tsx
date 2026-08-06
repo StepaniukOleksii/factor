@@ -21,7 +21,12 @@ import {GetRecentRecordsUseCase} from '../../application/GetRecentRecordsUseCase
 import {GetRecordsByTimeRangeUseCase} from '../../application/GetRecordsByTimeRangeUseCase';
 import {DeleteObservationUseCase} from '../../application/DeleteObservationUseCase';
 import {DeleteRecordUseCase} from '../../application/DeleteRecordUseCase';
-import {GetMetricSeriesUseCase, MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
+import {
+    AggregationStrategy,
+    GetMetricSeriesUseCase,
+    MetricSeriesPoint,
+    TimeRange,
+} from '../../application/GetMetricSeriesUseCase';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
 import {
@@ -72,6 +77,18 @@ function spanOf(range: TimeRange): number {
     return range.end.getTime() - range.start.getTime();
 }
 
+/**
+ * The window the charts are drawn over. Both halves are set together, when the
+ * Records for them land: a tapped preset lands on the selection while its
+ * Records are still in flight, so a bucket size taken from the selection instead
+ * would spend that render bucketing the window on screen by the size the next
+ * one asked for - one bucket wide whenever that size is the old window's span.
+ */
+interface ChartWindow {
+    range: TimeRange;
+    aggregation: AggregationStrategy;
+}
+
 export type ObservationDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'ObservationDetails'>;
 
 export function ObservationDetailsScreen({route, navigation}: ObservationDetailsScreenProps) {
@@ -96,7 +113,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
     const [observation, setObservation] = useState<Observation | null>(null);
     const [records, setRecords] = useState<DomainRecord[]>([]);
     const [chartRecords, setChartRecords] = useState<DomainRecord[]>([]);
-    const [chartRange, setChartRange] = useState<TimeRange | null>(null);
+    const [chartWindow, setChartWindow] = useState<ChartWindow | null>(null);
     const [customModalVisible, setCustomModalVisible] = useState(false);
     const [trendChartWidth, setTrendChartWidth] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -171,7 +188,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
             setLoadingTrends(true);
             const range = getTimeRangeForSelection(selection);
             const rangeRecords = await getRecordsByTimeRangeUseCase.execute(observationId, range);
-            setChartRange(range);
+            setChartWindow({range, aggregation: getAggregationForSelection(selection)});
             setChartRecords(rangeRecords);
         } catch (error) {
             console.error('Failed to load trend data', error);
@@ -220,7 +237,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
         // window is a single day this stops being true - a day is as narrow as
         // day alignment goes - so zoom settles there instead of needing its own
         // floor to say when to stop.
-        if (!chartRange || spanOf(zoomed) >= spanOf(chartRange)) {
+        if (!chartWindow || spanOf(zoomed) >= spanOf(chartWindow.range)) {
             return;
         }
         // Only this branch touches the history: a tap that opens a Record, or one
@@ -372,14 +389,12 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                 ) : null}
 
                 {(() => {
-                    // Which Metrics something can draw, in the Observation's own
-                    // order, so cards interleave by declaration rather than
-                    // grouping by type.
+                    // In the Observation's own order, so cards interleave by
+                    // declaration rather than grouping by type.
                     const chartedMetrics = observation.metrics.filter(metric => rendererRegistry.has(metric.type));
                     if (chartedMetrics.length === 0) {
                         return null;
                     }
-                    const aggregation = getAggregationForSelection(timeRangeSelection);
                     return (
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>TRENDS</Text>
@@ -406,8 +421,13 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                             <View style={styles.trendsList}>
                                 {chartedMetrics.map(metric => {
                                     const Renderer = rendererRegistry.get(metric.type);
-                                    const points = chartRange
-                                        ? getMetricSeriesUseCase.execute(chartRecords, metric, chartRange, aggregation)
+                                    const points = chartWindow
+                                        ? getMetricSeriesUseCase.execute(
+                                            chartRecords,
+                                            metric,
+                                            chartWindow.range,
+                                            chartWindow.aggregation,
+                                        )
                                         : [];
                                     const hasEnoughData = points.length >= 1;
                                     return (
@@ -422,8 +442,8 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                                     <Renderer
                                                         metric={metric}
                                                         points={points}
-                                                        timeRange={chartRange!}
-                                                        aggregation={aggregation}
+                                                        timeRange={chartWindow!.range}
+                                                        aggregation={chartWindow!.aggregation}
                                                         width={trendChartWidth}
                                                         height={TREND_CHART_HEIGHT}
                                                         onPointPress={handleChartPointPress}
