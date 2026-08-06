@@ -2,7 +2,7 @@ import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
 import {Line, RoundedRect, type SkFont, Text as SkiaText, useFont} from '@shopify/react-native-skia';
-import {EnumSwimlaneChart} from './EnumSwimlaneChart';
+import {CategorySwimlaneChart} from './CategorySwimlaneChart';
 import {getLaneColors} from './laneColors';
 import {TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
 import {AggregationStrategy, MetricSeriesPoint, TimeRange,} from '../../application/GetMetricSeriesUseCase';
@@ -70,7 +70,7 @@ function render(
   let root: any;
   act(() => {
     root = renderer.create(
-      <EnumSwimlaneChart
+      <CategorySwimlaneChart
         metric={metric}
         points={points}
         timeRange={TIME_RANGE}
@@ -120,7 +120,7 @@ function laneFloor(lane: number): number {
   return laneBoundary(lane + 1);
 }
 
-describe('EnumSwimlaneChart', () => {
+describe('CategorySwimlaneChart drawing an Enum Metric', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     // The typeface resolves asynchronously on device, so the default state of a
@@ -282,6 +282,89 @@ describe('EnumSwimlaneChart', () => {
     const onPointPress = vi.fn();
 
     const root = render([bucket(0, ['low', 1], ['high', 1])], enumMetric(), onPointPress);
+
+    const pressables = root.root.findAll(
+      (node: any) => node.props && typeof node.props.onPress === 'function',
+    );
+    expect(pressables).toHaveLength(0);
+    expect(onPointPress).not.toHaveBeenCalled();
+  });
+});
+
+describe('CategorySwimlaneChart drawing a Boolean Metric', () => {
+  const BOOLEAN_LANE_HEIGHT = (PLOT.bottom - PLOT.top) / 2;
+  /** The gutter the Numeric chart gives its value labels, which `Yes` fits. */
+  const BOOLEAN_PLOT_LEFT = 24;
+  const BOOLEAN_PLOT_WIDTH = PLOT.right - BOOLEAN_PLOT_LEFT;
+
+  function booleanMetric(): Metric {
+    return new Metric('b1', 'done', 'Boolean');
+  }
+
+  /** The bottom edge of the lane at `lane`, over two lanes rather than three. */
+  function booleanLaneFloor(lane: number): number {
+    return PLOT.top + (lane + 1) * BOOLEAN_LANE_HEIGHT;
+  }
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.mocked(useFont).mockReturnValue(null);
+  });
+
+  it('draws two lanes labelled Yes over No, Yes on the ramp’s dark end', () => {
+    loadFont();
+    const ramp = getLaneColors(2);
+
+    const root = render([bucket(0, ['true', 1], ['false', 1])], booleanMetric());
+
+    expect(laneLabels(root).map((label: any) => label.text)).toEqual(['Yes', 'No']);
+    expect(separators(root)).toHaveLength(3);
+    const [yes, no] = marks(root);
+    expect(yes.y + yes.height).toBeCloseTo(booleanLaneFloor(0) - 3);
+    expect(no.y + no.height).toBeCloseTo(booleanLaneFloor(1) - 3);
+    expect([yes.color, no.color]).toEqual([ramp[0], ramp[1]]);
+  });
+
+  // Its two words are known and short, where an Enum value runs to twelve
+  // characters - so the plot starts where a Numeric chart's does and keeps the
+  // width the wider gutter would have taken.
+  it('draws inside the narrow gutter a fixed pair of labels fits', () => {
+    loadFont();
+
+    const root = render([bucket(0, ['true', 1])], booleanMetric());
+
+    expect(separators(root).every((line: any) => line.p1.x === BOOLEAN_PLOT_LEFT)).toBe(true);
+    const [mark] = marks(root);
+    expect(mark.x).toBeCloseTo(BOOLEAN_PLOT_LEFT);
+    expect(mark.width).toBeCloseTo(BOOLEAN_PLOT_WIDTH / 10 - 2);
+  });
+
+  // A bucket splitting 2:1, beside one holding the busiest mark on the card - so
+  // the two are read against the series' scale rather than their own bucket's.
+  it('draws the answer given twice as often twice as tall', () => {
+    const root = render(
+      [bucket(0, ['true', 2], ['false', 1]), bucket(5, ['false', 4])],
+      booleanMetric(),
+    );
+
+    const [yes, no, busiest] = marks(root);
+    expect(busiest.height).toBeCloseTo(BOOLEAN_LANE_HEIGHT - 6);
+    expect(yes.height + 6).toBeCloseTo(2 * (no.height + 6));
+  });
+
+  it('neither draws a count matching no lane nor lets it set the height scale', () => {
+    const root = render([bucket(0, ['true', 1], ['maybe', 9])], booleanMetric());
+
+    expect(marks(root)).toHaveLength(1);
+    // Nine of a stray value would otherwise be the tallest count in the series,
+    // leaving the one real mark a ninth of its lane.
+    expect(marks(root)[0].height).toBeCloseTo(BOOLEAN_LANE_HEIGHT - 6);
+  });
+
+  it('reports no point either, the two charts being one renderer', () => {
+    const onPointPress = vi.fn();
+
+    const root = render([bucket(0, ['true', 1], ['false', 1])], booleanMetric(), onPointPress);
 
     const pressables = root.root.findAll(
       (node: any) => node.props && typeof node.props.onPress === 'function',

@@ -9,8 +9,8 @@ appId: com.anonymous.factor
       DEV_COMMAND: seed
       READY_TEXT: "no numeric"
 
-# `no numeric` charts only its Enum `mood`, so a single trend card sits above its
-# Records rather than the five `mixed metrics` would put there.
+# `no numeric` charts its Enum `mood` and its Boolean `done`, so two trend cards
+# sit above its Records rather than the five `mixed metrics` would put there.
 - tapOn: "no numeric"
 - assertVisible: "RECENT RECORDS"
 - assertVisible: "Add Record"

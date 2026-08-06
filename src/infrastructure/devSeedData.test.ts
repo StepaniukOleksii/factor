@@ -2,10 +2,10 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {buildSeedData} from './devSeedData';
 import {GetMetricSeriesUseCase, isCategoryPoint} from '../application/GetMetricSeriesUseCase';
 import {
-  getAggregationForPreset,
-  getTimeRangeForPreset,
-  TIME_RANGE_PRESETS,
-  type TimeRangePreset,
+    getAggregationForPreset,
+    getTimeRangeForPreset,
+    TIME_RANGE_PRESETS,
+    type TimeRangePreset,
 } from '../presentation/charts/chartDefaults';
 import {METRIC_DESCRIPTION_MAX_LENGTH, RECORD_NOTE_MAX_LENGTH} from '../domain/validationLimits';
 import type {NumericConstraint} from '../domain/Metric';
@@ -119,11 +119,40 @@ describe('seeded chart coverage', () => {
     expect(Math.max(...valuesPerBucket)).toBeGreaterThan(1);
   });
 
-  it('draws category a mark per day-bucket at the shorter windows and two columns at 1Y', () => {
-    expect(pointCount('mixed metrics', 'category', '1W')).toBe(4);
-    expect(pointCount('mixed metrics', 'category', '1M')).toBe(10);
-    expect(pointCount('mixed metrics', 'category', '1Y')).toBe(2);
+  // A bucket holding both answers is the only place a Boolean swimlane draws two
+  // marks at once, which is what the manual checklist reads its heights off. Not
+  // that the two counts differ: which answer each Record carries comes from the
+  // seeded RNG, so an assertion on that would turn on the order the fixture
+  // happens to be built in.
+  it.each([
+    ['mixed metrics', 'flag'],
+    ['no numeric', 'done'],
+  ])('gives %s\'s %s a 1Y bucket holding both answers', (observationName, metricName) => {
+    const {observation, records} = entry(observationName);
+    const metric = observation.metrics.find(candidate => candidate.name === metricName)!;
+
+    const points = getMetricSeries.execute(
+      records,
+      metric,
+      getTimeRangeForPreset('1Y'),
+      getAggregationForPreset('1Y'),
+    );
+
+    expect(
+      points.some(point => isCategoryPoint(point) && point.counts.length === 2),
+    ).toBe(true);
   });
+
+  // `flag` writes to `category`'s own Records, so both cards carry the same
+  // bucket counts at every preset - the pair of rows testing-data.md states.
+  it.each(['category', 'flag'])(
+    'draws %s a mark per day-bucket at the shorter windows and two columns at 1Y',
+    metricName => {
+      expect(pointCount('mixed metrics', metricName, '1W')).toBe(4);
+      expect(pointCount('mixed metrics', metricName, '1M')).toBe(10);
+      expect(pointCount('mixed metrics', metricName, '1Y')).toBe(2);
+    },
+  );
 
   // One Record per day-bucket, so every count is 1 and every mark fills its lane
   // - the other regime, and the one the checklist reads the lane order and the

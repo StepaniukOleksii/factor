@@ -2,7 +2,7 @@ import type React from 'react';
 import type {Metric, MetricValueType} from '../../domain/Metric';
 import type {AggregationStrategy, MetricSeriesPoint, TimeRange,} from '../../application/GetMetricSeriesUseCase';
 import {NumericTrendChart} from './NumericTrendChart';
-import {EnumSwimlaneChart} from './EnumSwimlaneChart';
+import {CategorySwimlaneChart} from './CategorySwimlaneChart';
 
 /**
  * The contract every chart renderer implements. Renderers own their drawing but
@@ -41,4 +41,5 @@ export type ChartRenderer = React.ComponentType<ChartRendererProps>;
 export const rendererRegistry = new Map<MetricValueType, ChartRenderer>();
 
 rendererRegistry.set('Numeric', NumericTrendChart);
-rendererRegistry.set('Enum', EnumSwimlaneChart);
+rendererRegistry.set('Enum', CategorySwimlaneChart);
+rendererRegistry.set('Boolean', CategorySwimlaneChart);

@@ -698,7 +698,7 @@ describe('ObservationDetailsScreen Trends', () => {
             name: 'Journal',
             metrics: [
                 {id: 't1', name: 'Notes', type: 'Text'},
-                {id: 'b1', name: 'Done', type: 'Boolean'},
+                {id: 't2', name: 'Highlights', type: 'Text'},
             ],
         } as unknown as Observation);
 
@@ -728,23 +728,22 @@ describe('ObservationDetailsScreen Trends', () => {
 
         const root = await renderScreen();
 
-        // Interleaved by declaration rather than grouped by type, and the
-        // Boolean between them still gets no card.
-        expect(chartedMetricNames(root)).toEqual(['Duration', 'mood', 'Quality']);
-        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(3);
+        // Interleaved by declaration rather than grouped by type.
+        expect(chartedMetricNames(root)).toEqual(['Duration', 'mood', 'Done', 'Quality']);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(4);
     });
 
     it('renders the section and its selector for an Observation whose only chartable Metric is an Enum', async () => {
         mockGetObservationByIdExecute.mockResolvedValue(
             observationOf(enumMetric('e1', 'mood', ['low', 'ok', 'high']), {
-                id: 'b1',
-                name: 'Done',
-                type: 'Boolean',
+                id: 't1',
+                name: 'Notes',
+                type: 'Text',
             }),
         );
         mockGetRecordsByTimeRangeExecute.mockResolvedValue([
-            chartRecord('a', 3, [['e1', 'low'], ['b1', true]]),
-            chartRecord('b', 1, [['e1', 'high'], ['b1', false]]),
+            chartRecord('a', 3, [['e1', 'low'], ['t1', 'slept badly']]),
+            chartRecord('b', 1, [['e1', 'high'], ['t1', 'slept well']]),
         ]);
 
         const root = await renderScreen();
@@ -752,6 +751,25 @@ describe('ObservationDetailsScreen Trends', () => {
         expect(findAllByText(root.root, 'TRENDS').length).toBeGreaterThan(0);
         expect(root.root.findAllByProps({testID: 'time-range-preset-1M'}).length).toBeGreaterThan(0);
         expect(chartedMetricNames(root)).toEqual(['mood']);
+    });
+
+    // The section and the selector previously went with it, so this Observation
+    // is the one whose Trends the slice brought into existence.
+    it('renders the section and its selector for an Observation whose only Metric is a Boolean', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            observationOf({id: 'b1', name: 'Done', type: 'Boolean'}),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['b1', true]]),
+            chartRecord('b', 1, [['b1', false]]),
+        ]);
+
+        const root = await renderScreen();
+
+        expect(findAllByText(root.root, 'TRENDS').length).toBeGreaterThan(0);
+        expect(root.root.findAllByProps({testID: 'time-range-preset-1M'}).length).toBeGreaterThan(0);
+        expect(chartedMetricNames(root)).toEqual(['Done']);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
     });
 
     it('shows the placeholder for an Enum Metric no Record in the window answered', async () => {

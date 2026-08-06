@@ -104,9 +104,9 @@ export function buildSeedData(): SeedEntry[] {
 
   // "mixed metrics" - one observation carrying every chart/metric scenario that isn't
   // observation-level (see testing-data.md): trends at each time range's resolution, a
-  // gappy trend, a trend with too few points to draw a line, an Enum metric charting as a
-  // swimlane among them, and metrics that never chart sharing records with the rest to
-  // prove multi-type records render correctly.
+  // gappy trend, a trend with too few points to draw a line, Enum and Boolean metrics
+  // charting as swimlanes among them, and a Text metric that never charts sharing records
+  // with the rest to prove multi-type records render correctly.
   {
     // Four of the eight carry a description and four deliberately don't, so one
     // Record form shows every state of the info button at once. The four bound
@@ -132,7 +132,7 @@ export function buildSeedData(): SeedEntry[] {
     const insufficientMetric = new Metric(Crypto.randomUUID(), 'insufficient', 'Numeric', {max: 100});
     // The only described non-Numeric Metric, covering the SegmentedField path.
     const flagMetric = new Metric(Crypto.randomUUID(), 'flag', 'Boolean', null,
-      'Boolean, so it never charts — and the segmented control this button sits in.');
+      'Boolean, so it charts as two lanes — and the segmented control this button sits in.');
     const categoryMetric = new Metric(Crypto.randomUUID(), 'category', 'Enum', {allowedValues: ['a', 'b', 'c']});
     const noteMetric = new Metric(Crypto.randomUUID(), 'note', 'Text');
     const observation = new Observation(Crypto.randomUUID(), 'mixed metrics', [
@@ -191,8 +191,8 @@ export function buildSeedData(): SeedEntry[] {
     // which this point falls outside of, and a lone dot at every wider one.
     setValueAt(recordValues, daysAgo(5), insufficientMetric.id, bounded(randRange(10, 90)));
 
-    // flag/category/note: every other day over 20 days, sharing a record => `category`
-    // draws a swimlane after the numeric cards while `flag` and `note` still draw
+    // flag/category/note: every other day over 20 days, sharing a record => `flag` and
+    // `category` each draw a swimlane after the numeric cards while `note` still draws
     // nothing, and one record can carry several value types at once.
     const categories = ['a', 'b', 'c'];
     for (let i = 18; i >= 0; i -= 2) {
@@ -216,8 +216,8 @@ export function buildSeedData(): SeedEntry[] {
     entries.push({observation, records: buildRecords(observation, recordValues, recordNotes)});
   }
 
-  // "no numeric" - no Numeric metric, so its TRENDS section is drawn entirely by the Enum
-  // `mood`: one swimlane card, and none for the Boolean beside it.
+  // "no numeric" - no Numeric metric at all, so its TRENDS section is two swimlane cards:
+  // the Enum `mood` and the Boolean `done` below it.
   {
     const moodMetric = new Metric(Crypto.randomUUID(), 'mood', 'Enum', {allowedValues: ['low', 'ok', 'high']});
     const doneMetric = new Metric(Crypto.randomUUID(), 'done', 'Boolean');
@@ -225,7 +225,7 @@ export function buildSeedData(): SeedEntry[] {
       Crypto.randomUUID(),
       'no numeric',
       [moodMetric, doneMetric],
-      'Has no Numeric metric, so its charts come entirely from an Enum one — the Boolean beside it still renders no card.'
+      'Has no Numeric metric at all, so its charts come entirely from an Enum one and the Boolean beside it — a swimlane each.'
     );
 
     const recordValues: TimestampValues = new Map();

@@ -6,7 +6,6 @@ import {
   isCategoryPoint,
   type TimeRange,
 } from '../../application/GetMetricSeriesUseCase';
-import type {EnumConstraint} from '../../domain/Metric';
 import {
   AXIS_LABEL_COLOR,
   baselineCentreOffset,
@@ -18,13 +17,12 @@ import {
   truncateToWidth,
   useAxisFont,
 } from './chartAxis';
+import {type ChartLane, getChartLanes, getLaneLabelGutter} from './chartLanes';
 import {getLaneColors} from './laneColors';
 import {InsufficientData} from './InsufficientData';
 import type {ChartRendererProps} from './rendererRegistry';
 
-// Wider than the Numeric chart's value gutter, which holds numbers: this one
-// holds words, and the extra characters are what make a lane label readable.
-const LANE_LABEL_GUTTER = 48;
+// Between a lane label and the plot it names.
 const LANE_LABEL_GAP = 5;
 // Between a mark and its neighbour, so consecutive buckets read as two marks
 // rather than one band.
@@ -39,10 +37,11 @@ const MIN_MARK_HEIGHT = 3;
 const MARK_CORNER_RADIUS = 4;
 
 /**
- * Renders an Enum metric's series as a swimlane: one lane per allowed value, in
- * declared order read top down - the order the Record form lists them in - and
- * one mark per value a bucket's Records took, as wide as the bucket and as tall
- * as the number of Records that took it.
+ * Renders as a swimlane the series of a metric whose Records take one of a fixed
+ * set of values - an Enum's declared list, a Boolean's pair of answers. One lane
+ * per value, read top down in the order the Record form presents them, and one
+ * mark per value a bucket's Records took, as wide as the bucket and as tall as
+ * the number of Records that took it.
  *
  * Heights are measured against one scale shared by the whole chart rather than
  * against each bucket's own total, so a bucket standing for a single Record
@@ -53,33 +52,32 @@ const MARK_CORNER_RADIUS = 4;
  * Nothing here is tappable: what a tap on a lane should mean has not been
  * decided, so `onPointPress` is never called and no `Pressable` wraps the canvas.
  */
-export const EnumSwimlaneChart = ({metric, points, timeRange, aggregation, width, height}: ChartRendererProps) => {
+export const CategorySwimlaneChart = ({metric, points, timeRange, aggregation, width, height}: ChartRendererProps) => {
   const font = useAxisFont();
 
-  const laneValues = (metric.constraint as EnumConstraint | null)?.allowedValues ?? [];
+  const lanes = getChartLanes(metric);
   const buckets = points.filter(isCategoryPoint);
-  if (buckets.length === 0 || laneValues.length === 0) {
+  if (buckets.length === 0 || lanes.length === 0) {
     return <InsufficientData height={height} />;
   }
 
-  const plot = toPlotRect(width, height, LANE_LABEL_GUTTER);
-  const laneHeight = (plot.bottom - plot.top) / laneValues.length;
-  const laneColors = getLaneColors(laneValues.length);
+  const gutter = getLaneLabelGutter(metric);
+  const plot = toPlotRect(width, height, gutter);
+  const laneHeight = (plot.bottom - plot.top) / lanes.length;
+  const laneColors = getLaneColors(lanes.length);
+  const drawable = drawableCounts(buckets, lanes);
   const swimlane: Swimlane = {
     plot,
-    laneValues,
     laneHeight,
     timeRange,
     bucketSizeMs: aggregation.bucketSizeMs,
-    tallestCount: tallestCountIn(buckets),
+    tallestCount: tallestCountIn(drawable),
   };
-  const marks = buckets.flatMap(bucket =>
-    bucket.counts.map(count => toMark(bucket, count, swimlane)),
-  );
+  const marks = drawable.map(laneCount => toMark(laneCount, swimlane));
 
   return (
     <Canvas style={{width, height}}>
-      {laneBoundaries(laneValues.length, plot, laneHeight).map(y => (
+      {laneBoundaries(lanes.length, plot, laneHeight).map(y => (
         <Line
           key={`separator-${y}`}
           p1={vec(plot.left, y)}
@@ -100,11 +98,11 @@ export const EnumSwimlaneChart = ({metric, points, timeRange, aggregation, width
         />
       ))}
       {font &&
-        laneValues.map((value, lane) => (
+        lanes.map(({label}, lane) => (
           <SkiaText
             key={`lane-label-${lane}`}
             font={font}
-            text={truncateToWidth(font, value, LANE_LABEL_GUTTER - LANE_LABEL_GAP)}
+            text={truncateToWidth(font, label, gutter - LANE_LABEL_GAP)}
             x={0}
             y={laneFloor(lane, plot, laneHeight) - laneHeight / 2 + baselineCentreOffset(font)}
             color={AXIS_LABEL_COLOR}
@@ -118,8 +116,6 @@ export const EnumSwimlaneChart = ({metric, points, timeRange, aggregation, width
 /** Everything a mark's geometry is measured against. */
 interface Swimlane {
   plot: PlotRect;
-  /** In declared order, so a value's index is its lane counted from the top. */
-  laneValues: string[];
   laneHeight: number;
   timeRange: TimeRange;
   bucketSizeMs: number;
@@ -127,10 +123,18 @@ interface Swimlane {
   tallestCount: number;
 }
 
+/** How many Records of one bucket took one value, and the lane that value has. */
+interface LaneCount {
+  point: CategorySeriesPoint;
+  count: CategoryCount;
+  /** The lane counted from the plot's top. */
+  lane: number;
+}
+
 /** The Records of one bucket that took one value, as drawn. */
 interface Mark {
   key: string;
-  /** The value's declared index, which is its lane counted from the plot's top. */
+  /** The value's lane, counted from the plot's top. */
   lane: number;
   x: number;
   y: number;
@@ -139,9 +143,27 @@ interface Mark {
 }
 
 /**
+ * Every count the chart can draw, each with the lane it belongs in. Lanes come
+ * from the Metric's type and counts from its Records, so a count matching no
+ * lane is possible - and is dropped here, before the shared height scale is
+ * taken, rather than painting above the plot at lane -1.
+ */
+function drawableCounts(buckets: CategorySeriesPoint[], lanes: ChartLane[]): LaneCount[] {
+  return buckets
+    .flatMap(point =>
+      point.counts.map(count => ({
+        point,
+        count,
+        lane: lanes.findIndex(lane => lane.value === count.value),
+      })),
+    )
+    .filter(({lane}) => lane >= 0);
+}
+
+/**
  * The lower edge of a lane, counting lanes down from the plot's top - where the
- * first-declared value's lane sits, so the lanes read in the order the Record
- * form lists the values.
+ * first value's lane sits, so the lanes read in the order the Record form
+ * presents the values.
  */
 function laneFloor(lane: number, plot: PlotRect, laneHeight: number): number {
   return plot.top + (lane + 1) * laneHeight;
@@ -157,16 +179,14 @@ function laneBoundaries(laneCount: number, plot: PlotRect, laneHeight: number): 
  * series, which is what fills a lane. Per chart, as the Numeric chart's value
  * axis is - two metrics side by side keep their own scales.
  */
-function tallestCountIn(buckets: CategorySeriesPoint[]): number {
-  return Math.max(...buckets.flatMap(bucket => bucket.counts.map(({count}) => count)));
+function tallestCountIn(drawable: LaneCount[]): number {
+  return Math.max(...drawable.map(({count}) => count.count));
 }
 
 function toMark(
-  point: CategorySeriesPoint,
-  {value, count}: CategoryCount,
-  {plot, laneValues, laneHeight, timeRange, bucketSizeMs, tallestCount}: Swimlane,
+  {point, count: {value, count}, lane}: LaneCount,
+  {plot, laneHeight, timeRange, bucketSizeMs, tallestCount}: Swimlane,
 ): Mark {
-  const lane = laneValues.indexOf(value);
   const x = timeToX(point.x, timeRange, plot);
   const markHeight = Math.max(
     (count / tallestCount) * laneHeight - 2 * MARK_INSET,

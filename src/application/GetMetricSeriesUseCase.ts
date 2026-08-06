@@ -2,6 +2,12 @@ import {EnumConstraint, Metric} from '../domain/Metric';
 import {Record} from '../domain/Record';
 
 /**
+ * A Boolean metric's two values, fixed by its type where an Enum's are declared
+ * in a constraint, and listed the way the Record form offers them.
+ */
+const BOOLEAN_VALUES = ['true', 'false'];
+
+/**
  * A half-open time window `[start, end)` used to scope which Records are
  * included in a metric series query.
  *
@@ -51,6 +57,12 @@ export interface NumericSeriesPoint extends MetricSeriesPointBase {
 
 /** How many of a bucket's Records took one of its metric's values. */
 export interface CategoryCount {
+  /**
+   * The value's canonical string form: an Enum value verbatim, `'true'` or
+   * `'false'` for a Boolean. Never the words a Boolean's answers are offered
+   * under, which are presentation's alone - a renderer matches a lane on this
+   * string and never on the label.
+   */
   value: string;
   /** At least 1 - a value no Record took is absent rather than present at zero. */
   count: number;
@@ -63,9 +75,10 @@ export interface CategorySeriesPoint extends MetricSeriesPointBase {
    */
   kind: 'category';
   /**
-   * In the metric's own declared value order, summing to `recordCount`. Counts
-   * rather than shares of the bucket: a renderer showing how much data stands
-   * behind a bucket needs the number, and a share cannot be recovered into one.
+   * In the order the metric's own values are presented in, summing to
+   * `recordCount`. Counts rather than shares of the bucket: a renderer showing
+   * how much data stands behind a bucket needs the number, and a share cannot be
+   * recovered into one.
    */
   counts: CategoryCount[];
 }
@@ -96,8 +109,8 @@ type SeriesPointValue =
  *
  * Records outside the range, or without a value the metric can chart, are
  * dropped; the rest are bucketed and each bucket reduced per the metric's
- * `MetricValueType` (mean for Numeric, per-value counts for Enum). Boolean and
- * Text throw until their own slices land rather than returning something
+ * `MetricValueType` (mean for Numeric, per-value counts for Enum and Boolean).
+ * Text throws until its own slice lands rather than returning something
  * plausible.
  */
 export class GetMetricSeriesUseCase {
@@ -158,13 +171,31 @@ export class GetMetricSeriesUseCase {
   /**
    * Whether a Record's value for this metric belongs in the series at all. An
    * Enum value outside `allowedValues` has no lane to be drawn in - and with no
-   * constraint there are no lanes, so nothing charts.
+   * constraint there are no lanes, so nothing charts. A Boolean value that is
+   * not a boolean has none either: counts are keyed by canonical string form, so
+   * the string `'true'` would otherwise be counted as the answer `true`.
    */
   private charts(value: unknown, metric: Metric): boolean {
     if (value === undefined || value === null) {
       return false;
     }
-    return metric.type !== 'Enum' || this.allowedValues(metric).includes(value as string);
+    switch (metric.type) {
+      case 'Enum':
+        return this.categoryValues(metric).includes(value as string);
+      case 'Boolean':
+        return typeof value === 'boolean';
+      default:
+        return true;
+    }
+  }
+
+  /**
+   * The values a metric's counts are listed in, as the canonical strings they
+   * are keyed by, in the order the Record form presents them - which is the
+   * order a swimlane's lanes read down from its top.
+   */
+  private categoryValues(metric: Metric): string[] {
+    return metric.type === 'Boolean' ? BOOLEAN_VALUES : this.allowedValues(metric);
   }
 
   private allowedValues(metric: Metric): string[] {
@@ -175,9 +206,9 @@ export class GetMetricSeriesUseCase {
     switch (metric.type) {
       case 'Numeric':
         return {kind: 'numeric', y: this.mean(records, metric)};
+      case 'Boolean':
       case 'Enum':
         return {kind: 'category', counts: this.counts(records, metric)};
-      case 'Boolean':
       case 'Text':
         throw new Error(
           `Aggregation for metric type '${metric.type}' is not implemented.`
@@ -196,10 +227,10 @@ export class GetMetricSeriesUseCase {
   private counts(records: Record[], metric: Metric): CategoryCount[] {
     const countByValue = new Map<string, number>();
     for (const record of records) {
-      const value = record.getValue(metric.id) as string;
+      const value = String(record.getValue(metric.id));
       countByValue.set(value, (countByValue.get(value) ?? 0) + 1);
     }
-    return this.allowedValues(metric)
+    return this.categoryValues(metric)
       .filter(value => countByValue.has(value))
       .map(value => ({value, count: countByValue.get(value)!}));
   }

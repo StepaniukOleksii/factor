@@ -9,8 +9,8 @@ appId: com.anonymous.factor
       DEV_COMMAND: seed
       READY_TEXT: "no numeric"
 
-# `no numeric` holds five Records and charts only its Enum `mood`: enough to leave
-# a fourth waiting behind the three on show, with a single trend card above them.
+# `no numeric` holds five Records and charts both its Metrics: enough to leave a
+# fourth waiting behind the three on show, with two trend cards above them.
 - tapOn: "no numeric"
 
 # Every seeded Record is timestamped 9:00, so a third match is a third tile.

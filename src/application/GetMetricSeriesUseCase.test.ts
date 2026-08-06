@@ -1,12 +1,12 @@
 import {describe, expect, it} from 'vitest';
 import {
-  AggregationStrategy,
-  type CategoryCount,
-  type CategorySeriesPoint,
-  GetMetricSeriesUseCase,
-  isCategoryPoint,
-  type MetricSeriesPoint,
-  TimeRange,
+    AggregationStrategy,
+    type CategoryCount,
+    type CategorySeriesPoint,
+    GetMetricSeriesUseCase,
+    isCategoryPoint,
+    type MetricSeriesPoint,
+    TimeRange,
 } from './GetMetricSeriesUseCase';
 import {Metric} from '../domain/Metric';
 import {Record} from '../domain/Record';
@@ -24,6 +24,17 @@ function record(
   value: unknown
 ): Record {
   return new Record(id, 'obs1', timestamp, new Map([[metricId, value]]));
+}
+
+function countsOf(series: MetricSeriesPoint[]): CategoryCount[] {
+  const [point] = series;
+  expect(isCategoryPoint(point)).toBe(true);
+  return (point as CategorySeriesPoint).counts;
+}
+
+/** What a point says about the Records behind it, whatever they reduced to. */
+function baseOf({x, recordId, recordCount, firstRecordAt, lastRecordAt}: MetricSeriesPoint) {
+  return {x, recordId, recordCount, firstRecordAt, lastRecordAt};
 }
 
 describe('GetMetricSeriesUseCase', () => {
@@ -248,24 +259,19 @@ describe('GetMetricSeriesUseCase', () => {
     ]);
   });
 
-  it.each(['Boolean', 'Text'] as const)(
-    'throws for %s, whose reduction is not implemented yet',
-    type => {
-      const metric = new Metric('x1', 'Completed', type);
-      const records = [
-        new Record('r1', 'obs1', new Date(100), new Map([['x1', type === 'Boolean' ? true : 'done']])),
-      ];
+  it('throws for Text, whose reduction is not implemented yet', () => {
+    const metric = new Metric('x1', 'Notes', 'Text');
+    const records = [new Record('r1', 'obs1', new Date(100), new Map([['x1', 'done']]))];
 
-      expect(() =>
-        useCase.execute(
-          records,
-          metric,
-          {start: new Date(0), end: new Date(1000)},
-          {bucketSizeMs: 1000}
-        )
-      ).toThrow(/not implemented/i);
-    }
-  );
+    expect(() =>
+      useCase.execute(
+        records,
+        metric,
+        {start: new Date(0), end: new Date(1000)},
+        {bucketSizeMs: 1000}
+      )
+    ).toThrow(/not implemented/i);
+  });
 
   it('rejects a non-positive bucket size', () => {
     expect(() =>
@@ -294,17 +300,6 @@ describe('GetMetricSeriesUseCase Enum reduction', () => {
   /** Records inside the first bucket, one every 100ms, taking the given values in turn. */
   function moodRecords(...values: string[]) {
     return values.map((value, index) => record(`r${index}`, new Date(index * 100), 'e1', value));
-  }
-
-  function countsOf(series: MetricSeriesPoint[]): CategoryCount[] {
-    const [point] = series;
-    expect(isCategoryPoint(point)).toBe(true);
-    return (point as CategorySeriesPoint).counts;
-  }
-
-  /** What a point says about the Records behind it, whatever they reduced to. */
-  function baseOf({x, recordId, recordCount, firstRecordAt, lastRecordAt}: MetricSeriesPoint) {
-    return {x, recordId, recordCount, firstRecordAt, lastRecordAt};
   }
 
   it('counts a bucket by value, in declared order', () => {
@@ -369,5 +364,67 @@ describe('GetMetricSeriesUseCase Enum reduction', () => {
     const numericSeries = useCase.execute(numericRecords, numericMetric(), TIME_RANGE, ONE_BUCKET);
 
     expect(enumSeries.map(baseOf)).toEqual(numericSeries.map(baseOf));
+  });
+});
+
+describe('GetMetricSeriesUseCase Boolean reduction', () => {
+  const useCase = new GetMetricSeriesUseCase();
+  const TIME_RANGE: TimeRange = {start: new Date(0), end: new Date(2000)};
+  const ONE_BUCKET: AggregationStrategy = {bucketSizeMs: 1000};
+
+  function booleanMetric(): Metric {
+    return new Metric('b1', 'Completed', 'Boolean');
+  }
+
+  /** Records inside the first bucket, one every 100ms, giving the answers in turn. */
+  function answers(...values: unknown[]) {
+    return values.map((value, index) => record(`r${index}`, new Date(index * 100), 'b1', value));
+  }
+
+  it('counts a bucket by answer, keyed by the value rather than the word for it', () => {
+    const series = useCase.execute(answers(false, true, false), booleanMetric(), TIME_RANGE, ONE_BUCKET);
+
+    expect(series[0].kind).toBe('category');
+    // `true` first however the Records fell, which is the order the Record form
+    // offers the two answers in.
+    expect(countsOf(series)).toEqual([
+      {value: 'true', count: 1},
+      {value: 'false', count: 2},
+    ]);
+  });
+
+  it('leaves out an answer no Record in the bucket gave', () => {
+    const series = useCase.execute(answers(false, false), booleanMetric(), TIME_RANGE, ONE_BUCKET);
+    const counts = countsOf(series);
+
+    expect(counts).toEqual([{value: 'false', count: 2}]);
+    expect(counts.reduce((total, {count}) => total + count, 0)).toBe(series[0].recordCount);
+  });
+
+  it('gives a unanimous bucket a single count of every Record in it', () => {
+    expect(
+      countsOf(useCase.execute(answers(true, true, true), booleanMetric(), TIME_RANGE, ONE_BUCKET))
+    ).toEqual([{value: 'true', count: 3}]);
+  });
+
+  // Unreachable through the domain, which refuses to store it - but the string
+  // would otherwise be counted as the answer `true` once the counts are keyed by
+  // canonical string form.
+  it('drops a Record whose stored value is not a boolean, from the counts and the count', () => {
+    const series = useCase.execute(answers(true, 'true', 1), booleanMetric(), TIME_RANGE, ONE_BUCKET);
+
+    expect(countsOf(series)).toEqual([{value: 'true', count: 1}]);
+    expect(series[0].recordCount).toBe(1);
+  });
+
+  it('reports the same Records a Numeric Metric of the same Records would', () => {
+    const at = [new Date(100), new Date(400), new Date(1200)];
+    const booleanRecords = at.map((timestamp, index) => record(`r${index}`, timestamp, 'b1', true));
+    const numericRecords = at.map((timestamp, index) => record(`r${index}`, timestamp, 'm1', 7));
+
+    const booleanSeries = useCase.execute(booleanRecords, booleanMetric(), TIME_RANGE, ONE_BUCKET);
+    const numericSeries = useCase.execute(numericRecords, numericMetric(), TIME_RANGE, ONE_BUCKET);
+
+    expect(booleanSeries.map(baseOf)).toEqual(numericSeries.map(baseOf));
   });
 });

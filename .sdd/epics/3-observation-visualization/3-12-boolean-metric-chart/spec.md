@@ -23,13 +23,17 @@ Chart a Boolean Metric as a two-lane swimlane, through that same renderer.
   takes the dark end.
 * Each bucket holding Records draws one mark per answer given in it, in that answer's lane and as tall as the
   Records that gave it. Everything else about the drawing is the Enum chart's, unchanged: the shared height
-  scale and the rest of the mark geometry, the lane gutter and its labels, the time axis, the absent count
-  label, and the "Not enough data yet" placeholder at zero points.
+  scale and the rest of the mark geometry, the lane labels, the time axis, the absent count label, and the
+  "Not enough data yet" placeholder at zero points.
+* Its lane labels sit in the narrower gutter a Numeric chart gives its value labels, `Yes` and `No` being
+  fixed by the type and short enough to fit it, so a Boolean plot starts where a Numeric one does and keeps
+  the width an Enum value's gutter would have taken. Two swimlanes on one screen therefore start from
+  different left edges where both are not the same type.
 * A Record whose stored value for the Metric is not a boolean is excluded from the series, as one carrying no
   value already is.
 * The Boolean chart reports no point and responds to no tap, as the Enum chart already doesn't — what a tap on
   a swimlane means is one decision for both, and still open.
-* No new layout: the chart is the two-lane case of the Enum chart's
+* No new layout beyond that gutter: the chart is otherwise the two-lane case of the Enum chart's
   [design](../3-11-enum-metric-chart/design/enum-metric-chart.html).
 
 ## 3. Technical Design
@@ -69,10 +73,11 @@ None.
 reason: once the registry hands it Boolean Metrics, the old name is the only thing left claiming it draws
 Enums. `Category` because that is the point kind it draws.
 
-**A new `src/presentation/charts/chartLanes.ts`** answers the question the renderer can no longer put to
-`metric.constraint`: which lanes a Metric has. `getChartLanes(metric)` returns `ChartLane[]` —
-`{value: string; label: string}` — top lane first, so a lane's index is both its position counted down from
-the plot's top and its entry in `getLaneColors`, exactly as a declared index is today.
+**A new `src/presentation/charts/chartLanes.ts`** answers the two questions the renderer can no longer put
+to `metric.constraint`: which lanes a Metric has, and how wide a gutter their labels need.
+`getChartLanes(metric)` returns `ChartLane[]` — `{value: string; label: string}` — top lane first, so a
+lane's index is both its position counted down from the plot's top and its entry in `getLaneColors`,
+exactly as a declared index is today.
 
 * `Enum` — `toEnumOptions(metric.constraint as EnumConstraint | null)`, which already returns that shape in
   declared order, and nothing for a Metric with no constraint.
@@ -91,21 +96,36 @@ rather than semantic — an index in the presented order, not a judgement about 
 serving both position and colour is what keeps a single rule for both types. Giving `No` the dark end instead
 would mean either putting `No` on top or reading the ramp backwards for one Metric type alone.
 
-The module sits in `charts/` rather than in `metricDisplay.ts`, where the wording it reads lives: which lanes a
-Metric has, and the canonical strings they match a series on, are this chart's business — `metricDisplay` owns
-only how a value is spoken.
+**`getLaneLabelGutter(metric)`** sits beside it and answers 24px for a `Boolean` — the width the Numeric
+chart already reserves for its value labels — and the Enum chart's existing 48px for anything else. A
+Boolean's labels are fixed by its type and short: at the axis size `Yes` measures 15px and `No` 12px,
+against the 19px a 24px gutter leaves once the label's 5px gap from the plot is taken. An Enum value is
+named by the user and runs to `METRIC_ENUM_VALUE_MAX_LENGTH` characters, which is what its wider gutter
+buys. Answered from the type rather than measured from the labels: the typeface resolves a render or two
+after the chart first draws, and a measured gutter would move the plot out from under the marks when it did.
 
-**`CategorySwimlaneChart`** takes its lanes from `getChartLanes(metric)` in place of `allowedValues`, draws
-`lane.label` in the gutter, and finds a count's lane by matching `lane.value`. A count matching no lane is
+The cost is that two swimlanes on one screen no longer start from the same left edge — `no numeric`'s `mood`
+above its `done`, and `mixed metrics`' `flag` above its `category`. Taken in exchange for the 24px of plot,
+a twelfth of a phone-width card, that a Boolean chart would otherwise spend on white space beside the word
+`No`; on `mixed metrics` it also puts `flag` on the same left edge as the five Numeric cards above it, which
+is six cards of seven aligned rather than five.
+
+The module sits in `charts/` rather than in `metricDisplay.ts`, where the wording it reads lives: which lanes a
+Metric has, the canonical strings they match a series on, and the room their labels take, are this chart's
+business — `metricDisplay` owns only how a value is spoken.
+
+**`CategorySwimlaneChart`** takes its lanes from `getChartLanes(metric)` in place of `allowedValues` and its
+plot's left edge from `getLaneLabelGutter(metric)` in place of its own constant — so the renderer stays free
+of the Metric's type, asking one module both questions. It draws `lane.label` in that gutter, truncated
+against its width as before, and finds a count's lane by matching `lane.value`. A count matching no lane is
 skipped rather than drawn — and skipped before the shared height scale is taken, so it cannot silently set it:
 lanes and series are now derived in two places, from the Metric's type here and from the same Metric's values
 in the use case, and a mark at lane `-1` would paint above the plot instead of failing visibly.
 
-Nothing else moves. The 48px gutter stays although `Yes` and `No` would fit a narrower one — one renderer with
-one geometry is what keeps `no numeric`'s two cards, and `mixed metrics`' two, drawing their plots from the
-same left edge. `getLaneColors(2)` already exists and already spans the same endpoints as the 3- and 4-lane
-ramps. Nothing wraps the canvas in a `Pressable`, so the Boolean chart inherits the Enum chart's inertness
-along with the rest.
+Nothing else moves. Every other measurement — the lane height, the mark geometry, the label gap, the time
+axis — is the Enum chart's, and the gutter is the one thing the two types differ in. `getLaneColors(2)`
+already exists and already spans the same endpoints as the 3- and 4-lane ramps. Nothing wraps the canvas in a
+`Pressable`, so the Boolean chart inherits the Enum chart's inertness along with the rest.
 
 ### 3.5 Presentation — Observation Details Screen
 
@@ -161,7 +181,8 @@ Run **Reseed test data** first. No storage change, so there is nothing to clear.
 
 1. Open `no numeric` at `1M`. Two cards: `mood` as before, and a new `done` below it — two lanes labelled `Yes`
    above `No`, five marks each filling one lane or the other (every bucket holds one Record), `Yes` the darker
-   green. Both plots start at the same left edge.
+   green. `done`'s labels sit in a narrower gutter than `mood`'s, so its plot starts further left and neither
+   word is cut short.
 2. RECENT RECORDS and its first Records are still on the first screen, below both cards.
 3. Switch to `1Y`: `done` becomes two columns near the right edge. Each mark is as tall as the Records that
    gave that answer, measured against the busiest mark on the card — so an answer given twice where another
@@ -170,7 +191,8 @@ Run **Reseed test data** first. No storage change, so there is nothing to clear.
    follows.
 4. Tap a `done` mark, and the empty space in its lanes: nothing happens, and no chart on the screen redraws.
 5. Open `mixed metrics` at `1M`. `flag`'s card sits between `insufficient` and `category`, in declaration
-   order; `note` still gets none. Ten marks, each filling `Yes` or `No`.
+   order; `note` still gets none. Ten marks, each filling `Yes` or `No`, and its plot starts on the same left
+   edge as the five Numeric plots above it rather than `category`'s below it.
 6. Switch to `1Y`: `flag` collapses to two columns whose marks are sized by how many Records gave each answer,
    and every Numeric and Enum chart is exactly as before.
 7. Tap **Add Record** on `mixed metrics`: `flag` still shows Yes/No segments beside its info button, and those
@@ -188,12 +210,14 @@ Run **Reseed test data** first. No storage change, so there is nothing to clear.
   unchanged; `Text` still throws.
 * **Unit — `chartLanes`:** an Enum Metric's lanes are its declared values in declared order, label and value
   alike, and none at all without a constraint; a Boolean Metric's are `true`/`Yes` then `false`/`No` whatever
-  its constraint; a Numeric or Text Metric has none.
+  its constraint; a Numeric or Text Metric has none. `getLaneLabelGutter` answers the narrow width for a
+  Boolean and the wide one for an Enum, constrained or not.
 * **Unit — `CategorySwimlaneChart`:** the existing Enum suite passes under the new name, unaltered; a Boolean
-  Metric draws two lanes labelled `Yes` over `No`, coloured from `getLaneColors(2)` with `Yes` on the dark
-  entry; a bucket where one answer was given more often than the other draws the two marks at heights in that
-  ratio, on the same scale as the rest of the series; a count matching no lane is neither drawn nor allowed to
-  set that scale; no press ever calls `onPointPress`.
+  Metric draws two lanes labelled `Yes` over `No` — untruncated, which is what says they fit — coloured from
+  `getLaneColors(2)` with `Yes` on the dark entry, its separators and marks starting at the narrow gutter and
+  its marks as wide as the plot that leaves; a bucket where one answer was given more often than the other
+  draws the two marks at heights in that ratio, on the same scale as the rest of the series; a count matching
+  no lane is neither drawn nor allowed to set that scale; no press ever calls `onPointPress`.
 * **Unit — `rendererRegistry`:** `get('Boolean')` and `get('Enum')` both return `CategorySwimlaneChart`;
   `Text` is still absent.
 * **Screen — `ObservationDetailsScreen`:** a Boolean Metric gets a card, interleaved by declaration among
