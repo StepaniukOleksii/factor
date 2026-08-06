@@ -9,8 +9,8 @@ appId: com.anonymous.factor
       DEV_COMMAND: seed
       READY_TEXT: "no numeric"
 
-# `no numeric` has no TRENDS section, which leaves its Records at the top of the
-# screen rather than below five charts.
+# `no numeric` charts only its Enum `mood`, so a single trend card sits above its
+# Records rather than the five `mixed metrics` would put there.
 - tapOn: "no numeric"
 
 # The fixture picks `mood` from three values at random, so the first edit is what

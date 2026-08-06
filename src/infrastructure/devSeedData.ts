@@ -104,9 +104,9 @@ export function buildSeedData(): SeedEntry[] {
 
   // "mixed metrics" - one observation carrying every chart/metric scenario that isn't
   // observation-level (see testing-data.md): trends at each time range's resolution, a
-  // gappy trend, a trend with too few points to draw a line, and non-numeric metrics (which never
-  // chart) sharing records with the numeric ones to prove multi-type records render
-  // correctly.
+  // gappy trend, a trend with too few points to draw a line, an Enum metric charting as a
+  // swimlane among them, and metrics that never chart sharing records with the rest to
+  // prove multi-type records render correctly.
   {
     // Four of the eight carry a description and four deliberately don't, so one
     // Record form shows every state of the info button at once. The four bound
@@ -191,8 +191,9 @@ export function buildSeedData(): SeedEntry[] {
     // which this point falls outside of, and a lone dot at every wider one.
     setValueAt(recordValues, daysAgo(5), insufficientMetric.id, bounded(randRange(10, 90)));
 
-    // flag/category/note: every other day over 20 days, sharing a record => non-numeric
-    // metrics never chart, and one record can carry several value types at once.
+    // flag/category/note: every other day over 20 days, sharing a record => `category`
+    // draws a swimlane after the numeric cards while `flag` and `note` still draw
+    // nothing, and one record can carry several value types at once.
     const categories = ['a', 'b', 'c'];
     for (let i = 18; i >= 0; i -= 2) {
       setValueAt(recordValues, daysAgo(i), flagMetric.id, rand() > 0.5);
@@ -215,9 +216,8 @@ export function buildSeedData(): SeedEntry[] {
     entries.push({observation, records: buildRecords(observation, recordValues, recordNotes)});
   }
 
-  // "no numeric" - non-numeric metrics only => the details screen renders neither the
-  // TRENDS section nor the time range selector that sits inside it, since there is
-  // nothing chartable to scope.
+  // "no numeric" - no Numeric metric, so its TRENDS section is drawn entirely by the Enum
+  // `mood`: one swimlane card, and none for the Boolean beside it.
   {
     const moodMetric = new Metric(Crypto.randomUUID(), 'mood', 'Enum', {allowedValues: ['low', 'ok', 'high']});
     const doneMetric = new Metric(Crypto.randomUUID(), 'done', 'Boolean');
@@ -225,7 +225,7 @@ export function buildSeedData(): SeedEntry[] {
       Crypto.randomUUID(),
       'no numeric',
       [moodMetric, doneMetric],
-      'Has no Numeric metrics at all, so its details screen shows neither the TRENDS section nor the time range selector inside it — only RECENT RECORDS.'
+      'Has no Numeric metric, so its charts come entirely from an Enum one — the Boolean beside it still renders no card.'
     );
 
     const recordValues: TimestampValues = new Map();

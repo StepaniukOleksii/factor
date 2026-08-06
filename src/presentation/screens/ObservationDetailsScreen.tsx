@@ -41,8 +41,8 @@ import {
     getAggregationForSelection,
     getDayAlignedRange,
     getTimeRangeForSelection,
-    NUMERIC_TREND_INSUFFICIENT_MESSAGE,
     type TimeRangeSelection,
+    TREND_INSUFFICIENT_MESSAGE,
 } from '../charts/chartDefaults';
 import {TimeRangeSelector} from '../charts/TimeRangeSelector';
 import {CustomTimeRangeModal} from '../charts/CustomTimeRangeModal';
@@ -372,11 +372,13 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                 ) : null}
 
                 {(() => {
-                    const numericMetrics = observation.metrics.filter(metric => metric.type === 'Numeric');
-                    if (numericMetrics.length === 0) {
+                    // Which Metrics something can draw, in the Observation's own
+                    // order, so cards interleave by declaration rather than
+                    // grouping by type.
+                    const chartedMetrics = observation.metrics.filter(metric => rendererRegistry.has(metric.type));
+                    if (chartedMetrics.length === 0) {
                         return null;
                     }
-                    const NumericRenderer = rendererRegistry.get('Numeric');
                     const aggregation = getAggregationForSelection(timeRangeSelection);
                     return (
                         <View style={styles.section}>
@@ -402,7 +404,8 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                 }}
                             />
                             <View style={styles.trendsList}>
-                                {numericMetrics.map(metric => {
+                                {chartedMetrics.map(metric => {
+                                    const Renderer = rendererRegistry.get(metric.type);
                                     const points = chartRange
                                         ? getMetricSeriesUseCase.execute(chartRecords, metric, chartRange, aggregation)
                                         : [];
@@ -410,16 +413,17 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                     return (
                                         <View key={metric.id} style={styles.trendCard}>
                                             <Text style={styles.trendCardTitle}>{metric.name}</Text>
-                                            {hasEnoughData && NumericRenderer ? (
+                                            {hasEnoughData && Renderer ? (
                                                 <View
                                                     testID="trend-chart"
                                                     style={styles.trendChart}
                                                     onLayout={(e) => setTrendChartWidth(e.nativeEvent.layout.width)}
                                                 >
-                                                    <NumericRenderer
+                                                    <Renderer
                                                         metric={metric}
                                                         points={points}
                                                         timeRange={chartRange!}
+                                                        aggregation={aggregation}
                                                         width={trendChartWidth}
                                                         height={TREND_CHART_HEIGHT}
                                                         onPointPress={handleChartPointPress}
@@ -430,7 +434,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                                     <MaterialIcons name="show-chart" size={22}
                                                                    color={COLORS.onSurfaceVariant}/>
                                                     <Text style={styles.trendEmptyText}>
-                                                        {NUMERIC_TREND_INSUFFICIENT_MESSAGE}
+                                                        {TREND_INSUFFICIENT_MESSAGE}
                                                     </Text>
                                                 </View>
                                             )}

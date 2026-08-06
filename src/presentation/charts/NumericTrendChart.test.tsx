@@ -3,8 +3,8 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
 import {Circle, Line, type SkFont, Skia, Text as SkiaText, useFont} from '@shopify/react-native-skia';
 import {NumericTrendChart} from './NumericTrendChart';
-import {NUMERIC_TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
-import {MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
+import {TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
+import {AggregationStrategy, MetricSeriesPoint, TimeRange,} from '../../application/GetMetricSeriesUseCase';
 import {Metric} from '../../domain/Metric';
 import {COLORS, withAlpha} from '@presentation/theme';
 
@@ -73,6 +73,7 @@ function loadFont() {
 // were taken changes nothing about how the chart draws or hit-tests a point.
 function points(...values: number[]): MetricSeriesPoint[] {
   return values.map((y, index) => ({
+    kind: 'numeric',
     x: index * 1000,
     y,
     recordId: `r${index}`,
@@ -108,6 +109,9 @@ function dataSpanRange(chartPoints: MetricSeriesPoint[]): TimeRange {
   };
 }
 
+/** Nothing this chart draws depends on it - only the swimlane sizes marks by bucket. */
+const AGGREGATION: AggregationStrategy = {bucketSizeMs: DAY_MS};
+
 function render(
   chartPoints: MetricSeriesPoint[],
   onPointPress = vi.fn(),
@@ -120,6 +124,7 @@ function render(
         metric={metric}
         points={chartPoints}
         timeRange={timeRange}
+        aggregation={AGGREGATION}
         width={CHART_WIDTH}
         height={CHART_HEIGHT}
         onPointPress={onPointPress}
@@ -244,6 +249,7 @@ describe('NumericTrendChart', () => {
     // space both before the first Record and after the last.
     const timeRange: TimeRange = {start: new Date(0), end: new Date(30 * DAY_MS)};
     const chartPoints: MetricSeriesPoint[] = [5, 6, 7].map(day => ({
+      kind: 'numeric',
       x: day * DAY_MS,
       y: 10 + day,
       recordId: `r${day}`,
@@ -266,7 +272,7 @@ describe('NumericTrendChart', () => {
 
     const root = render(points(10));
 
-    expect(findAllByText(root.root, NUMERIC_TREND_INSUFFICIENT_MESSAGE).length).toBe(0);
+    expect(findAllByText(root.root, TREND_INSUFFICIENT_MESSAGE).length).toBe(0);
     expect(recordDots(root).length).toBe(1);
     // A lone point has nothing to connect to, so neither the curve nor the fill
     // beneath it is built - and with no path made, neither is drawn.
@@ -308,7 +314,7 @@ describe('NumericTrendChart', () => {
     const root = render(points());
 
     expect(Skia.Path.Make).not.toHaveBeenCalled();
-    expect(findAllByText(root.root, NUMERIC_TREND_INSUFFICIENT_MESSAGE).length).toBeGreaterThan(0);
+    expect(findAllByText(root.root, TREND_INSUFFICIENT_MESSAGE).length).toBeGreaterThan(0);
   });
 
   it('draws no axis at all in the insufficient-data state', () => {
@@ -360,6 +366,7 @@ describe('NumericTrendChart', () => {
     // or zooms into the bucket, so the chart hands over the whole point rather
     // than just its record id.
     const aggregated: MetricSeriesPoint = {
+      kind: 'numeric',
       x: 1000,
       y: 20,
       recordId: 'r1',
@@ -368,7 +375,7 @@ describe('NumericTrendChart', () => {
       lastRecordAt: 1800,
     };
     const chartPoints: MetricSeriesPoint[] = [
-      {x: 0, y: 10, recordId: 'r0', recordCount: 1, firstRecordAt: 0, lastRecordAt: 0},
+      {kind: 'numeric', x: 0, y: 10, recordId: 'r0', recordCount: 1, firstRecordAt: 0, lastRecordAt: 0},
       aggregated,
     ];
     const root = render(chartPoints, onPointPress);
@@ -572,6 +579,7 @@ describe('NumericTrendChart axes', () => {
           metric={metric}
           points={chartPoints}
           timeRange={day}
+          aggregation={AGGREGATION}
           width={CHART_WIDTH}
           height={CHART_HEIGHT}
           onPointPress={vi.fn()}
@@ -586,6 +594,7 @@ describe('NumericTrendChart axes', () => {
           metric={metric}
           points={chartPoints}
           timeRange={month}
+          aggregation={AGGREGATION}
           width={CHART_WIDTH}
           height={CHART_HEIGHT}
           onPointPress={vi.fn()}

@@ -1,5 +1,13 @@
 import {describe, expect, it} from 'vitest';
-import {AggregationStrategy, GetMetricSeriesUseCase, TimeRange,} from './GetMetricSeriesUseCase';
+import {
+    AggregationStrategy,
+    type CategorySeriesPoint,
+    type CategoryShare,
+    GetMetricSeriesUseCase,
+    isCategoryPoint,
+    type MetricSeriesPoint,
+    TimeRange,
+} from './GetMetricSeriesUseCase';
 import {Metric} from '../domain/Metric';
 import {Record} from '../domain/Record';
 
@@ -39,6 +47,7 @@ describe('GetMetricSeriesUseCase', () => {
 
     expect(series).toEqual([
       {
+        kind: 'numeric',
         x: startMs,
         y: 15,
         recordId: 'a',
@@ -47,6 +56,7 @@ describe('GetMetricSeriesUseCase', () => {
         lastRecordAt: startMs + 5 * 60 * 60 * 1000,
       },
       {
+        kind: 'numeric',
         x: startMs + DAY_MS,
         y: 5,
         recordId: 'c',
@@ -135,7 +145,15 @@ describe('GetMetricSeriesUseCase', () => {
     );
 
     expect(series).toEqual([
-      {x: 0, y: 43, recordId: 'has-value', recordCount: 2, firstRecordAt: 100, lastRecordAt: 200},
+      {
+        kind: 'numeric',
+        x: 0,
+        y: 43,
+        recordId: 'has-value',
+        recordCount: 2,
+        firstRecordAt: 100,
+        lastRecordAt: 200,
+      },
     ]);
   });
 
@@ -154,8 +172,24 @@ describe('GetMetricSeriesUseCase', () => {
     const series = useCase.execute(records, metric, timeRange, aggregation);
 
     expect(series).toEqual([
-      {x: 0, y: 2, recordId: 'start-edge', recordCount: 2, firstRecordAt: 0, lastRecordAt: 999},
-      {x: 1000, y: 10, recordId: 'bucket1', recordCount: 1, firstRecordAt: 1000, lastRecordAt: 1000},
+      {
+        kind: 'numeric',
+        x: 0,
+        y: 2,
+        recordId: 'start-edge',
+        recordCount: 2,
+        firstRecordAt: 0,
+        lastRecordAt: 999,
+      },
+      {
+        kind: 'numeric',
+        x: 1000,
+        y: 10,
+        recordId: 'bucket1',
+        recordCount: 1,
+        firstRecordAt: 1000,
+        lastRecordAt: 1000,
+      },
     ]);
   });
 
@@ -202,25 +236,36 @@ describe('GetMetricSeriesUseCase', () => {
     );
 
     expect(series).toEqual([
-      {x: 0, y: 42, recordId: 'has-value', recordCount: 1, firstRecordAt: 100, lastRecordAt: 100},
+      {
+        kind: 'numeric',
+        x: 0,
+        y: 42,
+        recordId: 'has-value',
+        recordCount: 1,
+        firstRecordAt: 100,
+        lastRecordAt: 100,
+      },
     ]);
   });
 
-  it('throws for value types whose reduction is not implemented yet', () => {
-    const metric = new Metric('b1', 'Completed', 'Boolean');
-    const records = [
-      new Record('r1', 'obs1', new Date(100), new Map([['b1', true]])),
-    ];
+  it.each(['Boolean', 'Text'] as const)(
+    'throws for %s, whose reduction is not implemented yet',
+    type => {
+      const metric = new Metric('x1', 'Completed', type);
+      const records = [
+        new Record('r1', 'obs1', new Date(100), new Map([['x1', type === 'Boolean' ? true : 'done']])),
+      ];
 
-    expect(() =>
-      useCase.execute(
-        records,
-        metric,
-        {start: new Date(0), end: new Date(1000)},
-        {bucketSizeMs: 1000}
-      )
-    ).toThrow(/not implemented/i);
-  });
+      expect(() =>
+        useCase.execute(
+          records,
+          metric,
+          {start: new Date(0), end: new Date(1000)},
+          {bucketSizeMs: 1000}
+        )
+      ).toThrow(/not implemented/i);
+    }
+  );
 
   it('rejects a non-positive bucket size', () => {
     expect(() =>
@@ -231,5 +276,94 @@ describe('GetMetricSeriesUseCase', () => {
         {bucketSizeMs: 0}
       )
     ).toThrow(/positive/i);
+  });
+});
+
+describe('GetMetricSeriesUseCase Enum reduction', () => {
+  const useCase = new GetMetricSeriesUseCase();
+  // Three values, declared low to high, since a lane's order is what the chart
+  // paints its ramp along.
+  const MOODS = ['low', 'ok', 'high'];
+  const TIME_RANGE: TimeRange = {start: new Date(0), end: new Date(2000)};
+  const ONE_BUCKET: AggregationStrategy = {bucketSizeMs: 1000};
+
+  function enumMetric(allowedValues: string[] | null = MOODS): Metric {
+    return new Metric('e1', 'Mood', 'Enum', allowedValues ? {allowedValues} : null);
+  }
+
+  /** Records inside the first bucket, one every 100ms, taking the given values in turn. */
+  function moodRecords(...values: string[]) {
+    return values.map((value, index) => record(`r${index}`, new Date(index * 100), 'e1', value));
+  }
+
+  function sharesOf(series: MetricSeriesPoint[]): CategoryShare[] {
+    const [point] = series;
+    expect(isCategoryPoint(point)).toBe(true);
+    return (point as CategorySeriesPoint).shares;
+  }
+
+  /** What a point says about the Records behind it, whatever they reduced to. */
+  function baseOf({x, recordId, recordCount, firstRecordAt, lastRecordAt}: MetricSeriesPoint) {
+    return {x, recordId, recordCount, firstRecordAt, lastRecordAt};
+  }
+
+  it('reduces a bucket to one share per value its Records took, in declared order', () => {
+    const series = useCase.execute(
+      moodRecords('high', 'low', 'ok', 'low'),
+      enumMetric(),
+      TIME_RANGE,
+      ONE_BUCKET
+    );
+
+    expect(series[0].kind).toBe('category');
+    expect(sharesOf(series)).toEqual([
+      {value: 'low', share: 0.5},
+      {value: 'ok', share: 0.25},
+      {value: 'high', share: 0.25},
+    ]);
+  });
+
+  it('leaves out a value no Record in the bucket took', () => {
+    const shares = sharesOf(
+      useCase.execute(moodRecords('low', 'high'), enumMetric(), TIME_RANGE, ONE_BUCKET)
+    );
+
+    expect(shares.map(share => share.value)).toEqual(['low', 'high']);
+    expect(shares.reduce((total, share) => total + share.share, 0)).toBe(1);
+  });
+
+  it('gives a unanimous bucket a single share of the whole', () => {
+    expect(
+      sharesOf(useCase.execute(moodRecords('ok', 'ok', 'ok'), enumMetric(), TIME_RANGE, ONE_BUCKET))
+    ).toEqual([{value: 'ok', share: 1}]);
+  });
+
+  it('drops a Record whose value is not one the Metric allows, from the shares and the count', () => {
+    const series = useCase.execute(
+      moodRecords('low', 'elated', 'low'),
+      enumMetric(),
+      TIME_RANGE,
+      ONE_BUCKET
+    );
+
+    expect(sharesOf(series)).toEqual([{value: 'low', share: 1}]);
+    expect(series[0].recordCount).toBe(2);
+  });
+
+  it('charts nothing for a Metric carrying no allowed values', () => {
+    expect(
+      useCase.execute(moodRecords('low', 'ok'), enumMetric(null), TIME_RANGE, ONE_BUCKET)
+    ).toEqual([]);
+  });
+
+  it('reports the same Records a Numeric Metric of the same Records would', () => {
+    const at = [new Date(100), new Date(400), new Date(1200)];
+    const enumRecords = at.map((timestamp, index) => record(`r${index}`, timestamp, 'e1', 'ok'));
+    const numericRecords = at.map((timestamp, index) => record(`r${index}`, timestamp, 'm1', 7));
+
+    const enumSeries = useCase.execute(enumRecords, enumMetric(), TIME_RANGE, ONE_BUCKET);
+    const numericSeries = useCase.execute(numericRecords, numericMetric(), TIME_RANGE, ONE_BUCKET);
+
+    expect(enumSeries.map(baseOf)).toEqual(numericSeries.map(baseOf));
   });
 });

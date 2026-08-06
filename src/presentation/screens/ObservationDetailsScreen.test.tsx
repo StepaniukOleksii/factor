@@ -6,7 +6,7 @@ import {ObservationDetailsScreen} from './ObservationDetailsScreen';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
 import {Circle, type SkFont, Text as SkiaText, useFont} from '@shopify/react-native-skia';
-import {NUMERIC_TREND_INSUFFICIENT_MESSAGE, type TimeRangePreset,} from '../charts/chartDefaults';
+import {type TimeRangePreset, TREND_INSUFFICIENT_MESSAGE,} from '../charts/chartDefaults';
 import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {formatShortDate, formatTimeRange} from '@shared/formatTimeRange';
 import {COLORS, withAlpha} from '@presentation/theme';
@@ -241,11 +241,27 @@ function numericObservation(...metrics: {id: string; name: string}[]): Observati
     } as unknown as Observation;
 }
 
-function recordAgo(id: string, msAgo: number, values: [string, number][]): DomainRecord {
+/**
+ * An Observation whose Metrics are declared in the order given, each with its own
+ * value type - the order the Trends section is expected to render its cards in.
+ */
+function observationOf(...metrics: {id: string; name: string; type: string; constraint?: unknown}[]): Observation {
+    return {
+        id: 'obs-1',
+        name: 'Sleep Quality',
+        metrics,
+    } as unknown as Observation;
+}
+
+function enumMetric(id: string, name: string, allowedValues: string[]) {
+    return {id, name, type: 'Enum', constraint: {allowedValues}};
+}
+
+function recordAgo(id: string, msAgo: number, values: [string, unknown][]): DomainRecord {
     return new DomainRecord(id, 'obs-1', new Date(Date.now() - msAgo), new Map(values));
 }
 
-function chartRecord(id: string, daysAgo: number, values: [string, number][]): DomainRecord {
+function chartRecord(id: string, daysAgo: number, values: [string, unknown][]): DomainRecord {
     return recordAgo(id, daysAgo * DAY_MS, values);
 }
 
@@ -279,6 +295,17 @@ async function pressChartPoint(root: any, chartIndex = 0) {
     await act(async () => {
         pressable.props.onPress({nativeEvent: {locationX: 0, locationY: 50}});
     });
+}
+
+/**
+ * The Metrics the section handed to a renderer, in the order their cards were
+ * rendered - read off the renderer elements themselves, since which renderer
+ * drew which card is exactly what is being asserted.
+ */
+function chartedMetricNames(root: any): string[] {
+    return root.root
+        .findAll((node: any) => node.props?.metric && node.props?.points)
+        .map((node: any) => node.props.metric.name);
 }
 
 /**
@@ -665,7 +692,7 @@ describe('ObservationDetailsScreen Trends', () => {
         expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(0);
     });
 
-    it('omits the TRENDS section when there are no Numeric Metrics', async () => {
+    it('omits the TRENDS section when no Metric on the Observation charts at all', async () => {
         mockGetObservationByIdExecute.mockResolvedValue({
             id: 'obs-1',
             name: 'Journal',
@@ -685,13 +712,108 @@ describe('ObservationDetailsScreen Trends', () => {
         expect(root.root.findAllByProps({testID: 'time-range-custom'}).length).toBe(0);
     });
 
+    it('renders a card for every Metric a renderer can draw, in declaration order', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            observationOf(
+                {id: 'm1', name: 'Duration', type: 'Numeric'},
+                enumMetric('e1', 'mood', ['low', 'ok', 'high']),
+                {id: 'b1', name: 'Done', type: 'Boolean'},
+                {id: 'm2', name: 'Quality', type: 'Numeric'},
+            ),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['m1', 5], ['e1', 'low'], ['b1', true], ['m2', 50]]),
+            chartRecord('b', 1, [['m1', 7], ['e1', 'high'], ['b1', false], ['m2', 55]]),
+        ]);
+
+        const root = await renderScreen();
+
+        // Interleaved by declaration rather than grouped by type, and the
+        // Boolean between them still gets no card.
+        expect(chartedMetricNames(root)).toEqual(['Duration', 'mood', 'Quality']);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(3);
+    });
+
+    it('renders the section and its selector for an Observation whose only chartable Metric is an Enum', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            observationOf(enumMetric('e1', 'mood', ['low', 'ok', 'high']), {
+                id: 'b1',
+                name: 'Done',
+                type: 'Boolean',
+            }),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['e1', 'low'], ['b1', true]]),
+            chartRecord('b', 1, [['e1', 'high'], ['b1', false]]),
+        ]);
+
+        const root = await renderScreen();
+
+        expect(findAllByText(root.root, 'TRENDS').length).toBeGreaterThan(0);
+        expect(root.root.findAllByProps({testID: 'time-range-preset-1M'}).length).toBeGreaterThan(0);
+        expect(chartedMetricNames(root)).toEqual(['mood']);
+    });
+
+    it('shows the placeholder for an Enum Metric no Record in the window answered', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            observationOf(enumMetric('e1', 'mood', ['low', 'ok', 'high'])),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+
+        const root = await renderScreen();
+
+        expect(findAllByText(root.root, TREND_INSUFFICIENT_MESSAGE).length).toBeGreaterThan(0);
+        expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
+    });
+
+    it('leaves the window and the Records alone however an Enum card is pressed', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            observationOf(enumMetric('e1', 'mood', ['low', 'ok', 'high'])),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['e1', 'low']]),
+            chartRecord('b', 1, [['e1', 'high']]),
+        ]);
+        const navigate = vi.fn();
+
+        const root = await renderScreen(navigate);
+
+        // The card holds nothing that answers a press, which is how "not
+        // tappable" is expressed - so no window switch and no Record can follow.
+        const chartCard = root.root.findAllByProps({testID: 'trend-chart'})[0];
+        expect(
+            chartCard.findAll((node: any) => node.props && typeof node.props.onPress === 'function'),
+        ).toHaveLength(0);
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(1);
+        expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('still opens the Record behind a Numeric point on an Observation carrying an Enum card too', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            observationOf(
+                {id: 'm1', name: 'Duration', type: 'Numeric'},
+                enumMetric('e1', 'mood', ['low', 'ok', 'high']),
+            ),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('earliest', 3, [['m1', 5], ['e1', 'low']]),
+            chartRecord('latest', 1, [['m1', 5], ['e1', 'high']]),
+        ]);
+        const navigate = vi.fn();
+
+        const root = await renderScreen(navigate);
+        await pressChartPoint(root);
+
+        expect(navigate).toHaveBeenCalledWith('EditRecord', {observationId: 'obs-1', recordId: 'earliest'});
+    });
+
     it('shows the insufficient-data message for a Metric with no points in the window', async () => {
         mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
         mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
 
         const root = await renderScreen();
 
-        expect(findAllByText(root.root, NUMERIC_TREND_INSUFFICIENT_MESSAGE).length).toBeGreaterThan(0);
+        expect(findAllByText(root.root, TREND_INSUFFICIENT_MESSAGE).length).toBeGreaterThan(0);
         expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(0);
         expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
     });
@@ -864,7 +986,7 @@ describe('ObservationDetailsScreen Time Range Selector', () => {
         // ...but over a day only "Dense" does, and the other falls back on its own.
         expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
         expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
-        expect(findAllByText(root.root, NUMERIC_TREND_INSUFFICIENT_MESSAGE).length).toBeGreaterThan(0);
+        expect(findAllByText(root.root, TREND_INSUFFICIENT_MESSAGE).length).toBeGreaterThan(0);
     });
 
     it('leaves the RECENT RECORDS section alone when the preset changes', async () => {

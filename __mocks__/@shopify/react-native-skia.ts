@@ -23,6 +23,7 @@ export const Path = createStubComponent('Path');
 export const Line = createStubComponent('Line');
 export const Circle = createStubComponent('Circle');
 export const Rect = createStubComponent('Rect');
+export const RoundedRect = createStubComponent('RoundedRect');
 export const Text = createStubComponent('Text');
 export const LinearGradient = createStubComponent('LinearGradient');
 

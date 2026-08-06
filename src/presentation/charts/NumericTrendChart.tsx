@@ -1,25 +1,31 @@
 import React from 'react';
-import {type GestureResponderEvent, Pressable, StyleSheet, Text, View} from 'react-native';
+import {type GestureResponderEvent, Pressable} from 'react-native';
 import {
   Canvas,
   Circle,
   Line,
   LinearGradient,
   Path,
-  type SkFont,
   Skia,
   type SkPath,
   Text as SkiaText,
-  useFont,
   vec,
 } from '@shopify/react-native-skia';
-// A `Canvas` cannot composite a platform `Text` element, so drawing glyphs needs
-// a typeface Skia itself owns. Bundled with the app rather than matched from the
-// system, so every device labels its axes identically.
-import AXIS_TYPEFACE from '../../../assets/fonts/Roboto-Regular.ttf';
-import {MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
-import {formatPointCount, NUMERIC_TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
-import {type AxisTick, getTimeAxisTicks, getValueAxisTicks} from './axisTicks';
+import {isNumericPoint, type NumericSeriesPoint, TimeRange,} from '../../application/GetMetricSeriesUseCase';
+import {formatPointCount} from './chartDefaults';
+import {getValueAxisTicks} from './axisTicks';
+import {
+  AXIS_LABEL_COLOR,
+  baselineCentreOffset,
+  GRIDLINE_COLOR,
+  GRIDLINE_WIDTH,
+  measureWidth,
+  type PlotRect,
+  TimeAxisLabels,
+  toPlotRect,
+  useAxisFont,
+} from './chartAxis';
+import {InsufficientData} from './InsufficientData';
 import type {ChartRendererProps} from './rendererRegistry';
 import {COLORS, withAlpha} from '@presentation/theme';
 
@@ -29,9 +35,6 @@ const LINE_COLOR = COLORS.primaryContainer;
 const FILL_COLOR_TOP = withAlpha(COLORS.primaryContainer, 0.22);
 const FILL_COLOR_BOTTOM = withAlpha(COLORS.primaryContainer, 0);
 const STROKE_WIDTH = 2.5;
-// Keeps the stroke off the plot's top edge so peaks aren't clipped; the time
-// label strip below does the same job for troughs.
-const PLOT_TOP_PADDING = 6;
 // A tap counts as hitting a point only if it falls within this many pixels of the
 // curve vertically - a comfortable touch-target radius that still rejects taps in
 // the empty space above or below the line.
@@ -49,23 +52,11 @@ const POINT_COUNT_LABEL_COLOR = withAlpha(COLORS.onSurfaceVariant, 0.65);
 // close enough to still read as belonging to that point.
 const POINT_COUNT_LABEL_OFFSET = 9;
 
-// Gutters carved out of the chart's `{width, height}` box to make room for the
-// axis labels. What is left over is the plotting rectangle - everything the
-// chart draws and hit-tests lives inside it.
+// The gutter carved out of the chart's box for the value labels, on the left of
+// the plotting rectangle everything the chart draws and hit-tests lives inside.
 const VALUE_AXIS_WIDTH = 24;
-const TIME_AXIS_HEIGHT = 14;
-// Holds the last time label and the final record marker off the card's right
-// edge, the way the value gutter does on the left.
-const PLOT_RIGHT_INSET = 4;
 const VALUE_LABEL_GAP = 5;
-const TIME_LABEL_BASELINE_OFFSET = 12;
 const VALUE_AXIS_TICK_COUNT = 5;
-const AXIS_FONT_SIZE = 9;
-// Faint enough that the gridlines read as a reference behind the curve rather
-// than a grid drawn over it.
-const AXIS_LABEL_COLOR = COLORS.onSurfaceVariant;
-const GRIDLINE_COLOR = withAlpha(COLORS.outlineVariant, 0.6);
-const GRIDLINE_WIDTH = 1;
 
 /**
  * Renders a Numeric metric's aggregated series as a smooth Skia curve with a
@@ -83,22 +74,22 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
   // typeface resolves asynchronously, leaving this `null` for the first render
   // or two - the axis elements below wait for it while the curve does not, so a
   // chart is never blank while a font loads.
-  const font = useFont(AXIS_TYPEFACE, AXIS_FONT_SIZE);
+  const font = useAxisFont();
 
-  if (points.length === 0) {
-    return (
-      <View style={[styles.insufficient, {height}]}>
-        <Text style={styles.insufficientText}>{NUMERIC_TREND_INSUFFICIENT_MESSAGE}</Text>
-      </View>
-    );
+  // The registry pairs this renderer with the metric type whose reduction
+  // produces numeric points, so this narrowing is what makes the code legal
+  // rather than a case that can arise.
+  const numericPoints = points.filter(isNumericPoint);
+  if (numericPoints.length === 0) {
+    return <InsufficientData height={height} />;
   }
 
-  const plot = toPlotRect(width, height);
-  const ys = points.map(point => point.y);
+  const plot = toPlotRect(width, height, VALUE_AXIS_WIDTH);
+  const ys = numericPoints.map(point => point.y);
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
 
-  const screenPoints = toScreenPoints(points, timeRange, plot, minY, maxY);
+  const screenPoints = toScreenPoints(numericPoints, timeRange, plot, minY, maxY);
   // A curve joins points to each other, and the gradient fills the region under
   // that curve - neither means anything with a single point, so a lone point is
   // left as its own marker on the axes rather than given a line to nowhere.
@@ -106,13 +97,12 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
   const areaPath = linePath ? buildAreaPath(linePath, screenPoints, plot.bottom) : null;
 
   const valueTicks = getValueAxisTicks(minY, maxY, VALUE_AXIS_TICK_COUNT);
-  const timeTicks = getTimeAxisTicks(timeRange);
 
   const handlePress = (event: GestureResponderEvent) => {
     const {locationX, locationY} = event.nativeEvent;
     const nearestIndex = nearestPointIndex(screenPoints, locationX);
     if (Math.abs(screenPoints[nearestIndex].y - locationY) <= VERTICAL_TOLERANCE) {
-      onPointPress(points[nearestIndex]);
+      onPointPress(numericPoints[nearestIndex]);
     }
   };
 
@@ -160,7 +150,7 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
           />
         )}
         {screenPoints.map((point, index) => {
-          const {recordId, recordCount} = points[index];
+          const {recordId, recordCount} = numericPoints[index];
           const countLabel = recordCount > 1 ? formatPointCount(recordCount) : null;
           return (
             <React.Fragment key={recordId}>
@@ -178,17 +168,7 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
             </React.Fragment>
           );
         })}
-        {font &&
-          timeTicks.map(tick => (
-            <SkiaText
-              key={`time-${tick.ratio}`}
-              font={font}
-              text={tick.label}
-              x={timeLabelX(tick, measureWidth(font, tick.label), plot)}
-              y={plot.bottom + TIME_LABEL_BASELINE_OFFSET}
-              color={AXIS_LABEL_COLOR}
-            />
-          ))}
+        <TimeAxisLabels font={font} timeRange={timeRange} plot={plot} />
       </Canvas>
     </Pressable>
   );
@@ -199,28 +179,6 @@ interface Point {
   y: number;
 }
 
-/** The chart's box less its label gutters: where the curve is actually drawn. */
-interface PlotRect {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}
-
-/**
- * Carves the label gutters out of the chart's box. Clamped so a box too small
- * to hold them - a chart whose width hasn't been measured yet - collapses to an
- * empty rectangle rather than an inside-out one.
- */
-function toPlotRect(width: number, height: number): PlotRect {
-  return {
-    left: VALUE_AXIS_WIDTH,
-    top: PLOT_TOP_PADDING,
-    right: Math.max(width - PLOT_RIGHT_INSET, VALUE_AXIS_WIDTH),
-    bottom: Math.max(height - TIME_AXIS_HEIGHT, PLOT_TOP_PADDING),
-  };
-}
-
 /**
  * Where a fraction of the way up the value axis lands on screen. The same
  * inversion `toScreenPoints` applies to the curve, so a gridline and the values
@@ -228,35 +186,6 @@ function toPlotRect(width: number, height: number): PlotRect {
  */
 function valueRatioToY(ratio: number, plot: PlotRect): number {
   return plot.bottom - ratio * (plot.bottom - plot.top);
-}
-
-function measureWidth(font: SkFont, text: string): number {
-  return font.measureText(text).width;
-}
-
-/**
- * How far below a label's baseline its visual middle sits, so a value label
- * centres on its gridline instead of resting on top of it. `ascent` is negative
- * (measured upward from the baseline) and `descent` positive.
- */
-function baselineCentreOffset(font: SkFont): number {
-  const {ascent, descent} = font.getMetrics();
-  return -(ascent + descent) / 2;
-}
-
-/**
- * Where a time label starts, given how wide it is. Labels are centred on their
- * tick, except one sitting exactly at the range's start or end - those align
- * inwards from the plot's edge instead, so they don't overflow the card.
- */
-function timeLabelX(tick: AxisTick, labelWidth: number, plot: PlotRect): number {
-  if (tick.ratio <= 0) {
-    return plot.left;
-  }
-  if (tick.ratio >= 1) {
-    return plot.right - labelWidth;
-  }
-  return plot.left + tick.ratio * (plot.right - plot.left) - labelWidth / 2;
 }
 
 /**
@@ -321,7 +250,7 @@ function buildAreaPath(linePath: SkPath, screenPoints: Point[], baselineY: numbe
 }
 
 function toScreenPoints(
-  points: MetricSeriesPoint[],
+  points: NumericSeriesPoint[],
   timeRange: TimeRange,
   plot: PlotRect,
   minY: number,
@@ -346,15 +275,3 @@ function toScreenPoints(
       : plot.bottom - ((point.y - minY) / ySpan) * plotHeight,
   }));
 }
-
-const styles = StyleSheet.create({
-  insufficient: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  insufficientText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-});

@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {buildSeedData} from './devSeedData';
-import {GetMetricSeriesUseCase} from '../application/GetMetricSeriesUseCase';
+import {GetMetricSeriesUseCase, isCategoryPoint} from '../application/GetMetricSeriesUseCase';
 import {
   getAggregationForPreset,
   getTimeRangeForPreset,
@@ -86,6 +86,67 @@ describe('seeded chart coverage', () => {
 
     expect(points.length).toBeGreaterThanOrEqual(2);
     expect(points.some(point => point.recordCount > 1)).toBe(true);
+  });
+
+  // A swimlane's mixed regime - a bucket several values deep, each a fraction of
+  // its lane - is what the manual checklist eyeballs at 1Y, and neither Enum
+  // fixture can be stretched to a year of such buckets: `mood`'s Record count is
+  // load-bearing for the deletion flow and `category`'s Records are shared with
+  // `flag` and `note`. Both do fold their whole run of daily buckets into a
+  // couple of 30-day ones, which is where that regime is reachable.
+  it.each([
+    ['mixed metrics', 'category'],
+    ['no numeric', 'mood'],
+  ])('folds %s\'s %s into 1Y buckets several Records deep, one of them mixed', (observationName, metricName) => {
+    const {observation, records} = entry(observationName);
+    const metric = observation.metrics.find(candidate => candidate.name === metricName)!;
+
+    const points = getMetricSeries.execute(
+      records,
+      metric,
+      getTimeRangeForPreset('1Y'),
+      getAggregationForPreset('1Y'),
+    );
+
+    expect(points.length).toBeGreaterThan(0);
+    expect(points.length).toBeLessThan(pointCount(observationName, metricName, '1M'));
+    for (const point of points) {
+      expect(point.recordCount).toBeGreaterThan(1);
+    }
+    // Which values a bucket draws is the fixture's own business; that some
+    // bucket draws more than one is what the checklist reads off the screen.
+    const shareCounts = points.map(point => (isCategoryPoint(point) ? point.shares.length : 0));
+    expect(Math.max(...shareCounts)).toBeGreaterThan(1);
+  });
+
+  it('draws category a mark per day-bucket at the shorter windows and two columns at 1Y', () => {
+    expect(pointCount('mixed metrics', 'category', '1W')).toBe(4);
+    expect(pointCount('mixed metrics', 'category', '1M')).toBe(10);
+    expect(pointCount('mixed metrics', 'category', '1Y')).toBe(2);
+  });
+
+  // One Record per day-bucket, so every mark fills its lane - the other regime,
+  // and the one the checklist reads the lane order and the ramp off.
+  it.each([
+    ['mixed metrics', 'category'],
+    ['no numeric', 'mood'],
+  ])('leaves every 1M bucket of %s\'s %s unanimous', (observationName, metricName) => {
+    const {observation, records} = entry(observationName);
+    const metric = observation.metrics.find(candidate => candidate.name === metricName)!;
+
+    const points = getMetricSeries.execute(
+      records,
+      metric,
+      getTimeRangeForPreset('1M'),
+      getAggregationForPreset('1M'),
+    );
+
+    expect(points.length).toBeGreaterThan(0);
+    for (const point of points) {
+      expect(isCategoryPoint(point) && point.shares).toEqual([
+        {value: expect.any(String), share: 1},
+      ]);
+    }
   });
 
   it('fills the 30-day-bucketed 1Y window from the yearly Metric', () => {

@@ -1,7 +1,7 @@
 import {AggregationStrategy, TimeRange} from '../../application/GetMetricSeriesUseCase';
 
-/** Message shown when a Numeric metric has no aggregated points at all. */
-export const NUMERIC_TREND_INSUFFICIENT_MESSAGE = 'Not enough data yet';
+/** Message shown when a metric has no aggregated points at all. */
+export const TREND_INSUFFICIENT_MESSAGE = 'Not enough data yet';
 
 /**
  * The largest count an aggregated point spells out. Past it the exact number

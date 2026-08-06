@@ -1,7 +1,8 @@
 import type React from 'react';
 import type {Metric, MetricValueType} from '../../domain/Metric';
-import type {MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
+import type {AggregationStrategy, MetricSeriesPoint, TimeRange,} from '../../application/GetMetricSeriesUseCase';
 import {NumericTrendChart} from './NumericTrendChart';
+import {EnumSwimlaneChart} from './EnumSwimlaneChart';
 
 /**
  * The contract every chart renderer implements. Renderers own their drawing but
@@ -12,6 +13,12 @@ export interface ChartRendererProps {
   points: MetricSeriesPoint[];
   /** The x-axis domain. Scaled across `[start, end)`, not across the data's own span. */
   timeRange: TimeRange;
+  /**
+   * How the points were bucketed. A renderer drawing a point as an interval
+   * rather than a dot needs the bucket's span, which the gaps between points
+   * cannot give it: on a metric that skips buckets they are multiples of it.
+   */
+  aggregation: AggregationStrategy;
   width: number;
   height: number;
   /**
@@ -34,3 +41,4 @@ export type ChartRenderer = React.ComponentType<ChartRendererProps>;
 export const rendererRegistry = new Map<MetricValueType, ChartRenderer>();
 
 rendererRegistry.set('Numeric', NumericTrendChart);
+rendererRegistry.set('Enum', EnumSwimlaneChart);

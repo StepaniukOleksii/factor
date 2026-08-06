@@ -1,10 +1,11 @@
 import {describe, expect, it, vi} from 'vitest';
 import {rendererRegistry} from './rendererRegistry';
 import {NumericTrendChart} from './NumericTrendChart';
+import {EnumSwimlaneChart} from './EnumSwimlaneChart';
 import {MetricValueType} from '../../domain/Metric';
 
-// NumericTrendChart (pulled in transitively when the registry registers it)
-// imports react-native, which can't load raw under Node.
+// The charts (pulled in transitively when the registry registers them) import
+// react-native, which can't load raw under Node.
 vi.mock('react-native', () => require('react-native-web'));
 
 describe('rendererRegistry', () => {
@@ -19,5 +20,15 @@ describe('rendererRegistry', () => {
 
   it('registers NumericTrendChart for the Numeric metric type', () => {
     expect(rendererRegistry.get('Numeric')).toBe(NumericTrendChart);
+  });
+
+  it('registers EnumSwimlaneChart for the Enum metric type', () => {
+    expect(rendererRegistry.get('Enum')).toBe(EnumSwimlaneChart);
+  });
+
+  // The Trends section renders a card for every registered type, so a type
+  // registered before it can draw would put an empty card on the screen.
+  it.each(['Boolean', 'Text'] as const)('leaves %s unregistered until it can draw', type => {
+    expect(rendererRegistry.has(type)).toBe(false);
   });
 });
