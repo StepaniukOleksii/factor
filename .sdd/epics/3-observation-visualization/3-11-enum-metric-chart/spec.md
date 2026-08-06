@@ -21,9 +21,10 @@ rather than needing one of its own.
 * The Trends section renders a chart for every Metric whose type has a registered renderer, in the
   Observation's own Metric order rather than grouped by type. It and the time range selector are omitted only
   when no Metric on the Observation charts at all.
-* An Enum chart draws one lane per allowed value, in declared order, the last-declared value in the top lane,
-  coloured by a one-hue ordinal ramp over the app's existing green — darkest at the first-declared value,
-  lightest at the last. No legend is drawn.
+* An Enum chart draws one lane per allowed value, in declared order read top down — the first-declared value
+  in the top lane, so the lanes and the Record form's own value list run the same way — coloured by a one-hue
+  ordinal ramp over the app's existing green, darkest at the first-declared value and lightest at the last.
+  No legend is drawn.
 * Each bucket holding Records draws one mark per value those Records took, in that value's own lane, its
   height that value's share of the bucket and its width the bucket's own span. A bucket whose Records all
   took one value draws a single mark filling that lane, and a share too small to draw is drawn at a minimum
@@ -103,7 +104,8 @@ multiples of it on any Metric that doesn't record every bucket. The screen alrea
 `NumericTrendChart` ignores it.
 
 **The lane ramp** lives in `src/presentation/charts/laneColors.ts` as `getLaneColors(laneCount)`, returning
-the ramp bottom lane first:
+the ramp in declared value order — so an entry's index is both its value's place in that order and its lane
+counted from the top:
 
 * 2 lanes — `#5a8a45`, `#b6f09c`
 * 3 lanes — `#5a8a45`, `#86bd68`, `#b6f09c`
@@ -118,7 +120,7 @@ one chart's ordinal scale, and nothing else in the app has an ordinal scale to s
 
 **`EnumSwimlaneChart`** (`src/presentation/charts/EnumSwimlaneChart.tsx`) implements `ChartRenderer` for
 `Enum` and registers in `rendererRegistry` beside the Numeric entry. Its lanes come from `allowedValues`: the
-value at declared index *i* takes lane *i* counted from the plot's bottom, and colour *i* from the ramp. With
+value at declared index *i* takes lane *i* counted from the plot's top, and colour *i* from the ramp. With
 no values or no points it renders `TREND_INSUFFICIENT_MESSAGE` in the same block `NumericTrendChart` uses for
 its zero-point case — unreachable, since the screen gates first, but it keeps the two interchangeable.
 
@@ -209,16 +211,16 @@ details-screen checklists updated to match.
 Run **Reseed test data** first. No storage change, so there is nothing to clear.
 
 1. Open `no numeric`. A TRENDS section and its selector now appear, with one card titled `mood` and none for
-   `done`: three lanes labelled `high`, `ok`, `low` top to bottom, five marks each filling its lane, and lane
-   separators but no value labels down the left. A `low` mark is the darkest green on the card and a `high`
-   mark the lightest.
+   `done`: three lanes labelled `low`, `ok`, `high` top to bottom — the order the Record form lists them in —
+   five marks each filling its lane, and lane separators but no value labels down the left. A `low` mark is
+   the darkest green on the card and a `high` mark the lightest.
 2. RECENT RECORDS and its first Records are still on the first screen below the card.
 3. Switch to `1Y`: the five marks collapse into one column near the right edge carrying one mark per value
    recorded, each a fraction of its lane and together about one lane's worth of height. Switch to `1D` and
    confirm either a single mark or `Not enough data yet`, per the hour rule above.
 4. Open `mixed metrics` at `1M`. `category`'s card sits after the five Numeric cards, in declaration order;
-   `flag` and `note` still get none. Ten marks in the newer two-thirds of the window, lanes labelled `c`, `b`,
-   `a` top to bottom.
+   `flag` and `note` still get none. Ten marks in the newer two-thirds of the window, lanes labelled `a`, `b`,
+   `c` top to bottom.
 5. Switch to `1Y`: `category` becomes one column of three sized marks, and every Numeric chart is exactly as
    before — curve, gradient fill, axes, dots, count labels.
 6. Tap a `category` mark, and the empty space in its lanes: nothing happens, and the Numeric charts do not
@@ -237,12 +239,12 @@ Run **Reseed test data** first. No storage change, so there is nothing to clear.
   outside `allowedValues` is dropped from the series and from `recordCount`, and a Metric with no constraint
   yields no points; base fields match what the same Records give a Numeric Metric; Numeric points are
   unchanged but for `kind`; `Boolean` and `Text` still throw.
-* **Unit — `laneColors`:** the stated ramp for 2, 3 and 4 lanes, bottom lane first, each starting and ending
-  on the shared endpoints, falling back to the 4-lane ramp above 4.
+* **Unit — `laneColors`:** the stated ramp for 2, 3 and 4 lanes, in declared value order, each starting and
+  ending on the shared endpoints, falling back to the 4-lane ramp above 4.
 * **Unit — `chartAxis`:** `truncateToWidth` on a fitting string, a longer one, and a width too small for even
   an ellipsis; `toPlotRect` honours the gutter it is given and still collapses rather than inverting.
 * **Unit — `EnumSwimlaneChart`** (on the existing Skia mock): a bucket's shares become one mark per share, in
-  its value's lane counted from the bottom and coloured from that lane's ramp entry; a unanimous bucket draws
+  its value's lane counted from the top and coloured from that lane's ramp entry; a unanimous bucket draws
   one lane-filling mark and a tiny share lands on the minimum height; width follows `bucketSizeMs` and never
   crosses the plot's right edge; `laneCount + 1` separators, no value gridline or label; lane labels truncate
   to the gutter, are omitted while the font is `null`, and leave the plot rectangle identical either way; zero

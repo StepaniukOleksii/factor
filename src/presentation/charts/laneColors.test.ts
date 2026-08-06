@@ -20,7 +20,7 @@ describe('getLaneColors', () => {
   });
 
   // A lane's colour says where in the declared order it sits, so the darkest
-  // green belongs to the first-declared value - drawn in the bottom lane.
+  // green belongs to the first-declared value - drawn in the top lane.
   it.each([2, 3, 4])('spans the shared endpoints at %i lanes, darkest first', laneCount => {
     const ramp = getLaneColors(laneCount);
 

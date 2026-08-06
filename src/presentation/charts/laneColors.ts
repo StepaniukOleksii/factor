@@ -18,9 +18,11 @@ const LANE_RAMPS: Readonly<Record<number, readonly string[]>> = {
 const FALLBACK_LANE_COUNT = 4;
 
 /**
- * The ramp for `laneCount` lanes, bottom lane first. `METRIC_ENUM_MAX_VALUES`
- * keeps a real chart within 2 to 4, so any other count falls back to the widest
- * ramp rather than throwing: a chart is not worth crashing a screen over.
+ * The ramp for `laneCount` lanes, in the metric's own declared value order - so
+ * an entry's index is both its value's place in that order and its lane counted
+ * from the chart's top. `METRIC_ENUM_MAX_VALUES` keeps a real chart within 2 to
+ * 4, so any other count falls back to the widest ramp rather than throwing: a
+ * chart is not worth crashing a screen over.
  */
 export function getLaneColors(laneCount: number): readonly string[] {
   return LANE_RAMPS[laneCount] ?? LANE_RAMPS[FALLBACK_LANE_COUNT];

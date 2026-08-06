@@ -40,9 +40,9 @@ const MARK_CORNER_RADIUS = 4;
 
 /**
  * Renders an Enum metric's series as a swimlane: one lane per allowed value, in
- * declared order with the last-declared value on top, and one mark per value a
- * bucket's Records took - as wide as the bucket and as tall a share of its lane
- * as the Records taking that value were of the bucket.
+ * declared order read top down - the order the Record form lists them in - and
+ * one mark per value a bucket's Records took, as wide as the bucket and as tall
+ * a share of its lane as the Records taking that value were of the bucket.
  *
  * Nothing here is tappable: what a tap on a lane should mean has not been
  * decided, so `onPointPress` is never called and no `Pressable` wraps the canvas.
@@ -73,11 +73,11 @@ export const EnumSwimlaneChart = ({metric, points, timeRange, aggregation, width
 
   return (
     <Canvas style={{width, height}}>
-      {separatorLanes(laneValues.length).map(lane => (
+      {laneBoundaries(laneValues.length, plot, laneHeight).map(y => (
         <Line
-          key={`separator-${lane}`}
-          p1={vec(plot.left, laneFloor(lane, plot, laneHeight))}
-          p2={vec(plot.right, laneFloor(lane, plot, laneHeight))}
+          key={`separator-${y}`}
+          p1={vec(plot.left, y)}
+          p2={vec(plot.right, y)}
           color={GRIDLINE_COLOR}
           strokeWidth={GRIDLINE_WIDTH}
         />
@@ -112,7 +112,7 @@ export const EnumSwimlaneChart = ({metric, points, timeRange, aggregation, width
 /** Everything a mark's geometry is measured against. */
 interface Swimlane {
   plot: PlotRect;
-  /** In declared order, so a value's index is its lane counted from the bottom. */
+  /** In declared order, so a value's index is its lane counted from the top. */
   laneValues: string[];
   laneHeight: number;
   timeRange: TimeRange;
@@ -122,7 +122,7 @@ interface Swimlane {
 /** One value's share of one bucket, as drawn. */
 interface Mark {
   key: string;
-  /** Counted from the plot's bottom, which is where the first-declared value sits. */
+  /** The value's declared index, which is its lane counted from the plot's top. */
   lane: number;
   x: number;
   y: number;
@@ -131,16 +131,17 @@ interface Mark {
 }
 
 /**
- * The lower edge of a lane, counting lanes up from the plot's bottom - where the
- * first-declared value's lane sits. Lane `laneCount` is the plot's own top edge.
+ * The lower edge of a lane, counting lanes down from the plot's top - where the
+ * first-declared value's lane sits, so the lanes read in the order the Record
+ * form lists the values.
  */
 function laneFloor(lane: number, plot: PlotRect, laneHeight: number): number {
-  return plot.bottom - lane * laneHeight;
+  return plot.top + (lane + 1) * laneHeight;
 }
 
-/** Every lane boundary, the plot's bottom and top edges included. */
-function separatorLanes(laneCount: number): number[] {
-  return Array.from({length: laneCount + 1}, (_, lane) => lane);
+/** Every lane boundary, the plot's top and bottom edges included. */
+function laneBoundaries(laneCount: number, plot: PlotRect, laneHeight: number): number[] {
+  return Array.from({length: laneCount + 1}, (_, index) => plot.top + index * laneHeight);
 }
 
 function toMark(

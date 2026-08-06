@@ -110,9 +110,14 @@ function findAllByText(root: any, text: string) {
   );
 }
 
-/** The bottom edge of a lane, counting lanes up from the plot's own bottom. */
+/** Every lane boundary, counting down from the plot's own top edge at index 0. */
+function laneBoundary(index: number): number {
+  return PLOT.top + index * LANE_HEIGHT;
+}
+
+/** The bottom edge of the lane holding the value declared at `lane`. */
 function laneFloor(lane: number): number {
-  return PLOT.bottom - lane * LANE_HEIGHT;
+  return laneBoundary(lane + 1);
 }
 
 describe('EnumSwimlaneChart', () => {
@@ -127,12 +132,14 @@ describe('EnumSwimlaneChart', () => {
     const root = render([bucket(0, ['low', 0.5], ['high', 0.5])]);
 
     expect(marks(root)).toHaveLength(2);
+    // `low` is declared first, so it takes the top lane and `high` the bottom.
     const [low, high] = marks(root);
     expect(low.y + low.height).toBeCloseTo(laneFloor(0) - 3);
     expect(high.y + high.height).toBeCloseTo(laneFloor(2) - 3);
+    expect(low.y).toBeLessThan(high.y);
   });
 
-  it('colours each mark from the ramp entry of its own lane, darkest at the bottom', () => {
+  it('colours each mark from the ramp entry of its own lane, darkest at the top', () => {
     const ramp = getLaneColors(MOODS.length);
 
     const root = render([bucket(0, ['low', 0.34], ['ok', 0.33], ['high', 0.33])]);
@@ -187,11 +194,13 @@ describe('EnumSwimlaneChart', () => {
 
     expect(lines).toHaveLength(MOODS.length + 1);
     expect(lines.map((line: any) => line.p1.y)).toEqual([
-      laneFloor(0),
-      laneFloor(1),
-      laneFloor(2),
-      laneFloor(3),
+      laneBoundary(0),
+      laneBoundary(1),
+      laneBoundary(2),
+      laneBoundary(3),
     ]);
+    expect(lines[0].p1.y).toBe(PLOT.top);
+    expect(lines[MOODS.length].p1.y).toBe(PLOT.bottom);
     lines.forEach((line: any) => {
       expect(line.p1.x).toBe(PLOT.left);
       expect(line.p2.x).toBe(PLOT.right);
@@ -199,11 +208,12 @@ describe('EnumSwimlaneChart', () => {
     });
   });
 
-  it('labels each lane in the gutter, the last-declared value on top', () => {
+  it('labels each lane in the gutter, in declared order read top down', () => {
     loadFont();
 
     const root = render([bucket(0, ['ok', 1])]);
 
+    // The order the Record form lists them in, so the chart and the picker agree.
     expect(laneLabels(root).map((label: any) => label.text)).toEqual(['low', 'ok', 'high']);
     laneLabels(root).forEach((label: any, lane: number) => {
       expect(label.x).toBe(0);

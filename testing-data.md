@@ -126,9 +126,9 @@ Open **`mixed metrics`** details screen (time range selector defaults to `1M`):
 - `insufficient` — trend chart shows a single dot, vertically centred on the axes, with no line and no
   gradient fill (its one record falls inside the 30-day window).
 - `category` — a swimlane card *after* the five Numeric ones, in declaration order: three lanes labelled
-  `c`, `b`, `a` top to bottom, ten marks in the newer two-thirds of the window each filling its lane, and
-  lane separators but no value labels down the left. An `a` mark is the darkest green and a `c` mark the
-  lightest. Tapping a mark, or the empty space beside it, does nothing.
+  `a`, `b`, `c` top to bottom — the order the Record form lists them in — ten marks in the newer two-thirds
+  of the window each filling its lane, and lane separators but no value labels down the left. An `a` mark is
+  the darkest green and a `c` mark the lightest. Tapping a mark, or the empty space beside it, does nothing.
 - `flag`/`note` — neither gets a trend card; RECENT RECORDS shows entries with a boolean, an enum value,
   and a note together on the same record.
 - record notes — under RECENT RECORDS at least one collapsed row shows a note glyph beside its time and at
@@ -168,9 +168,9 @@ Still on **`mixed metrics`**, tap **Add Record** (and again via **Edit Record** 
 Open **`no numeric`** details screen:
 
 - a TRENDS section and its time range selector appear, holding one card titled `mood` and none for `done`:
-  three lanes labelled `high`, `ok`, `low` top to bottom, five marks each filling its lane, and lane
-  separators but no value labels down the left. A `low` mark is the darkest green and a `high` mark the
-  lightest.
+  three lanes labelled `low`, `ok`, `high` top to bottom — the order the Record form lists them in — five
+  marks each filling its lane, and lane separators but no value labels down the left. A `low` mark is the
+  darkest green and a `high` mark the lightest.
 - RECENT RECORDS and its first records are still on the first screen, below that one card.
 - at `1Y` the five marks collapse into two columns near the right edge, each carrying a mark per value
   recorded in it. At `1D`, either a single mark or `Not enough data yet`, per the 09:00 rule above.
