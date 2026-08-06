@@ -18,11 +18,11 @@ const DAY_MS = 24 * HOUR_MS;
 const CHART_WIDTH = 300;
 const CHART_HEIGHT = 108;
 
-// The plotting rectangle the chart carves out of its box: a 24px column on the
-// left for value labels, a 14px strip along the bottom for time labels, 6px of
-// top padding so peaks aren't clipped, and a 4px right inset mirroring the left
-// gutter. Mirrors NumericTrendChart's own layout constants.
-const PLOT = {left: 24, top: 6, right: 296, bottom: 94};
+// The plotting rectangle the chart carves out of its box: the 32px gutter every
+// chart reserves for the labels down its left edge, a 14px strip along the
+// bottom for time labels, 6px of top padding so peaks aren't clipped, and a 4px
+// right inset. Mirrors the shared layout constants in chartAxis.
+const PLOT = {left: 32, top: 6, right: 296, bottom: 94};
 const PLOT_WIDTH = PLOT.right - PLOT.left;
 const PLOT_HEIGHT = PLOT.bottom - PLOT.top;
 /** Where every time label's baseline sits: 12px below the plot's bottom edge. */
@@ -179,9 +179,9 @@ function labelCentre(label: any): number {
 // The chart draws its curve inside PLOT, so the points built by
 // `points(10, 20, 15, 25)` land at these screen coordinates: x spread evenly
 // across the plotting rectangle's width, y inverted across the value range.
-//   index 0 (y=10, min): screen (24, 94)
-//   index 1 (y=20):      screen (114.7, 35.3)
-//   index 2 (y=15):      screen (205.3, 64.7)
+//   index 0 (y=10, min): screen (32, 94)
+//   index 1 (y=20):      screen (120, 35.3)
+//   index 2 (y=15):      screen (208, 64.7)
 //   index 3 (y=25, max): screen (296, 6)
 function press(root: any, locationX: number, locationY: number) {
   const pressable = root.root.findByProps({testID: 'numeric-trend-chart-pressable'});
@@ -331,8 +331,8 @@ describe('NumericTrendChart', () => {
     const chartPoints = points(10, 20, 15, 25);
     const root = render(chartPoints, onPointPress);
 
-    // Nearest the third point at screen (205.3, 64.7).
-    press(root, 205, 65);
+    // Nearest the third point at screen (208, 64.7).
+    press(root, 208, 65);
 
     expect(onPointPress).toHaveBeenCalledWith(chartPoints[2]);
   });
@@ -342,7 +342,7 @@ describe('NumericTrendChart', () => {
     const chartPoints = points(10, 20, 15, 25);
     const root = render(chartPoints, onPointPress);
 
-    // Nearest the first point at screen (24, 94) - inside the plot, not at the
+    // Nearest the first point at screen (32, 94) - inside the plot, not at the
     // chart box's own left edge.
     press(root, PLOT.left, PLOT.bottom);
 

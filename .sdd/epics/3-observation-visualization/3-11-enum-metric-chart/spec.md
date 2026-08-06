@@ -132,6 +132,8 @@ Geometry:
 * The plot rectangle is `toPlotRect(width, height, 48)` — a 48px left gutter against the value axis's 24,
   which is what buys the labels their extra characters. Lane height is the plot's height over the lane count,
   so 2, 3 and 4 lanes each fill the same card.
+  ([Boolean Metric Chart](../3-12-boolean-metric-chart/spec.md) §3.4 later replaced both widths with one
+  32px gutter shared by every chart, and dropped `toPlotRect`'s parameter with them.)
 * `laneCount + 1` separators span the plot's width at the lane boundaries, in the shared gridline colour and
   width, and are the only horizontal rules the chart draws.
 * A mark's `x` maps its bucket start across `timeRange` as the Numeric chart maps a point's; its width is

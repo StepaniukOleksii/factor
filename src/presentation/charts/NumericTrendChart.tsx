@@ -19,6 +19,7 @@ import {
   baselineCentreOffset,
   GRIDLINE_COLOR,
   GRIDLINE_WIDTH,
+  LABEL_GAP,
   measureWidth,
   type PlotRect,
   TimeAxisLabels,
@@ -52,10 +53,6 @@ const POINT_COUNT_LABEL_COLOR = withAlpha(COLORS.onSurfaceVariant, 0.65);
 // close enough to still read as belonging to that point.
 const POINT_COUNT_LABEL_OFFSET = 9;
 
-// The gutter carved out of the chart's box for the value labels, on the left of
-// the plotting rectangle everything the chart draws and hit-tests lives inside.
-const VALUE_AXIS_WIDTH = 24;
-const VALUE_LABEL_GAP = 5;
 const VALUE_AXIS_TICK_COUNT = 5;
 
 /**
@@ -84,7 +81,7 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
     return <InsufficientData height={height} />;
   }
 
-  const plot = toPlotRect(width, height, VALUE_AXIS_WIDTH);
+  const plot = toPlotRect(width, height);
   const ys = numericPoints.map(point => point.y);
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
@@ -123,7 +120,7 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
                 <SkiaText
                   font={font}
                   text={tick.label}
-                  x={plot.left - VALUE_LABEL_GAP - measureWidth(font, tick.label)}
+                  x={plot.left - LABEL_GAP - measureWidth(font, tick.label)}
                   y={y + baselineCentreOffset(font)}
                   color={AXIS_LABEL_COLOR}
                 />

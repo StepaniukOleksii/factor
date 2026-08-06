@@ -20,16 +20,16 @@ function enumMetric(allowedValues: string[] | null = MOODS): Metric {
 const CHART_WIDTH = 300;
 const CHART_HEIGHT = 108;
 
-// The plotting rectangle this chart carves out of its box: a 48px gutter for the
-// lane labels, then the same top padding, right inset and time-label strip every
-// chart reserves.
-const PLOT = {left: 48, top: 6, right: 296, bottom: 94};
+// The plotting rectangle this chart carves out of its box: the 32px gutter every
+// chart reserves for its left-hand labels, then the same top padding, right
+// inset and time-label strip.
+const PLOT = {left: 32, top: 6, right: 296, bottom: 94};
 const PLOT_WIDTH = PLOT.right - PLOT.left;
 const LANE_HEIGHT = (PLOT.bottom - PLOT.top) / MOODS.length;
 /** Where every time label's baseline sits: 12px below the plot's bottom edge. */
 const TIME_LABEL_BASELINE = PLOT.bottom + 12;
 /** The gutter less the 5px gap a lane label keeps from the plot. */
-const LANE_LABEL_WIDTH = 43;
+const LANE_LABEL_WIDTH = PLOT.left - 5;
 
 // A ten-bucket window, so a bucket is a tenth of the plot wide and a point's own
 // `x` reads as its bucket index.
@@ -293,9 +293,6 @@ describe('CategorySwimlaneChart drawing an Enum Metric', () => {
 
 describe('CategorySwimlaneChart drawing a Boolean Metric', () => {
   const BOOLEAN_LANE_HEIGHT = (PLOT.bottom - PLOT.top) / 2;
-  /** The gutter the Numeric chart gives its value labels, which `Yes` fits. */
-  const BOOLEAN_PLOT_LEFT = 24;
-  const BOOLEAN_PLOT_WIDTH = PLOT.right - BOOLEAN_PLOT_LEFT;
 
   function booleanMetric(): Metric {
     return new Metric('b1', 'done', 'Boolean');
@@ -325,18 +322,17 @@ describe('CategorySwimlaneChart drawing a Boolean Metric', () => {
     expect([yes.color, no.color]).toEqual([ramp[0], ramp[1]]);
   });
 
-  // Its two words are known and short, where an Enum value runs to twelve
-  // characters - so the plot starts where a Numeric chart's does and keeps the
-  // width the wider gutter would have taken.
-  it('draws inside the narrow gutter a fixed pair of labels fits', () => {
+  // One gutter for every chart, whatever it labels - so two cards of the same
+  // window put a moment at the same x and can be read down a column.
+  it('draws from the same left edge, and over the same plot, an Enum swimlane does', () => {
     loadFont();
 
     const root = render([bucket(0, ['true', 1])], booleanMetric());
 
-    expect(separators(root).every((line: any) => line.p1.x === BOOLEAN_PLOT_LEFT)).toBe(true);
+    expect(separators(root).every((line: any) => line.p1.x === PLOT.left)).toBe(true);
     const [mark] = marks(root);
-    expect(mark.x).toBeCloseTo(BOOLEAN_PLOT_LEFT);
-    expect(mark.width).toBeCloseTo(BOOLEAN_PLOT_WIDTH / 10 - 2);
+    expect(mark.x).toBeCloseTo(PLOT.left);
+    expect(mark.width).toBeCloseTo(PLOT_WIDTH / 10 - 2);
   });
 
   // A bucket splitting 2:1, beside one holding the busiest mark on the card - so

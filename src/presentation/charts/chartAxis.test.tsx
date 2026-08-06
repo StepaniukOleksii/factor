@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import type {SkFont} from '@shopify/react-native-skia';
-import {toPlotRect, truncateToWidth} from './chartAxis';
+import {LABEL_GUTTER, toPlotRect, truncateToWidth} from './chartAxis';
 
 // Every glyph the same width, the ellipsis included, so a width in pixels reads
 // as a number of characters.
@@ -33,15 +33,17 @@ describe('truncateToWidth', () => {
 });
 
 describe('toPlotRect', () => {
-  it('reserves the left gutter it is given', () => {
-    expect(toPlotRect(300, 108, 48)).toEqual({left: 48, top: 6, right: 296, bottom: 94});
-    expect(toPlotRect(300, 108, 24)).toEqual({left: 24, top: 6, right: 296, bottom: 94});
+  // The one gutter every chart reserves, so two cards of the same window put a
+  // moment at the same place and can be read against each other down a column.
+  it('reserves the shared label gutter, whatever the chart', () => {
+    expect(toPlotRect(300, 108)).toEqual({left: LABEL_GUTTER, top: 6, right: 296, bottom: 94});
+    expect(LABEL_GUTTER).toBe(32);
   });
 
   // The width of a chart card is measured on layout, so the first render draws
   // into a box with no room for its own gutters.
   it('collapses an unmeasured box rather than inverting it', () => {
-    const plot = toPlotRect(0, 0, 48);
+    const plot = toPlotRect(0, 0);
 
     expect(plot.right).toBe(plot.left);
     expect(plot.bottom).toBe(plot.top);

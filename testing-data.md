@@ -130,8 +130,8 @@ Open **`mixed metrics`** details screen (time range selector defaults to `1M`):
 - `flag` — a swimlane card *after* the five Numeric ones and *before* `category`, in declaration order: two
   lanes labelled `Yes` above `No` — the words and the order the Record form's own segments carry — and ten
   marks in the newer two-thirds of the window, each filling one lane or the other. A `Yes` mark is the darker
-  green. Its two labels are short enough for the gutter a Numeric chart uses, so its plot starts on the same
-  left edge as the five above it and further left than `category`'s below it.
+  green. Its plot starts on the same left edge as every other card in the section — the five Numeric ones
+  above it and `category` below — since every chart reserves one gutter of the same width.
 - `category` — a swimlane card after `flag`: three lanes labelled `a`, `b`, `c` top to bottom — the order the
   Record form lists them in — ten marks in the newer two-thirds of the window each filling its lane, and lane
   separators but no value labels down the left. An `a` mark is the darkest green and a `c` mark the lightest.
@@ -180,8 +180,8 @@ Open **`no numeric`** details screen:
   below it. `mood`: three lanes labelled `low`, `ok`, `high` top to bottom — the order the Record form lists
   them in — five marks each filling its lane, and lane separators but no value labels down the left. A `low`
   mark is the darkest green and a `high` mark the lightest. `done`: two lanes labelled `Yes` above `No`, five
-  marks each filling one lane or the other, `Yes` the darker green. Its labels sit in the narrower gutter a
-  Numeric chart uses, so its plot starts further left than `mood`'s and neither word is cut short.
+  marks each filling one lane or the other, `Yes` the darker green. Both plots start on the same left edge,
+  and no label on either card is cut short.
 - RECENT RECORDS and its first records are still on the first screen, below both cards.
 - at `1Y` each card's five marks collapse into two columns near the right edge, each carrying a mark per
   value recorded in it. On `mood` no value repeats within either bucket, so every mark still fills its lane

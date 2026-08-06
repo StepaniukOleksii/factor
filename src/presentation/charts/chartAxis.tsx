@@ -23,6 +23,22 @@ export const TIME_AXIS_HEIGHT = 14;
 export const PLOT_RIGHT_INSET = 4;
 export const TIME_LABEL_BASELINE_OFFSET = 12;
 export const AXIS_FONT_SIZE = 9;
+/**
+ * The gutter every chart carves out of its box for the labels down its left
+ * edge, and the gap those labels keep from the plot. One width for every chart
+ * rather than one per chart: the x scale runs from the plot's left edge, so two
+ * cards reserving different gutters put the same moment at two different places
+ * and cannot be read down a column against each other.
+ *
+ * 32px holds five digits of a Numeric value label - four, and any negative
+ * carrying a decimal, overran the 24px this replaced, and a value label is
+ * right-aligned rather than truncated, so an overrun is drawn off the card. It
+ * holds six average characters of a lane label, past which `truncateToWidth`
+ * takes over: fewer than the 48px it replaces there, and enough to tell lanes
+ * apart when the ramp and the lane's position already say which is which.
+ */
+export const LABEL_GUTTER = 32;
+export const LABEL_GAP = 5;
 export const AXIS_LABEL_COLOR = COLORS.onSurfaceVariant;
 // Faint enough that the gridlines read as a reference behind what the chart
 // draws rather than a grid drawn over it.
@@ -38,16 +54,15 @@ export interface PlotRect {
 }
 
 /**
- * Carves the label gutters out of the chart's box, `leftGutter` wide on the left
- * - each chart reserving whatever its own left-hand labels need. Clamped so a
- * box too small to hold them - a chart whose width hasn't been measured yet -
- * collapses to an empty rectangle rather than an inside-out one.
+ * Carves the label gutters out of the chart's box. Clamped so a box too small to
+ * hold them - a chart whose width hasn't been measured yet - collapses to an
+ * empty rectangle rather than an inside-out one.
  */
-export function toPlotRect(width: number, height: number, leftGutter: number): PlotRect {
+export function toPlotRect(width: number, height: number): PlotRect {
   return {
-    left: leftGutter,
+    left: LABEL_GUTTER,
     top: PLOT_TOP_PADDING,
-    right: Math.max(width - PLOT_RIGHT_INSET, leftGutter),
+    right: Math.max(width - PLOT_RIGHT_INSET, LABEL_GUTTER),
     bottom: Math.max(height - TIME_AXIS_HEIGHT, PLOT_TOP_PADDING),
   };
 }

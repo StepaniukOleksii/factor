@@ -11,19 +11,19 @@ import {
   baselineCentreOffset,
   GRIDLINE_COLOR,
   GRIDLINE_WIDTH,
+  LABEL_GAP,
+  LABEL_GUTTER,
   type PlotRect,
   TimeAxisLabels,
   toPlotRect,
   truncateToWidth,
   useAxisFont,
 } from './chartAxis';
-import {type ChartLane, getChartLanes, getLaneLabelGutter} from './chartLanes';
+import {type ChartLane, getChartLanes} from './chartLanes';
 import {getLaneColors} from './laneColors';
 import {InsufficientData} from './InsufficientData';
 import type {ChartRendererProps} from './rendererRegistry';
 
-// Between a lane label and the plot it names.
-const LANE_LABEL_GAP = 5;
 // Between a mark and its neighbour, so consecutive buckets read as two marks
 // rather than one band.
 const MARK_GAP = 2;
@@ -61,8 +61,7 @@ export const CategorySwimlaneChart = ({metric, points, timeRange, aggregation, w
     return <InsufficientData height={height} />;
   }
 
-  const gutter = getLaneLabelGutter(metric);
-  const plot = toPlotRect(width, height, gutter);
+  const plot = toPlotRect(width, height);
   const laneHeight = (plot.bottom - plot.top) / lanes.length;
   const laneColors = getLaneColors(lanes.length);
   const drawable = drawableCounts(buckets, lanes);
@@ -102,7 +101,7 @@ export const CategorySwimlaneChart = ({metric, points, timeRange, aggregation, w
           <SkiaText
             key={`lane-label-${lane}`}
             font={font}
-            text={truncateToWidth(font, label, gutter - LANE_LABEL_GAP)}
+            text={truncateToWidth(font, label, LABEL_GUTTER - LABEL_GAP)}
             x={0}
             y={laneFloor(lane, plot, laneHeight) - laneHeight / 2 + baselineCentreOffset(font)}
             color={AXIS_LABEL_COLOR}

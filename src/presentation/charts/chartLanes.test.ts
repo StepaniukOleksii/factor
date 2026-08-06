@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {getChartLanes, getLaneLabelGutter} from './chartLanes';
+import {getChartLanes} from './chartLanes';
 import {Metric, type MetricConstraint, type MetricValueType} from '../../domain/Metric';
 
 function metric(type: MetricValueType, constraint: MetricConstraint = null): Metric {
@@ -38,19 +38,5 @@ describe('getChartLanes', () => {
 
   it.each(['Numeric', 'Text'] as const)('gives a %s Metric no lanes at all', type => {
     expect(getChartLanes(metric(type))).toEqual([]);
-  });
-});
-
-describe('getLaneLabelGutter', () => {
-  // The width the Numeric chart reserves for its own value labels, so a Boolean
-  // card's plot starts where a Numeric card's does.
-  it('gives a Boolean Metric the narrow gutter its two known words fit', () => {
-    expect(getLaneLabelGutter(metric('Boolean'))).toBe(24);
-  });
-
-  // Sized for a value the user names, which is why it cannot be the narrow one.
-  it('gives an Enum Metric the wide gutter, whatever it declares', () => {
-    expect(getLaneLabelGutter(metric('Enum', {allowedValues: ['a']}))).toBe(48);
-    expect(getLaneLabelGutter(metric('Enum'))).toBe(48);
   });
 });
