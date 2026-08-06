@@ -40,4 +40,4 @@ they're ready to become a real spec.
 8. Charts are not updated after a Record is removed. To reproduce, remove the latest Record from the Observation Details
    screen. Observe that the Record is still drawn on the chart. Go back to the Observation List screen. Enter the
    Observation Details screen. Observe that the deleted Record is not displayed on the chart anymore.
-9. The numeric chart cannot display more than 4 numbers. The leading number is silently hidden. 
+9. The numeric chart cannot display more than 5 or 6 numbers. The leading number is silently hidden. 
