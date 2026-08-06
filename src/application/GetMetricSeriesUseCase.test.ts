@@ -1,8 +1,8 @@
 import {describe, expect, it} from 'vitest';
 import {
     AggregationStrategy,
+    type CategoryCount,
     type CategorySeriesPoint,
-    type CategoryShare,
     GetMetricSeriesUseCase,
     isCategoryPoint,
     type MetricSeriesPoint,
@@ -296,10 +296,10 @@ describe('GetMetricSeriesUseCase Enum reduction', () => {
     return values.map((value, index) => record(`r${index}`, new Date(index * 100), 'e1', value));
   }
 
-  function sharesOf(series: MetricSeriesPoint[]): CategoryShare[] {
+  function countsOf(series: MetricSeriesPoint[]): CategoryCount[] {
     const [point] = series;
     expect(isCategoryPoint(point)).toBe(true);
-    return (point as CategorySeriesPoint).shares;
+    return (point as CategorySeriesPoint).counts;
   }
 
   /** What a point says about the Records behind it, whatever they reduced to. */
@@ -307,7 +307,7 @@ describe('GetMetricSeriesUseCase Enum reduction', () => {
     return {x, recordId, recordCount, firstRecordAt, lastRecordAt};
   }
 
-  it('reduces a bucket to one share per value its Records took, in declared order', () => {
+  it('counts a bucket by value, in declared order', () => {
     const series = useCase.execute(
       moodRecords('high', 'low', 'ok', 'low'),
       enumMetric(),
@@ -316,29 +316,34 @@ describe('GetMetricSeriesUseCase Enum reduction', () => {
     );
 
     expect(series[0].kind).toBe('category');
-    expect(sharesOf(series)).toEqual([
-      {value: 'low', share: 0.5},
-      {value: 'ok', share: 0.25},
-      {value: 'high', share: 0.25},
+    expect(countsOf(series)).toEqual([
+      {value: 'low', count: 2},
+      {value: 'ok', count: 1},
+      {value: 'high', count: 1},
     ]);
   });
 
   it('leaves out a value no Record in the bucket took', () => {
-    const shares = sharesOf(
-      useCase.execute(moodRecords('low', 'high'), enumMetric(), TIME_RANGE, ONE_BUCKET)
+    const series = useCase.execute(
+      moodRecords('low', 'high'),
+      enumMetric(),
+      TIME_RANGE,
+      ONE_BUCKET
     );
+    const counts = countsOf(series);
 
-    expect(shares.map(share => share.value)).toEqual(['low', 'high']);
-    expect(shares.reduce((total, share) => total + share.share, 0)).toBe(1);
+    expect(counts.map(({value}) => value)).toEqual(['low', 'high']);
+    // Everything the point stands for is accounted for by some value.
+    expect(counts.reduce((total, {count}) => total + count, 0)).toBe(series[0].recordCount);
   });
 
-  it('gives a unanimous bucket a single share of the whole', () => {
+  it('gives a unanimous bucket a single count of every Record in it', () => {
     expect(
-      sharesOf(useCase.execute(moodRecords('ok', 'ok', 'ok'), enumMetric(), TIME_RANGE, ONE_BUCKET))
-    ).toEqual([{value: 'ok', share: 1}]);
+      countsOf(useCase.execute(moodRecords('ok', 'ok', 'ok'), enumMetric(), TIME_RANGE, ONE_BUCKET))
+    ).toEqual([{value: 'ok', count: 3}]);
   });
 
-  it('drops a Record whose value is not one the Metric allows, from the shares and the count', () => {
+  it('drops a Record whose value is not one the Metric allows, from the counts and the count', () => {
     const series = useCase.execute(
       moodRecords('low', 'elated', 'low'),
       enumMetric(),
@@ -346,7 +351,7 @@ describe('GetMetricSeriesUseCase Enum reduction', () => {
       ONE_BUCKET
     );
 
-    expect(sharesOf(series)).toEqual([{value: 'low', share: 1}]);
+    expect(countsOf(series)).toEqual([{value: 'low', count: 2}]);
     expect(series[0].recordCount).toBe(2);
   });
 

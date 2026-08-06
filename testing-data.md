@@ -82,7 +82,8 @@ card, where nothing should invite confusing them.
 
 A Numeric trend card draws a line from **two** aggregated points upwards, a single dot (no line, no
 gradient fill) at exactly **one**, and "Not enough data yet" only at **zero**. An Enum card draws a
-column of marks per point instead, and the same placeholder at zero. Aggregated point counts per metric
+column of marks per point instead — one per value recorded in that bucket, as tall as the records behind
+it against the card's own busiest mark — and the same placeholder at zero. Aggregated point counts per metric
 on `mixed metrics`, so you know what each time range preset should look like before you tap it (these
 are asserted by `devSeedData.test.ts`, so they stay true):
 
@@ -145,9 +146,10 @@ Still on **`mixed metrics`**, tap through the time range selector and check agai
 - `1W` / `1M` — `dense`, `sparse` and `hourly` all chart, at progressively more points.
 - `1Y` — `yearly` fills out across the window; `dense` and `sparse` shrink to 3 points bunched at the
   right-hand edge, since all their records fall in the last two months. `category` collapses to two
-  columns at that edge, each carrying a mark per value recorded in it, sized as a fraction of its lane
-  rather than filling it. Every Numeric chart is exactly as before — curve, gradient fill, axes, dots,
-  count labels.
+  columns at that edge — one standing for seven records and one for three — each carrying a mark per value
+  recorded in it, sized by how many records took that value: the commonest fills its lane and the rest are
+  shorter in proportion, so the three-record column carries visibly less ink than the seven-record one.
+  Every Numeric chart is exactly as before — curve, gradient fill, axes, dots, count labels.
 - RECENT RECORDS is identical at every selection.
 
 Still on **`mixed metrics`**, tap **Add Record** (and again via **Edit Record** — identical on both routes):
@@ -173,7 +175,9 @@ Open **`no numeric`** details screen:
   darkest green and a `high` mark the lightest.
 - RECENT RECORDS and its first records are still on the first screen, below that one card.
 - at `1Y` the five marks collapse into two columns near the right edge, each carrying a mark per value
-  recorded in it. At `1D`, either a single mark or `Not enough data yet`, per the 09:00 rule above.
+  recorded in it. No value repeats within either bucket, so every mark still fills its lane and the columns
+  differ in how many lanes they occupy rather than in height. At `1D`, either a single mark or
+  `Not enough data yet`, per the 09:00 rule above.
 - RECENT RECORDS shows entries carrying an enum value and a boolean together.
 
 Still on **`no numeric`**, tap **Add Record** (and again via **Edit Record** — identical on both routes):

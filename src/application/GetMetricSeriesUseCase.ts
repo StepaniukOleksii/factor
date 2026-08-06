@@ -49,11 +49,11 @@ export interface NumericSeriesPoint extends MetricSeriesPointBase {
   y: number;
 }
 
-/** How much of a bucket one of its metric's values accounts for. */
-export interface CategoryShare {
+/** How many of a bucket's Records took one of its metric's values. */
+export interface CategoryCount {
   value: string;
-  /** In `(0, 1]` - a value no Record took is absent rather than present at zero. */
-  share: number;
+  /** At least 1 - a value no Record took is absent rather than present at zero. */
+  count: number;
 }
 
 export interface CategorySeriesPoint extends MetricSeriesPointBase {
@@ -62,8 +62,12 @@ export interface CategorySeriesPoint extends MetricSeriesPointBase {
    * shape, its two values being a fixed pair rather than a declared list.
    */
   kind: 'category';
-  /** In the metric's own declared value order, summing to 1. */
-  shares: CategoryShare[];
+  /**
+   * In the metric's own declared value order, summing to `recordCount`. Counts
+   * rather than shares of the bucket: a renderer showing how much data stands
+   * behind a bucket needs the number, and a share cannot be recovered into one.
+   */
+  counts: CategoryCount[];
 }
 
 /** A single point on a metric's chart series. */
@@ -85,14 +89,14 @@ export function isCategoryPoint(point: MetricSeriesPoint): point is CategorySeri
 /** The half of a point that its metric's value type decides. */
 type SeriesPointValue =
   | Pick<NumericSeriesPoint, 'kind' | 'y'>
-  | Pick<CategorySeriesPoint, 'kind' | 'shares'>;
+  | Pick<CategorySeriesPoint, 'kind' | 'counts'>;
 
 /**
  * Turns a Metric's Records into a chart-ready series.
  *
  * Records outside the range, or without a value the metric can chart, are
  * dropped; the rest are bucketed and each bucket reduced per the metric's
- * `MetricValueType` (mean for Numeric, per-value shares for Enum). Boolean and
+ * `MetricValueType` (mean for Numeric, per-value counts for Enum). Boolean and
  * Text throw until their own slices land rather than returning something
  * plausible.
  */
@@ -172,7 +176,7 @@ export class GetMetricSeriesUseCase {
       case 'Numeric':
         return {kind: 'numeric', y: this.mean(records, metric)};
       case 'Enum':
-        return {kind: 'category', shares: this.shares(records, metric)};
+        return {kind: 'category', counts: this.counts(records, metric)};
       case 'Boolean':
       case 'Text':
         throw new Error(
@@ -189,15 +193,15 @@ export class GetMetricSeriesUseCase {
     return sum / values.length;
   }
 
-  private shares(records: Record[], metric: Metric): CategoryShare[] {
-    const counts = new Map<string, number>();
+  private counts(records: Record[], metric: Metric): CategoryCount[] {
+    const countByValue = new Map<string, number>();
     for (const record of records) {
       const value = record.getValue(metric.id) as string;
-      counts.set(value, (counts.get(value) ?? 0) + 1);
+      countByValue.set(value, (countByValue.get(value) ?? 0) + 1);
     }
     return this.allowedValues(metric)
-      .filter(value => counts.has(value))
-      .map(value => ({value, share: counts.get(value)! / records.length}));
+      .filter(value => countByValue.has(value))
+      .map(value => ({value, count: countByValue.get(value)!}));
   }
 
   private assertNever(type: never): never {

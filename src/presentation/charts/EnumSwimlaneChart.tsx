@@ -1,8 +1,8 @@
 import React from 'react';
 import {Canvas, Line, RoundedRect, Text as SkiaText, vec} from '@shopify/react-native-skia';
 import {
+  type CategoryCount,
   type CategorySeriesPoint,
-  type CategoryShare,
   isCategoryPoint,
   type TimeRange,
 } from '../../application/GetMetricSeriesUseCase';
@@ -32,9 +32,9 @@ const MARK_GAP = 2;
 const MIN_MARK_WIDTH = 2;
 // Keeps a mark clear of its lane's separators, top and bottom.
 const MARK_INSET = 3;
-// A value that occurred at all is visible, however small its share. Nothing is
-// distorted by it: each lane is measured against itself, so unlike a stacked bar
-// there is no total for a floored mark to take from.
+// A value that occurred at all is visible, however few Records took it. This does
+// overstate the rarest counts, since every mark is measured against the same
+// scale - the alternative is a value that happened vanishing from the chart.
 const MIN_MARK_HEIGHT = 3;
 const MARK_CORNER_RADIUS = 4;
 
@@ -42,7 +42,13 @@ const MARK_CORNER_RADIUS = 4;
  * Renders an Enum metric's series as a swimlane: one lane per allowed value, in
  * declared order read top down - the order the Record form lists them in - and
  * one mark per value a bucket's Records took, as wide as the bucket and as tall
- * a share of its lane as the Records taking that value were of the bucket.
+ * as the number of Records that took it.
+ *
+ * Heights are measured against one scale shared by the whole chart rather than
+ * against each bucket's own total, so a bucket standing for a single Record
+ * draws a shorter column than a busy one beside it. Within a bucket that leaves
+ * every mark divided by the same constant, so their proportions to one another
+ * are still that bucket's own split.
  *
  * Nothing here is tappable: what a tap on a lane should mean has not been
  * decided, so `onPointPress` is never called and no `Pressable` wraps the canvas.
@@ -51,7 +57,8 @@ export const EnumSwimlaneChart = ({metric, points, timeRange, aggregation, width
   const font = useAxisFont();
 
   const laneValues = (metric.constraint as EnumConstraint | null)?.allowedValues ?? [];
-  if (points.length === 0 || laneValues.length === 0) {
+  const buckets = points.filter(isCategoryPoint);
+  if (buckets.length === 0 || laneValues.length === 0) {
     return <InsufficientData height={height} />;
   }
 
@@ -66,10 +73,11 @@ export const EnumSwimlaneChart = ({metric, points, timeRange, aggregation, width
     laneHeight,
     timeRange,
     bucketSizeMs: aggregation.bucketSizeMs,
+    tallestCount: tallestCountIn(buckets),
   };
-  const marks = points
-    .filter(isCategoryPoint)
-    .flatMap(point => point.shares.map(share => toMark(point, share, swimlane)));
+  const marks = buckets.flatMap(bucket =>
+    bucket.counts.map(count => toMark(bucket, count, swimlane)),
+  );
 
   return (
     <Canvas style={{width, height}}>
@@ -117,9 +125,11 @@ interface Swimlane {
   laneHeight: number;
   timeRange: TimeRange;
   bucketSizeMs: number;
+  /** What a full lane stands for: the most Records any one value took in any one bucket. */
+  tallestCount: number;
 }
 
-/** One value's share of one bucket, as drawn. */
+/** The Records of one bucket that took one value, as drawn. */
 interface Mark {
   key: string;
   /** The value's declared index, which is its lane counted from the plot's top. */
@@ -144,14 +154,26 @@ function laneBoundaries(laneCount: number, plot: PlotRect, laneHeight: number): 
   return Array.from({length: laneCount + 1}, (_, index) => plot.top + index * laneHeight);
 }
 
+/**
+ * The scale every mark is drawn against: the largest count anywhere in the
+ * series, which is what fills a lane. Per chart, as the Numeric chart's value
+ * axis is - two metrics side by side keep their own scales.
+ */
+function tallestCountIn(buckets: CategorySeriesPoint[]): number {
+  return Math.max(...buckets.flatMap(bucket => bucket.counts.map(({count}) => count)));
+}
+
 function toMark(
   point: CategorySeriesPoint,
-  {value, share}: CategoryShare,
-  {plot, laneValues, laneHeight, timeRange, bucketSizeMs}: Swimlane,
+  {value, count}: CategoryCount,
+  {plot, laneValues, laneHeight, timeRange, bucketSizeMs, tallestCount}: Swimlane,
 ): Mark {
   const lane = laneValues.indexOf(value);
   const x = timeToX(point.x, timeRange, plot);
-  const markHeight = Math.max(share * laneHeight - 2 * MARK_INSET, MIN_MARK_HEIGHT);
+  const markHeight = Math.max(
+    (count / tallestCount) * laneHeight - 2 * MARK_INSET,
+    MIN_MARK_HEIGHT,
+  );
   return {
     key: `${point.x}-${value}`,
     lane,

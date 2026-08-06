@@ -26,9 +26,11 @@ rather than needing one of its own.
   ordinal ramp over the app's existing green, darkest at the first-declared value and lightest at the last.
   No legend is drawn.
 * Each bucket holding Records draws one mark per value those Records took, in that value's own lane, its
-  height that value's share of the bucket and its width the bucket's own span. A bucket whose Records all
-  took one value draws a single mark filling that lane, and a share too small to draw is drawn at a minimum
-  height rather than rounded away.
+  height how many Records took that value and its width the bucket's own span. Heights are measured against
+  one scale shared by the whole chart — the largest count any value reaches in any bucket fills a lane — so a
+  bucket standing for one Record draws a shorter column than a busy one beside it, while within a bucket the
+  marks still stand in that bucket's own proportions. A count too small to draw is drawn at a minimum height
+  rather than rounded away.
 * Each lane is labelled at the chart's left edge, in a gutter sized for a short value; a value too long to fit
   is truncated with an ellipsis, and never overruns the plot.
 * The chart carries the same time axis, at the same span tiers, as the Numeric chart, and no value axis.
@@ -36,7 +38,7 @@ rather than needing one of its own.
   yet" placeholder a Numeric Metric with no points shows.
 * A Record whose value is not one of the Metric's declared values is excluded from the series, as one carrying
   no value already is.
-* A bucket's Record count is not shown: twelve unanimous Records draw the same mark as one.
+* A bucket's Record count is not spelled out in figures; mark height is what carries it.
 * The Enum chart reports no point and responds to no tap — it opens no Record, zooms nothing, and leaves the
   section's window alone.
 * Layout per [`design/enum-metric-chart.html`](design/enum-metric-chart.html).
@@ -53,27 +55,28 @@ it existed, so no Metric a user can create needs more lanes than the card can gi
 ### 3.2 Application
 
 `MetricSeriesPoint` (`src/application/GetMetricSeriesUseCase.ts`) becomes a discriminated union over a shared
-base: `y: number` cannot carry per-value shares, and this is the first renderer that doesn't fit the shape
+base: `y: number` cannot carry a count per value, and this is the first renderer that doesn't fit the shape
 [Visualization Foundation](../3-1-visualization-foundation/spec.md) shipped.
 
 * The base keeps `x`, `recordId`, `recordCount`, `firstRecordAt` and `lastRecordAt` unchanged. Each is about
   *which Records* a point stands for rather than what they reduced to, and the screen's tap handling reads
   only these — so nothing about navigation or zoom is touched.
 * `NumericSeriesPoint` — `kind: 'numeric'` and the existing `y`.
-* `CategorySeriesPoint` — `kind: 'category'` and `shares: CategoryShare[]`, where
-  `CategoryShare = {value: string; share: number}`. Listed in declared value order, each in `(0, 1]`, summing
-  to 1, with a value no Record took absent rather than present at zero, so a renderer draws exactly the marks
-  the list holds. `'category'` rather than `'enum'` because the Boolean slice will produce this same shape.
+* `CategorySeriesPoint` — `kind: 'category'` and `counts: CategoryCount[]`, where
+  `CategoryCount = {value: string; count: number}`. Listed in declared value order, each at least 1, summing
+  to `recordCount`, with a value no Record took absent rather than present at zero, so a renderer draws
+  exactly the marks the list holds. Counts rather than shares of the bucket: a renderer sizing a mark by how
+  much data stands behind it needs the number, and a share cannot be recovered into one. `'category'` rather
+  than `'enum'` because the Boolean slice will produce this same shape.
 * Type guards `isNumericPoint` and `isCategoryPoint` beside them, since the registry gives a renderer no
   type-level guarantee about which kind it is handed.
 
 `GetMetricSeriesUseCase.reduce` returns the kind-specific half of the point rather than a bare number, the new
-Enum branch counting each declared value's occurrences and dividing by the bucket's Record count. `Boolean`
-and `Text` keep throwing.
+Enum branch counting each declared value's occurrences in the bucket. `Boolean` and `Text` keep throwing.
 
 Its in-range filter, which already drops Records carrying no value, additionally drops one whose Enum value is
 not among `allowedValues` — which drops every Record when the constraint is absent. Unreachable from the UI,
-but it keeps `recordCount` equal to the number of Records the shares are computed over and every share's lane
+but it keeps `recordCount` equal to the number of Records the counts are taken over and every count's lane
 lookup total.
 
 ### 3.3 Storage
@@ -134,20 +137,25 @@ Geometry:
 * A mark's `x` maps its bucket start across `timeRange` as the Numeric chart maps a point's; its width is
   `aggregation.bucketSizeMs` through the same scale less a 2px gap, floored at 2px and clipped at the plot's
   right edge — the newest bucket of a window ending mid-bucket would otherwise run past it.
-* A mark's height is its share of the lane less a 3px inset top and bottom, floored at 3px so a value that
-  occurred at all is visible. The floor distorts nothing: each lane is measured against itself, so unlike a
-  stacked bar there is no total for a floored mark to steal from. Marks grow up from their lane's floor, with
-  a 4px corner radius clamped to half the smaller side so a thin mark reads as a bar rather than a lozenge.
+* A mark's height is `count / tallestCount` of the lane less a 3px inset top and bottom, where `tallestCount`
+  is the largest count anywhere in the series — computed per chart, as the Numeric chart's value axis is, so
+  two metrics side by side keep their own scales. Dividing every mark by the same constant leaves a bucket's
+  marks in that bucket's own proportions and makes a column's total ink proportional to its Record count,
+  which sizing each mark against its own bucket's total did not: a lone Record filled its lane and out-inked
+  the ten behind the mark beside it. Floored at 3px so a value that occurred at all is visible — which does
+  overstate the rarest counts, the alternative being a value that happened vanishing from the chart. Marks
+  grow up from their lane's floor, with a 4px corner radius clamped to half the smaller side so a thin mark
+  reads as a bar rather than a lozenge.
 * Lane labels sit in the gutter, left-aligned and vertically centred on their lane via `baselineCentreOffset`,
   through `truncateToWidth` against the gutter less a 5px gap, at the time labels' own size and colour so the
   chart introduces no new type size. They wait for the font like every other glyph, but the gutter is reserved
   whether or not it has resolved, so nothing shifts when it does.
 
 Nothing wraps the canvas in a `Pressable` and `onPointPress` is never called, which is how "not tappable" is
-expressed; the prop stays because the contract is shared. Nothing draws `recordCount` either.
+expressed; the prop stays because the contract is shared. Nothing writes `recordCount` in figures either:
 [Aggregated Point Record Count](../3-8-aggregated-point-record-count/spec.md)'s answer does not transfer — it
-labels one mark per bucket where a swimlane has up to four, in 22px lanes at four values — so the gap is left
-open rather than solved badly, and is on the backlog.
+labels one mark per bucket where a swimlane has up to four, in 22px lanes at four values. Mark height carries
+volume instead, which is most of what that label was for; an exact figure per column stays on the backlog.
 
 The 48px gutter is what settles the open question
 [Enum Metric Input](../../2-record-management/2-11-enum-metric-input/spec.md) §3.4 left for whichever spec
@@ -173,15 +181,16 @@ claiming otherwise.
 ### Seed Data
 
 No new Observation or Metric: `mixed metrics` carries `category` (`a`/`b`/`c`) and `no numeric` carries `mood`
-(`low`/`ok`/`high`). At `1M` both draw one lane-filling mark per day-bucket — ten and five, across the newer
-part of the window. At `1Y` every Record of either falls inside the newest 30-day bucket, giving one column
-carrying all three shares. At `1D` both hang on the hour the seed ran: their Records sit at 09:00 on alternate
-days and a 24-hour window holds exactly one 09:00, so a reseed after 09:00 leaves one mark and one before it
-leaves the placeholder — both correct.
+(`low`/`ok`/`high`). At `1M` both draw one Record per day-bucket — ten and five, across the newer part of the
+window — so every count is 1 and every mark fills its lane. At `1Y` the 365-day window divides into twelve
+30-day buckets and a five-day stub, and both metrics' Records straddle that boundary: `category` folds into
+columns of seven Records and three, `mood` into three and two. At `1D` both hang on the hour the seed ran:
+their Records sit at 09:00 on alternate days and a 24-hour window holds exactly one 09:00, so a reseed after
+09:00 leaves one mark and one before it leaves the placeholder — both correct.
 
 A year of *mixed* buckets is not reachable by hand, and neither fixture stretches to it: `no numeric`'s Record
 count is load-bearing for `.maestro/2-3-record-deletion.yaml`, which deletes all five and asserts the empty
-state, and `category`'s Records are shared with `flag` and `note`. Share sizing across many buckets is pinned
+state, and `category`'s Records are shared with `flag` and `note`. Height against the shared scale is pinned
 by unit tests instead.
 
 Three things stop being true:
@@ -215,14 +224,16 @@ Run **Reseed test data** first. No storage change, so there is nothing to clear.
    five marks each filling its lane, and lane separators but no value labels down the left. A `low` mark is
    the darkest green on the card and a `high` mark the lightest.
 2. RECENT RECORDS and its first Records are still on the first screen below the card.
-3. Switch to `1Y`: the five marks collapse into one column near the right edge carrying one mark per value
-   recorded, each a fraction of its lane and together about one lane's worth of height. Switch to `1D` and
+3. Switch to `1Y`: the five marks collapse into two columns near the right edge, one mark per value recorded
+   in each. Every one of those buckets holds a single Record of any given value, so the marks still fill their
+   lanes and the columns differ in how many lanes they occupy rather than in height. Switch to `1D` and
    confirm either a single mark or `Not enough data yet`, per the hour rule above.
 4. Open `mixed metrics` at `1M`. `category`'s card sits after the five Numeric cards, in declaration order;
    `flag` and `note` still get none. Ten marks in the newer two-thirds of the window, lanes labelled `a`, `b`,
    `c` top to bottom.
-5. Switch to `1Y`: `category` becomes one column of three sized marks, and every Numeric chart is exactly as
-   before — curve, gradient fill, axes, dots, count labels.
+5. Switch to `1Y`: `category` becomes two columns whose marks are sized by how many Records took each value —
+   the value taking the most in either column fills its lane and the rest are shorter in proportion. Every
+   Numeric chart is exactly as before — curve, gradient fill, axes, dots, count labels.
 6. Tap a `category` mark, and the empty space in its lanes: nothing happens, and the Numeric charts do not
    redraw. Then tap an aggregated `dense` point and confirm it still zooms, and a single-Record `sparse` point
    at `1M` that it still opens that Record.
@@ -234,21 +245,23 @@ Run **Reseed test data** first. No storage change, so there is nothing to clear.
 
 ### Automated Tests
 
-* **Unit — `GetMetricSeriesUseCase`:** an Enum Metric yields `kind: 'category'` points whose `shares` are in
-  declared order, sum to 1, omit a value no Record took, and give a unanimous bucket one share of 1; a value
-  outside `allowedValues` is dropped from the series and from `recordCount`, and a Metric with no constraint
-  yields no points; base fields match what the same Records give a Numeric Metric; Numeric points are
-  unchanged but for `kind`; `Boolean` and `Text` still throw.
+* **Unit — `GetMetricSeriesUseCase`:** an Enum Metric yields `kind: 'category'` points whose `counts` are in
+  declared order, sum to `recordCount`, omit a value no Record took, and give a unanimous bucket one count of
+  every Record in it; a value outside `allowedValues` is dropped from the series and from `recordCount`, and a
+  Metric with no constraint yields no points; base fields match what the same Records give a Numeric Metric;
+  Numeric points are unchanged but for `kind`; `Boolean` and `Text` still throw.
 * **Unit — `laneColors`:** the stated ramp for 2, 3 and 4 lanes, in declared value order, each starting and
   ending on the shared endpoints, falling back to the 4-lane ramp above 4.
 * **Unit — `chartAxis`:** `truncateToWidth` on a fitting string, a longer one, and a width too small for even
   an ellipsis; `toPlotRect` honours the gutter it is given and still collapses rather than inverting.
-* **Unit — `EnumSwimlaneChart`** (on the existing Skia mock): a bucket's shares become one mark per share, in
-  its value's lane counted from the top and coloured from that lane's ramp entry; a unanimous bucket draws
-  one lane-filling mark and a tiny share lands on the minimum height; width follows `bucketSizeMs` and never
-  crosses the plot's right edge; `laneCount + 1` separators, no value gridline or label; lane labels truncate
-  to the gutter, are omitted while the font is `null`, and leave the plot rectangle identical either way; zero
-  points and a Metric with no values render `TREND_INSUFFICIENT_MESSAGE`; no press ever calls `onPointPress`.
+* **Unit — `EnumSwimlaneChart`** (on the existing Skia mock): a bucket's counts become one mark each, in its
+  value's lane counted from the top and coloured from that lane's ramp entry; the largest count in the series
+  fills its lane, half that count takes half the lane, a bucket of one Record draws shorter than a busy one
+  beside it, and a count too small against the scale lands on the minimum height; width follows `bucketSizeMs`
+  and never crosses the plot's right edge; `laneCount + 1` separators, no value gridline or label; lane labels
+  truncate to the gutter, are omitted while the font is `null`, and leave the plot rectangle identical either
+  way; zero points and a Metric with no values render `TREND_INSUFFICIENT_MESSAGE`; no press ever calls
+  `onPointPress`.
 * **Unit — `rendererRegistry`:** `get('Enum')` returns `EnumSwimlaneChart`, `Boolean` and `Text` still absent.
 * **Regression — `NumericTrendChart`:** its existing suite passes unaltered but for the `kind` its fixture
   points gain, which is what shows the axis extraction changed nothing it draws.
@@ -256,8 +269,9 @@ Run **Reseed test data** first. No storage change, so there is nothing to clear.
   Enum-only Observation renders the section and selector where before it rendered neither; an all-Boolean/Text
   one renders neither; a tap on an Enum card leaves selection, data and navigation untouched, with the
   existing tap, zoom and back-unzoom suites unchanged.
-* **Unit — `devSeedData`:** `category` and `mood` each reduce to a single `1Y` bucket holding more than one
-  Record and more than one share — the mixed regime the manual checklist relies on being reachable.
+* **Unit — `devSeedData`:** `category` and `mood` each fold at `1Y` into fewer buckets than at `1M`, every one
+  holding more than one Record and at least one holding more than one value — the mixed regime the manual
+  checklist relies on being reachable — while every `1M` bucket stays a single Record of one value.
 * **E2E:** `.maestro/3-11-enum-metric-chart.yaml`, on the `seed` fixture — opening `no numeric` and seeing the
   TRENDS section, the presets and a `mood` card where the screen previously had none, its Records still
   reachable below. What the swimlane draws is inside the canvas and out of a flow's reach.

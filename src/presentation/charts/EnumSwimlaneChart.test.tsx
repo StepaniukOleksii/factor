@@ -49,14 +49,14 @@ function loadFont() {
   vi.mocked(useFont).mockReturnValue(fontStub);
 }
 
-/** One bucket's Records, as the values they took and each value's share of them. */
-function bucket(bucketIndex: number, ...shares: [string, number][]): MetricSeriesPoint {
+/** One bucket's Records, as the values they took and how many took each. */
+function bucket(bucketIndex: number, ...counts: [string, number][]): MetricSeriesPoint {
   return {
     kind: 'category',
     x: bucketIndex * BUCKET_MS,
-    shares: shares.map(([value, share]) => ({value, share})),
+    counts: counts.map(([value, count]) => ({value, count})),
     recordId: `r${bucketIndex}`,
-    recordCount: shares.length,
+    recordCount: counts.reduce((total, [, count]) => total + count, 0),
     firstRecordAt: bucketIndex * BUCKET_MS,
     lastRecordAt: bucketIndex * BUCKET_MS,
   };
@@ -129,7 +129,7 @@ describe('EnumSwimlaneChart', () => {
   });
 
   it('draws one mark per value a bucket took, each in the lane of that value', () => {
-    const root = render([bucket(0, ['low', 0.5], ['high', 0.5])]);
+    const root = render([bucket(0, ['low', 1], ['high', 1])]);
 
     expect(marks(root)).toHaveLength(2);
     // `low` is declared first, so it takes the top lane and `high` the bottom.
@@ -142,22 +142,36 @@ describe('EnumSwimlaneChart', () => {
   it('colours each mark from the ramp entry of its own lane, darkest at the top', () => {
     const ramp = getLaneColors(MOODS.length);
 
-    const root = render([bucket(0, ['low', 0.34], ['ok', 0.33], ['high', 0.33])]);
+    const root = render([bucket(0, ['low', 1], ['ok', 1], ['high', 1])]);
 
     expect(marks(root).map((mark: any) => mark.color)).toEqual([ramp[0], ramp[1], ramp[2]]);
     expect(ramp[ramp.length - 1]).toBe(COLORS.primaryContainer);
   });
 
-  it('fills a lane with the single mark of a unanimous bucket', () => {
-    const [mark] = marks(render([bucket(0, ['ok', 1])]));
+  it('fills a lane with the largest count anywhere in the series', () => {
+    const [half, largest] = marks(render([bucket(0, ['ok', 2]), bucket(5, ['ok', 4])]));
 
     // The lane less the 3px inset it keeps from its separators, top and bottom.
-    expect(mark.height).toBeCloseTo(LANE_HEIGHT - 6);
-    expect(mark.y).toBeCloseTo(laneFloor(1) - 3 - mark.height);
+    expect(largest.height).toBeCloseTo(LANE_HEIGHT - 6);
+    expect(largest.y).toBeCloseTo(laneFloor(1) - 3 - largest.height);
+    // And every other mark against that same scale, so half the count of the
+    // largest takes half the lane.
+    expect(half.height + 6).toBeCloseTo((largest.height + 6) / 2);
   });
 
-  it('draws a share too small to see at a minimum height rather than rounding it away', () => {
-    const [tiny] = marks(render([bucket(0, ['low', 0.01], ['high', 0.99])]));
+  // The reason heights are counts rather than shares of their own bucket: a lone
+  // Record used to fill its lane, drawing more ink than the ten behind the mark
+  // beside it.
+  it('draws a bucket of one Record shorter than a busy bucket beside it', () => {
+    const root = render([bucket(0, ['low', 1]), bucket(5, ['low', 10], ['high', 20])]);
+
+    const [lone, busyLow, busyHigh] = marks(root);
+    expect(lone.height).toBeLessThan(busyLow.height);
+    expect(busyHigh.height).toBeCloseTo(LANE_HEIGHT - 6);
+  });
+
+  it('draws a count too small to see at a minimum height rather than rounding it away', () => {
+    const [tiny] = marks(render([bucket(0, ['low', 1], ['high', 99])]));
 
     expect(tiny.height).toBe(3);
   });
@@ -243,7 +257,7 @@ describe('EnumSwimlaneChart', () => {
   });
 
   it('draws the marks and separators while the font is still loading', () => {
-    const points = [bucket(0, ['low', 0.5], ['high', 0.5])];
+    const points = [bucket(0, ['low', 1], ['high', 1])];
 
     const loading = render(points);
     loadFont();
@@ -274,7 +288,7 @@ describe('EnumSwimlaneChart', () => {
   it('reports no point, having nothing to press', () => {
     const onPointPress = vi.fn();
 
-    const root = render([bucket(0, ['low', 0.5], ['high', 0.5])], enumMetric(), onPointPress);
+    const root = render([bucket(0, ['low', 1], ['high', 1])], enumMetric(), onPointPress);
 
     const pressables = root.root.findAll(
       (node: any) => node.props && typeof node.props.onPress === 'function',

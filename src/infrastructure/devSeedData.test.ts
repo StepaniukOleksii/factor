@@ -115,8 +115,8 @@ describe('seeded chart coverage', () => {
     }
     // Which values a bucket draws is the fixture's own business; that some
     // bucket draws more than one is what the checklist reads off the screen.
-    const shareCounts = points.map(point => (isCategoryPoint(point) ? point.shares.length : 0));
-    expect(Math.max(...shareCounts)).toBeGreaterThan(1);
+    const valuesPerBucket = points.map(point => (isCategoryPoint(point) ? point.counts.length : 0));
+    expect(Math.max(...valuesPerBucket)).toBeGreaterThan(1);
   });
 
   it('draws category a mark per day-bucket at the shorter windows and two columns at 1Y', () => {
@@ -125,12 +125,13 @@ describe('seeded chart coverage', () => {
     expect(pointCount('mixed metrics', 'category', '1Y')).toBe(2);
   });
 
-  // One Record per day-bucket, so every mark fills its lane - the other regime,
-  // and the one the checklist reads the lane order and the ramp off.
+  // One Record per day-bucket, so every count is 1 and every mark fills its lane
+  // - the other regime, and the one the checklist reads the lane order and the
+  // ramp off.
   it.each([
     ['mixed metrics', 'category'],
     ['no numeric', 'mood'],
-  ])('leaves every 1M bucket of %s\'s %s unanimous', (observationName, metricName) => {
+  ])('leaves every 1M bucket of %s\'s %s a single Record of one value', (observationName, metricName) => {
     const {observation, records} = entry(observationName);
     const metric = observation.metrics.find(candidate => candidate.name === metricName)!;
 
@@ -143,8 +144,8 @@ describe('seeded chart coverage', () => {
 
     expect(points.length).toBeGreaterThan(0);
     for (const point of points) {
-      expect(isCategoryPoint(point) && point.shares).toEqual([
-        {value: expect.any(String), share: 1},
+      expect(isCategoryPoint(point) && point.counts).toEqual([
+        {value: expect.any(String), count: 1},
       ]);
     }
   });
