@@ -22,12 +22,6 @@ until they're ready to become a real spec.
       exists to prevent on the Numeric chart. Its answer doesn't transfer: it labels one mark per bucket where
       a swimlane has up to four, in 22px lanes at four values. Needs something belonging to the column rather
       than the mark, or an admission that share already says enough.
-    - Boolean metric chart — folds into the Enum swimlane renderer rather than needing a tick/step one of its
-      own: `done` is a two-value enum in all but name, and two lanes serve it. The 2-lane ramp and the
-      `CategorySeriesPoint` shape are already there; what it needs is the `Boolean` branch of
-      `GetMetricSeriesUseCase.reduce`, a registry entry, and decisions on lane wording (`Yes`/`No` from
-      `BOOLEAN_METRIC_OPTIONS`?) and which of the two sits on top. `mixed metrics`' `flag` and `no numeric`'s
-      `done` both start charting, so `testing-data.md` changes with it.
     - Text metric markers (sparse markers, not a real trend — annotation only).
     - Per-metric visibility toggle, persisted per Observation (first real "customization" slice).
     - Not yet ready to spec: cross-Observation overlay/comparison (compare a metric from one Observation against
