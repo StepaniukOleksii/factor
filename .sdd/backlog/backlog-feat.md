@@ -17,11 +17,14 @@ until they're ready to become a real spec.
       own pass first. A bucket column is the obvious target (nearest by x, ignoring y, since every mark in a
       column belongs to one bucket), which would make zoom the way to resolve a mixed bucket into its Records;
       whether a tap on one *lane* should mean something narrower is the open question.
-    - A swimlane bucket's Record count. The Enum chart draws nothing for it, so twelve unanimous Records look
-      like one — the state [Aggregated Point Record Count](../epics/3-observation-visualization/3-8-aggregated-point-record-count/spec.md)
-      exists to prevent on the Numeric chart. Its answer doesn't transfer: it labels one mark per bucket where
-      a swimlane has up to four, in 22px lanes at four values. Needs something belonging to the column rather
-      than the mark, or an admission that share already says enough.
+    - A swimlane bucket's Record count in figures. Mark height is relative: a full lane means "the most this
+      chart reaches", which is one Record on `no numeric` at 1M and several at 1Y, drawn the same both times.
+      Two Metrics side by side each get their own scale, and nothing on the card says what either scale is.
+      Height still ranks a chart's own buckets honestly, so what's missing is the anchor, not the ordering.
+      [Aggregated Point Record Count](../epics/3-observation-visualization/3-8-aggregated-point-record-count/spec.md)'s
+      answer doesn't transfer: it labels one mark per bucket where a swimlane has up to four, in 22px lanes at
+      four values. Needs something belonging to the column rather than the mark, or an admission that relative
+      height already says enough.
     - Text metric markers (sparse markers, not a real trend — annotation only).
     - Per-metric visibility toggle, persisted per Observation (first real "customization" slice).
     - Not yet ready to spec: cross-Observation overlay/comparison (compare a metric from one Observation against
