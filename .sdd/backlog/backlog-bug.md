@@ -37,3 +37,6 @@ they're ready to become a real spec.
    closing it means changing 3-5 rather than fixing code against it, and it changes what every existing custom
    range draws. The obvious shape is one span-keyed tier table both paths call, the way the axis labels
    already work; zoom would inherit it, since a zoomed window is a custom range.
+8. Charts are not updated after a Record is removed. To reproduce, remove the latest Record from the Observation Details
+   screen. Observe that the Record is still drawn on the chart. Go back to the Observation List screen. Enter the
+   Observation Details screen. Observe that the deleted Record is not displayed on the chart anymore.
