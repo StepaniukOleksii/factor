@@ -11,7 +11,7 @@ appId: com.anonymous.factor
       READY_TEXT: "mixed metrics"
 
 # `mixed metrics` carries five Numeric Metrics beside a Boolean, an Enum and a
-# Text one.
+# Text one - every type with a renderer, and the one without.
 - tapOn: "mixed metrics"
 - assertVisible: "TRENDS"
 - assertVisible:
@@ -23,12 +23,8 @@ appId: com.anonymous.factor
     element: "insufficient"
     direction: DOWN
 - assertVisible: "yearly"
-- assertNotVisible: "flag"
-- assertNotVisible: "category"
+- scrollUntilVisible:
+    element: "category"
+    direction: DOWN
+- assertVisible: "flag"
 - assertNotVisible: "note"
-
-- tapOn: "Back"
-- tapOn: "no numeric"
-- assertNotVisible: "TRENDS"
-- assertNotVisible:
-    id: "trend-chart"

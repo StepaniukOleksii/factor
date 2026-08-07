@@ -52,8 +52,3 @@ appId: com.anonymous.factor
 - assertVisible:
     id: "time-range-preset-1M"
     selected: true
-
-- tapOn: "Back"
-- tapOn: "no numeric"
-- assertNotVisible:
-    id: "time-range-preset-1M"

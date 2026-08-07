@@ -15,15 +15,16 @@ appId: com.anonymous.factor
 - assertVisible: "RECENT RECORDS"
 - assertVisible: "Add Record"
 
-- assertNotVisible: "MOOD"
-- assertNotVisible: "DONE"
+# Maestro matches text case-insensitively, so the `MOOD` and `DONE` chips an
+# expanded tile shows cannot be told from the `mood` and `done` cards above them.
+# `done`'s value can, and the fixture tosses a coin for which word it reads.
+- assertNotVisible: "Yes|No"
 
 - tapOn: "Today.*"
-- assertVisible: "MOOD"
-- assertVisible: "DONE"
+- assertVisible: "Yes|No"
 
 - tapOn: "Today.*"
-- assertNotVisible: "MOOD"
+- assertNotVisible: "Yes|No"
 
 - tapOn: "Add Record"
 - assertVisible: "mood: None.*"

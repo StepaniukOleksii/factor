@@ -34,9 +34,9 @@ appId: com.anonymous.factor
     element: "About flag"
     direction: DOWN
 - tapOn: "About flag"
-- assertVisible: "Boolean, so it never charts.*"
+- assertVisible: "Boolean, so it charts as two lanes.*"
 - tapOn: "Close flag description"
-- assertNotVisible: "Boolean, so it never charts.*"
+- assertNotVisible: "Boolean, so it charts as two lanes.*"
 
 - scrollUntilVisible:
     element: "note value"
