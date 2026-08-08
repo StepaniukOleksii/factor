@@ -10,7 +10,13 @@ import {
     View
 } from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {CreateObservationUseCase} from '../../application/CreateObservationUseCase';
+import {CreateObservationInput, CreateObservationUseCase} from '../../application/CreateObservationUseCase';
+import {
+    CreateObservationErrors,
+    hasErrors,
+    MetricErrors,
+    validateCreateObservation,
+} from '../../application/validateCreateObservation';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {MetricValueType} from '../../domain/Metric';
 import {
@@ -70,10 +76,33 @@ const METRIC_TYPE_CHOICES: SelectFieldOption<MetricValueType>[] =
     (['Numeric', 'Text', 'Boolean', 'Enum'] as MetricValueType[])
         .map(type => ({value: type, label: formatMetricType(type)}));
 
+const NOTHING_MARKED: CreateObservationErrors = {perMetric: []};
+const NO_METRIC_ERRORS: MetricErrors = {};
+
 export function CreateObservationScreen({navigation}: CreateObservationScreenProps) {
     const [observationName, setObservationName] = useState('');
     const [description, setDescription] = useState('');
     const [metrics, setMetrics] = useState<MetricDraft[]>([EMPTY_METRIC]);
+    const [attemptedSave, setAttemptedSave] = useState(false);
+
+    const input: CreateObservationInput = {
+        name: observationName,
+        description: description.trim(),
+        metrics: metrics.map(m => ({
+            name: m.name,
+            type: m.type,
+            description: m.description,
+            min: m.min,
+            max: m.max,
+            values: m.values,
+        })),
+    };
+
+    const errors = validateCreateObservation(input);
+    // Judged every render but withheld until the user has tried to save: a form
+    // that opens marked has faulted them for nothing they did yet. Afterwards
+    // the marks answer to what is on screen, so a field clears as it is fixed.
+    const marked = attemptedSave ? errors : NOTHING_MARKED;
 
     const handleAddMetric = () => {
         setMetrics([...metrics, EMPTY_METRIC]);
@@ -104,21 +133,16 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
     };
 
     const handleSave = async () => {
+        setAttemptedSave(true);
+        if (hasErrors(errors)) {
+            return;
+        }
         try {
-            await useCase.execute({
-                name: observationName,
-                description: description.trim(),
-                metrics: metrics.map(m => ({
-                    name: m.name,
-                    type: m.type,
-                    description: m.description,
-                    min: m.min,
-                    max: m.max,
-                    values: m.values
-                }))
-            });
+            await useCase.execute(input);
             navigation.goBack();
         } catch (error: any) {
+            // Nothing the fields could have shown - the input passed the same
+            // rules the use case applies, so anything left is the save failing.
             Alert.alert('Error', error.message || 'An error occurred while saving.');
         }
     };
@@ -160,6 +184,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                             placeholder="e.g., Sleep Quality, Mood"
                             maxLength={OBSERVATION_NAME_MAX_LENGTH}
                             showCounter
+                            error={marked.name}
                         />
                     </View>
                 </View>
@@ -175,119 +200,142 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                             numberOfLines={3}
                             maxLength={OBSERVATION_DESCRIPTION_MAX_LENGTH}
                             showCounter
+                            error={marked.description}
                         />
                     </View>
                     <View style={styles.divider}/>
                     <View style={styles.metricsContainer}>
                         <Text style={styles.label}>METRICS</Text>
 
-                        {metrics.map((metric, index) => (
-                            <View key={index} style={styles.metricCard}>
-                                <View style={styles.metricGrid}>
-                                    <View style={styles.metricField}>
-                                        <LabeledTextField
-                                            label="METRIC NAME"
-                                            labelAccessory={metrics.length > 1 ? (
-                                                <TouchableOpacity onPress={() => handleRemoveMetric(index)}
-                                                                  style={styles.deleteButton}>
-                                                    <MaterialIcons name="delete" size={20} color={COLORS.outline}/>
-                                                </TouchableOpacity>
-                                            ) : undefined}
-                                            value={metric.name}
-                                            onChangeText={(val) => handleMetricChange(index, 'name', val)}
-                                            placeholder="e.g., Duration"
-                                            maxLength={METRIC_NAME_MAX_LENGTH}
-                                            showCounter
-                                        />
-                                    </View>
+                        {metrics.map((metric, index) => {
+                            const metricError = marked.perMetric[index] ?? NO_METRIC_ERRORS;
 
-                                    <View style={styles.metricField}>
-                                        <SelectField<MetricValueType>
-                                            label="TYPE"
-                                            testID={`metric-type-${index}`}
-                                            options={METRIC_TYPE_CHOICES}
-                                            selected={metric.type}
-                                            // A Metric always has a type, so the
-                                            // picker offers no way back to none.
-                                            onSelect={(type) => selectType(index, type!)}
-                                        />
-                                    </View>
-
-                                    {metric.type === 'Numeric' && (
-                                        <View style={styles.boundsRow}>
-                                            <View style={styles.boundField}>
-                                                <LabeledTextField
-                                                    label="MIN"
-                                                    testID={`metric-min-${index}`}
-                                                    value={metric.min}
-                                                    onChangeText={(val) => handleMetricChange(index, 'min', val)}
-                                                    keyboardType="numeric"
-                                                />
-                                            </View>
-                                            <View style={styles.boundField}>
-                                                <LabeledTextField
-                                                    label="MAX"
-                                                    testID={`metric-max-${index}`}
-                                                    value={metric.max}
-                                                    onChangeText={(val) => handleMetricChange(index, 'max', val)}
-                                                    keyboardType="numeric"
-                                                />
-                                            </View>
+                            return (
+                                <View key={index} style={styles.metricCard}>
+                                    <View style={styles.metricGrid}>
+                                        <View style={styles.metricField}>
+                                            <LabeledTextField
+                                                label="METRIC NAME"
+                                                labelAccessory={metrics.length > 1 ? (
+                                                    <TouchableOpacity onPress={() => handleRemoveMetric(index)}
+                                                                      style={styles.deleteButton}>
+                                                        <MaterialIcons name="delete" size={20}
+                                                                       color={COLORS.outline}/>
+                                                    </TouchableOpacity>
+                                                ) : undefined}
+                                                value={metric.name}
+                                                onChangeText={(val) => handleMetricChange(index, 'name', val)}
+                                                placeholder="e.g., Duration"
+                                                maxLength={METRIC_NAME_MAX_LENGTH}
+                                                showCounter
+                                                error={metricError.name}
+                                            />
                                         </View>
-                                    )}
 
-                                    {metric.type === 'Enum' && (
-                                        <View>
-                                            <View style={styles.valueRows}>
-                                                {metric.values.map((value, valueIndex) => (
-                                                    <LabeledTextField
-                                                        key={valueIndex}
-                                                        label={`VALUE ${valueIndex + 1}`}
-                                                        testID={`metric-value-${index}-${valueIndex}`}
-                                                        labelAccessory={metric.values.length > EMPTY_METRIC_VALUES.length ? (
-                                                            <TouchableOpacity
-                                                                onPress={() => handleRemoveValue(index, valueIndex)}
-                                                                style={styles.deleteButton}>
-                                                                <MaterialIcons name="delete" size={20}
-                                                                               color={COLORS.outline}/>
-                                                            </TouchableOpacity>
-                                                        ) : undefined}
-                                                        value={value}
-                                                        onChangeText={(val) => handleValueChange(index, valueIndex, val)}
-                                                        maxLength={METRIC_ENUM_VALUE_MAX_LENGTH}
-                                                        showCounter
-                                                    />
-                                                ))}
-                                            </View>
-
-                                            {metric.values.length < METRIC_ENUM_MAX_VALUES && (
-                                                <TouchableOpacity
-                                                    style={[styles.dashedButton, styles.addValueButton]}
-                                                    onPress={() => handleAddValue(index)}
-                                                >
-                                                    <MaterialIcons name="add" size={20}
-                                                                   color={COLORS.onSurfaceVariant}/>
-                                                    <Text style={styles.dashedButtonText}>Add Value</Text>
-                                                </TouchableOpacity>
-                                            )}
+                                        <View style={styles.metricField}>
+                                            <SelectField<MetricValueType>
+                                                label="TYPE"
+                                                testID={`metric-type-${index}`}
+                                                options={METRIC_TYPE_CHOICES}
+                                                selected={metric.type}
+                                                // A Metric always has a type, so the
+                                                // picker offers no way back to none.
+                                                onSelect={(type) => selectType(index, type!)}
+                                            />
                                         </View>
-                                    )}
 
-                                    <View style={styles.metricField}>
-                                        <LabeledTextField
-                                            label="DESCRIPTION"
-                                            value={metric.description}
-                                            onChangeText={(val) => handleMetricChange(index, 'description', val)}
-                                            placeholder="Optional — what does each value mean?"
-                                            multiline
-                                            numberOfLines={3}
-                                            maxLength={METRIC_DESCRIPTION_MAX_LENGTH}
-                                            showCounter
-                                        />
+                                        {metric.type === 'Numeric' && (
+                                            <View>
+                                                <View style={styles.boundsRow}>
+                                                    <View style={styles.boundField}>
+                                                        <LabeledTextField
+                                                            label="MIN"
+                                                            testID={`metric-min-${index}`}
+                                                            value={metric.min}
+                                                            onChangeText={(val) => handleMetricChange(index, 'min', val)}
+                                                            keyboardType="numeric"
+                                                            error={metricError.min}
+                                                        />
+                                                    </View>
+                                                    <View style={styles.boundField}>
+                                                        <LabeledTextField
+                                                            label="MAX"
+                                                            testID={`metric-max-${index}`}
+                                                            value={metric.max}
+                                                            onChangeText={(val) => handleMetricChange(index, 'max', val)}
+                                                            keyboardType="numeric"
+                                                            error={metricError.max}
+                                                        />
+                                                    </View>
+                                                </View>
+                                                {/* Below the pair rather than in either field: neither
+                                                    bound is wrong on its own. */}
+                                                {metricError.range ? (
+                                                    <Text style={styles.groupError}>{metricError.range}</Text>
+                                                ) : null}
+                                            </View>
+                                        )}
+
+                                        {metric.type === 'Enum' && (
+                                            <View>
+                                                <View style={styles.valueRows}>
+                                                    {metric.values.map((value, valueIndex) => (
+                                                        <LabeledTextField
+                                                            key={valueIndex}
+                                                            label={`VALUE ${valueIndex + 1}`}
+                                                            testID={`metric-value-${index}-${valueIndex}`}
+                                                            labelAccessory={metric.values.length > EMPTY_METRIC_VALUES.length ? (
+                                                                <TouchableOpacity
+                                                                    onPress={() => handleRemoveValue(index, valueIndex)}
+                                                                    style={styles.deleteButton}>
+                                                                    <MaterialIcons name="delete" size={20}
+                                                                                   color={COLORS.outline}/>
+                                                                </TouchableOpacity>
+                                                            ) : undefined}
+                                                            value={value}
+                                                            onChangeText={(val) => handleValueChange(index, valueIndex, val)}
+                                                            maxLength={METRIC_ENUM_VALUE_MAX_LENGTH}
+                                                            showCounter
+                                                        />
+                                                    ))}
+                                                </View>
+
+                                                {/* Below the rows rather than in any one of them: which
+                                                    row is short of a value is the user's choice. */}
+                                                {metricError.values ? (
+                                                    <Text style={styles.groupError}>{metricError.values}</Text>
+                                                ) : null}
+
+                                                {metric.values.length < METRIC_ENUM_MAX_VALUES && (
+                                                    <TouchableOpacity
+                                                        style={[styles.dashedButton, styles.addValueButton]}
+                                                        onPress={() => handleAddValue(index)}
+                                                    >
+                                                        <MaterialIcons name="add" size={20}
+                                                                       color={COLORS.onSurfaceVariant}/>
+                                                        <Text style={styles.dashedButtonText}>Add Value</Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
+                                        )}
+
+                                        <View style={styles.metricField}>
+                                            <LabeledTextField
+                                                label="DESCRIPTION"
+                                                value={metric.description}
+                                                onChangeText={(val) => handleMetricChange(index, 'description', val)}
+                                                placeholder="Optional — what does each value mean?"
+                                                multiline
+                                                numberOfLines={3}
+                                                maxLength={METRIC_DESCRIPTION_MAX_LENGTH}
+                                                showCounter
+                                                error={metricError.description}
+                                            />
+                                        </View>
                                     </View>
                                 </View>
-                            </View>
-                        ))}
+                            );
+                        })}
 
                         <TouchableOpacity style={styles.dashedButton} onPress={handleAddMetric}>
                             <MaterialIcons name="add" size={20} color={COLORS.onSurfaceVariant}/>
@@ -374,6 +422,9 @@ const styles = StyleSheet.create({
         padding: 4,
         marginRight: -4,
     },
+    // LabeledTextField's own error spacing, so a message about a group of fields
+    // sits where a message about one of them would.
+    groupError: {...TYPOGRAPHY.error, marginTop: 4},
     dashedButton: {
         flexDirection: 'row',
         alignItems: 'center',

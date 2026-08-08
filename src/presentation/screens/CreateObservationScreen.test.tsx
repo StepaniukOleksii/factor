@@ -1,6 +1,7 @@
 import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
+import {Alert} from 'react-native';
 import {CreateObservationScreen} from './CreateObservationScreen';
 import {METRIC_ENUM_VALUE_MAX_LENGTH} from '../../domain/validationLimits';
 
@@ -88,13 +89,29 @@ async function typeInto(root: any, testID: string, text: string) {
 }
 
 /**
- * The metric name field carries no testID, and is the only unlabelled input
- * before the bounds - found through the placeholder its label row shows.
+ * The name fields carry no testID, and are the only unlabelled inputs before the
+ * bounds - found through the placeholder each one's label row shows.
  */
 async function nameMetric(root: any, name: string) {
     await act(async () => {
         root.root.findByProps({placeholder: 'e.g., Duration'}).props.onChangeText(name);
     });
+}
+
+async function nameObservation(root: any, name: string) {
+    await act(async () => {
+        root.root.findByProps({placeholder: 'e.g., Sleep Quality, Mood'}).props.onChangeText(name);
+    });
+}
+
+/** A form field by the caption above it, which only `LabeledTextField` carries. */
+function fieldByLabel(root: any, label: string) {
+    return root.root.findAllByProps({label})[0];
+}
+
+/** Whether the screen has `message` on it anywhere, as the user would read it. */
+function shows(root: any, message: string) {
+    return findAllByText(root.root, message).length > 0;
 }
 
 /**
@@ -124,9 +141,105 @@ function submittedMetrics() {
 }
 
 describe('CreateObservationScreen', () => {
+    let alerted: ReturnType<typeof vi.spyOn>;
+
     beforeEach(() => {
         vi.clearAllMocks();
         mockCreateObservationExecute.mockResolvedValue(undefined);
+        alerted = vi.spyOn(Alert, 'alert').mockImplementation(() => {
+        });
+    });
+
+    describe('mandatory fields', () => {
+        it('marks nothing until a save has been attempted', async () => {
+            const {root} = await renderScreen();
+
+            expect(shows(root, 'Observation name cannot be empty')).toBe(false);
+            expect(shows(root, 'Metric name cannot be empty')).toBe(false);
+        });
+
+        // The bug this covers: an unmet field was reported by the platform's own
+        // error dialog, which names no field and interrupts to say so.
+        it('marks the fields instead of raising a dialog, and does not save', async () => {
+            const {root, goBack} = await renderScreen();
+
+            await saveObservation(root);
+
+            expect(alerted).not.toHaveBeenCalled();
+            expect(mockCreateObservationExecute).not.toHaveBeenCalled();
+            expect(goBack).not.toHaveBeenCalled();
+        });
+
+        it('puts each message on the field that caused it', async () => {
+            const {root} = await renderScreen();
+
+            await saveObservation(root);
+
+            expect(fieldByLabel(root, 'OBSERVATION NAME').props.error)
+                .toBe('Observation name cannot be empty');
+            expect(fieldByLabel(root, 'METRIC NAME').props.error)
+                .toBe('Metric name cannot be empty');
+        });
+
+        // One attempt per unmet field is what the dialog cost the user.
+        it('reports every unmet field at once', async () => {
+            const {root} = await renderScreen();
+
+            await saveObservation(root);
+
+            expect(shows(root, 'Observation name cannot be empty')).toBe(true);
+            expect(shows(root, 'Metric name cannot be empty')).toBe(true);
+        });
+
+        it('clears a mark as its field is filled in, leaving the rest marked', async () => {
+            const {root} = await renderScreen();
+
+            await saveObservation(root);
+            await nameObservation(root, 'Sleep');
+
+            expect(shows(root, 'Observation name cannot be empty')).toBe(false);
+            expect(shows(root, 'Metric name cannot be empty')).toBe(true);
+        });
+
+        // The two rows a Choice Metric starts on are blank, so it is unmet on
+        // arrival the way an empty name field is.
+        it('marks a Choice Metric left on its empty rows', async () => {
+            const {root} = await renderScreen();
+
+            await nameObservation(root, 'Mood');
+            await nameMetric(root, 'level');
+            await chooseType(root, 'Choice');
+            await saveObservation(root);
+
+            expect(shows(root, 'A choice metric needs at least 2 values')).toBe(true);
+            expect(mockCreateObservationExecute).not.toHaveBeenCalled();
+        });
+
+        it('saves once every field is met', async () => {
+            const {root, goBack} = await renderScreen();
+
+            await nameObservation(root, 'Sleep');
+            await nameMetric(root, 'Hours');
+            await saveObservation(root);
+
+            expect(mockCreateObservationExecute).toHaveBeenCalledTimes(1);
+            expect(goBack).toHaveBeenCalled();
+            expect(alerted).not.toHaveBeenCalled();
+        });
+
+        // The dialog keeps the one job no field can do: the draft passed the
+        // rules and the save failed anyway.
+        it('still raises a dialog when the save itself fails', async () => {
+            mockCreateObservationExecute.mockRejectedValue(new Error('Database is locked'));
+            const {root, goBack} = await renderScreen();
+
+            await nameObservation(root, 'Sleep');
+            await nameMetric(root, 'Hours');
+            await saveObservation(root);
+
+            expect(alerted).toHaveBeenCalledWith('Error', 'Database is locked');
+            expect(goBack).not.toHaveBeenCalled();
+        });
     });
 
     describe('metric bounds', () => {
@@ -161,6 +274,7 @@ describe('CreateObservationScreen', () => {
         it('passes both bounds through as typed', async () => {
             const {root} = await renderScreen();
 
+            await nameObservation(root, 'Mood');
             await nameMetric(root, 'level');
             await typeInto(root, 'metric-min-0', '1');
             await typeInto(root, 'metric-max-0', '5');
@@ -174,6 +288,7 @@ describe('CreateObservationScreen', () => {
         it('passes a bound left blank as the empty text that means unset', async () => {
             const {root} = await renderScreen();
 
+            await nameObservation(root, 'Mood');
             await nameMetric(root, 'level');
             await typeInto(root, 'metric-max-0', '5');
             await saveObservation(root);
@@ -188,6 +303,7 @@ describe('CreateObservationScreen', () => {
         it('sends no bound for a Metric switched away from Numeric', async () => {
             const {root} = await renderScreen();
 
+            await nameObservation(root, 'Diary');
             await nameMetric(root, 'journal');
             await typeInto(root, 'metric-min-0', '1');
             await chooseType(root, 'Text');
@@ -343,6 +459,7 @@ describe('CreateObservationScreen', () => {
         it('passes the values through as typed, in the order they were declared', async () => {
             const {root} = await renderScreen();
 
+            await nameObservation(root, 'Mood');
             await nameMetric(root, 'mood');
             await chooseType(root, 'Choice');
             await typeInto(root, 'metric-value-0-0', 'low');
@@ -359,6 +476,7 @@ describe('CreateObservationScreen', () => {
         it('sends no value for a Metric switched away from Choice', async () => {
             const {root} = await renderScreen();
 
+            await nameObservation(root, 'Mood');
             await nameMetric(root, 'mood');
             await chooseType(root, 'Choice');
             await typeInto(root, 'metric-value-0-0', 'low');
