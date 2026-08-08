@@ -519,6 +519,34 @@ describe('ObservationDetailsScreen Record Actions', () => {
         expect(countRecordCards(root.root)).toBe(1);
     });
 
+    it('redraws the charts without the deleted record', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(numericObservation({id: 'm1', name: 'Duration'}));
+        // Two days apart, so each buckets to a dot of its own at the default window.
+        const charted = [chartRecord('a', 3, [['m1', 5]]), chartRecord('b', 1, [['m1', 7]])];
+        mockGetRecentRecordsExecute.mockResolvedValue(charted);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue(charted);
+
+        const root = await renderScreen();
+        expect(recordDots(root).length).toBe(2);
+
+        await openRecordMenu(root);
+        await openDeleteRecordConfirmation(root);
+
+        // Queued after the initial load so both queries only report it to the
+        // post-delete refresh
+        const remaining = [charted[1]];
+        mockGetRecentRecordsExecute.mockResolvedValueOnce(remaining);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValueOnce(remaining);
+
+        const deleteConfirmButton = findTouchableWithText(root.root, 'Delete');
+        await act(async () => {
+            await deleteConfirmButton!.props.onPress();
+        });
+
+        expect(mockDeleteRecordExecute).toHaveBeenCalledWith('a');
+        expect(recordDots(root).length).toBe(1);
+    });
+
     it('displays the empty state after deleting the final record', async () => {
         const root = await renderScreen();
         await openRecordMenu(root);

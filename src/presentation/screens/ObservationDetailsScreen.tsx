@@ -308,7 +308,10 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
             await deleteRecordUseCase.execute(recordToDelete.id);
             setRecordDeleteModalVisible(false);
             setRecordToDelete(null);
+            // Deleting is the only change made without leaving the screen, so
+            // the focus effect that re-queries the charts never runs for it.
             await loadRecentRecords();
+            await loadTrendData(timeRangeSelection);
         } catch (error) {
             console.error('Failed to delete record', error);
             alert('Failed to delete record. Please try again.');
