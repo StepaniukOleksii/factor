@@ -43,5 +43,5 @@ export {CenteredState} from './CenteredState';
 export {CenteredStateProps} from './CenteredState';
 
 /** Fixed bottom action bar that hosts a screen's primary call-to-action - translucent with a top divider */
-export {FooterBar} from './FooterBar';
+export {FooterBar, FOOTER_CLEARANCE} from './FooterBar';
 export {FooterBarProps} from './FooterBar';

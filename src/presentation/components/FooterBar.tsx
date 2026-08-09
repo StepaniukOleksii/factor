@@ -7,6 +7,18 @@ export interface FooterBarProps {
 }
 
 /**
+ * Bottom padding a screen's scrolling content must reserve so its last element
+ * clears the `FooterBar` floating over it. Lives here rather than in each
+ * screen because it answers to the paddings below: a screen that copies the
+ * number instead drifts from them silently, and the content it ends on is what
+ * the footer then covers.
+ *
+ * Sized for the tallest case - Android, whose footer adds the navigation-bar
+ * padding - so one value serves both platforms.
+ */
+export const FOOTER_CLEARANCE = 120;
+
+/**
  * Fixed action bar pinned to the bottom of a screen, holding the primary
  * call-to-action (typically a `PrimaryActionButton`). It floats translucently
  * over the scrolling content with a hairline top divider that mirrors the

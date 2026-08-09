@@ -32,6 +32,7 @@ import {Record as DomainRecord} from '../../domain/Record';
 import {
     CenteredState,
     Dialog,
+    FOOTER_CLEARANCE,
     FooterBar,
     PrimaryActionButton,
     ScreenContainer,
@@ -711,7 +712,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: 24,
-        paddingBottom: 120,
+        paddingBottom: FOOTER_CLEARANCE,
     },
     description: {
         color: COLORS.onSurfaceVariant,

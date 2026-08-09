@@ -17,6 +17,7 @@ import {RECORD_NOTE_MAX_LENGTH} from '../../domain/validationLimits';
 import {
     CenteredState,
     Dialog,
+    FOOTER_CLEARANCE,
     FooterBar,
     LabeledTextField,
     PrimaryActionButton,
@@ -593,7 +594,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: 16,
-        paddingBottom: 120,
+        paddingBottom: FOOTER_CLEARANCE,
     },
     metricsList: {
         gap: 12,

@@ -29,6 +29,7 @@ import {
 } from '../../domain/validationLimits';
 import {MaterialIcons} from '@expo/vector-icons';
 import {
+    FOOTER_CLEARANCE,
     FooterBar,
     LabeledTextField,
     PrimaryActionButton,
@@ -374,7 +375,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 16,
-        paddingBottom: 100, // Clears the fixed footer.
+        paddingBottom: FOOTER_CLEARANCE,
     },
     section: {
         marginBottom: 0,
