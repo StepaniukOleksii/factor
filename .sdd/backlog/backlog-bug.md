@@ -34,8 +34,7 @@ they're ready to become a real spec.
    closing it means changing 3-5 rather than fixing code against it, and it changes what every existing custom
    range draws. The obvious shape is one span-keyed tier table both paths call, the way the axis labels
    already work; zoom would inherit it, since a zoomed window is a custom range.
-6. The numeric chart cannot display more than 5 or 6 numbers. The leading number is silently hidden. 
-7. The Create Observation screen marks no field as required until a save is refused. Requiredness is only
+6. The Create Observation screen marks no field as required until a save is refused. Requiredness is only
    inferable from a placeholder *not* reading `Optional — ...`, and MIN/MAX carry no placeholder at all, so
    optional bounds read as required on the same reasoning. Unmarked: OBSERVATION NAME, METRIC NAME, and a
    Choice Metric's first two VALUE rows.

@@ -31,8 +31,10 @@ export const AXIS_FONT_SIZE = 9;
  * and cannot be read down a column against each other.
  *
  * 32px holds five digits of a Numeric value label - four, and any negative
- * carrying a decimal, overran the 24px this replaced, and a value label is
- * right-aligned rather than truncated, so an overrun is drawn off the card. It
+ * carrying a decimal, overran the 24px this replaced. A value label is
+ * right-aligned rather than truncated, since a truncated number is a different
+ * number, so a value too wide for this is not shortened but scaled:
+ * `getValueAxisTicks` moves the whole axis into a unit whose labels fit. It
  * holds six average characters of a lane label, past which `truncateToWidth`
  * takes over: fewer than the 48px it replaces there, and enough to tell lanes
  * apart when the ramp and the lane's position already say which is which.

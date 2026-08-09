@@ -82,10 +82,82 @@ export function getValueAxisTicks(
   // count off a division by zero. A flat series needs no such guard: its zero
   // value span simply gives every tick the same label.
   const lastIndex = Math.max(tickCount - 1, 1);
-  return Array.from({length: tickCount}, (_, index) => {
-    const ratio = index / lastIndex;
-    return {ratio, label: formatAxisValueLabel(minValue + ratio * (maxValue - minValue))};
-  });
+  const ratios = Array.from({length: tickCount}, (_, index) => index / lastIndex);
+  const values = ratios.map(ratio => minValue + ratio * (maxValue - minValue));
+  // Chosen from the whole axis at once, never per label - see `chooseValueUnit`.
+  const unit = chooseValueUnit(values);
+
+  return ratios.map((ratio, index) => ({
+    ratio,
+    label: formatAxisValueLabel(values[index], unit),
+  }));
+}
+
+/**
+ * A factor an axis divides its values by before writing them, and the letter
+ * that says it did.
+ */
+export interface ValueUnit {
+  factor: number;
+  /** Written after the scaled number; empty for the unscaled unit. */
+  suffix: string;
+}
+
+/** Values written as they are. */
+export const PLAIN_UNIT: ValueUnit = {factor: 1, suffix: ''};
+
+/**
+ * Largest first, so the first one a magnitude reaches is the smallest that
+ * brings it under 1000 - which is what caps a scaled label at `999`, `99.9` or
+ * `9.99` and its letter.
+ *
+ * Stops at `T`. Past 10^15 the scaled number grows digits again, which the
+ * chart handles by dropping a label it cannot fit rather than drawing a clipped
+ * one; a Metric counting in quadrillions is not what this app records.
+ */
+const SCALED_UNITS: ReadonlyArray<ValueUnit> = [
+  {factor: 1e12, suffix: 'T'},
+  {factor: 1e9, suffix: 'B'},
+  {factor: 1e6, suffix: 'M'},
+  {factor: 1e3, suffix: 'k'},
+];
+
+/**
+ * How many characters of a plain label the gutter holds. At the axis size five
+ * fit whatever they are - `99999` measures 24.4px and `-9999` 22.0px against the
+ * 27px `LABEL_GUTTER` leaves - and a sixth digit overruns it: `999999` is 29.3px
+ * and `-99999` 27.1px. A value label is right-aligned and never truncated, since
+ * a truncated number is a different number, so an overrun would be drawn off the
+ * canvas, silently losing its leading digits and reading as a smaller value.
+ *
+ * Scaling rather than widening: the gutter is one width for every chart so that
+ * a column of them puts the same moment at the same pixel, so a Numeric chart
+ * cannot buy room by taking more of it.
+ */
+const PLAIN_LABEL_MAX_CHARS = 5;
+
+/**
+ * The unit a whole axis writes its labels in: none while the plain numbers fit
+ * the gutter, otherwise the smallest that brings its widest value under 1000.
+ *
+ * One unit for the axis, not one per label. A label picking its own would put
+ * `99000` beside `105k` on the same five gridlines, which reads as two scales
+ * rather than one.
+ *
+ * Chosen by formatting the labels rather than from a threshold on the range,
+ * because what decides this is whether the widest one fits, and how wide a value
+ * writes depends on its sign and its decimals as much as on its size.
+ */
+export function chooseValueUnit(values: ReadonlyArray<number>): ValueUnit {
+  const widestPlain = values.reduce(
+    (widest, value) => Math.max(widest, formatAxisValueLabel(value).length),
+    0,
+  );
+  if (widestPlain <= PLAIN_LABEL_MAX_CHARS) {
+    return PLAIN_UNIT;
+  }
+  const magnitude = values.reduce((largest, value) => Math.max(largest, Math.abs(value)), 0);
+  return SCALED_UNITS.find(unit => magnitude >= unit.factor) ?? PLAIN_UNIT;
 }
 
 /**
@@ -113,11 +185,18 @@ export function formatAxisTimeLabel(date: Date, tier: TimeAxisTier): string {
  * apart, without the decimal noise averaging a bucket leaves behind (a bucket
  * mean of `12.333333333333334` reads as `12.3`). Trailing zeros are dropped, so
  * a whole number stays a whole number.
+ *
+ * `unit` belongs to the axis rather than to this value, and defaults to none -
+ * the same decimals rule then applies to the scaled number, so `123456` under
+ * `k` reads `123k` and `1234` reads `1.23k`. Zero is written bare whatever the
+ * unit, since `0k` says nothing `0` does not.
  */
-export function formatAxisValueLabel(value: number): string {
-  const magnitude = Math.abs(value);
+export function formatAxisValueLabel(value: number, unit: ValueUnit = PLAIN_UNIT): string {
+  const scaled = value / unit.factor;
+  const magnitude = Math.abs(scaled);
   const decimals = magnitude >= 100 ? 0 : magnitude >= 10 ? 1 : 2;
-  return String(Number(value.toFixed(decimals)));
+  const written = String(Number(scaled.toFixed(decimals)));
+  return written === '0' ? written : written + unit.suffix;
 }
 
 /**

@@ -478,8 +478,39 @@ describe('NumericTrendChart axes', () => {
     expect(labels.map((label: any) => label.text)).toEqual(['10', '13.8', '17.5', '21.3', '25']);
     labels.forEach((label: any) => {
       expect(label.x + label.text.length * GLYPH_WIDTH).toBeLessThanOrEqual(PLOT.left);
+      // Right-aligned, so a label wider than the gutter would start left of the
+      // canvas and lose its leading digits to the clip - which reads as a
+      // smaller number rather than as a broken label.
+      expect(label.x).toBeGreaterThanOrEqual(0);
       expect(label.color).toBe(COLORS.onSurfaceVariant);
     });
+  });
+
+  it('scales a large series into a unit so its labels still fit the gutter', () => {
+    loadFont();
+
+    const labels = valueLabels(render(points(100000, 300000, 200000, 500000)));
+
+    expect(labels.map((label: any) => label.text)).toEqual([
+      '100k',
+      '200k',
+      '300k',
+      '400k',
+      '500k',
+    ]);
+    labels.forEach((label: any) => expect(label.x).toBeGreaterThanOrEqual(0));
+  });
+
+  it('drops a value label too wide for the gutter rather than drawing it clipped', () => {
+    loadFont();
+
+    // Past the top of the unit ladder the scaled number grows digits again. The
+    // gridlines still say where the values sit; a label that could only be drawn
+    // with its leading digits cut off is left out instead.
+    const root = render(points(1e18, 3e18, 2e18, 5e18));
+
+    expect(gridlines(root).length).toBe(5);
+    expect(valueLabels(root)).toEqual([]);
   });
 
   it('scales each chart to its own value range rather than a shared one', () => {

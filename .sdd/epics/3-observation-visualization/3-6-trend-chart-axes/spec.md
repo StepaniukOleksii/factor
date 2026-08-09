@@ -53,6 +53,10 @@ nothing yet for this feature to add axes to.
 * [ ] **Value Axis (Y):** Each Numeric trend chart shows 5 evenly spaced horizontal gridlines spanning
   its own plotted value range (its series' min to max, the same domain the curve is already scaled
   against), each paired with a value label at the chart's left edge.
+* [ ] **Value Labels Fit Their Gutter:** Value labels are right-aligned into the left gutter and never
+  truncated — a truncated number is a different number. They are written plainly while the widest of them
+  fits; past that the whole axis switches to one unit (`k`, `M`, `B`, `T`) chosen from its widest value, so
+  all 5 read at one scale (`90k` … `120k`, never `90000` beside `120k`). Zero stays bare.
 * [ ] **No Vertical Gridlines:** Only the 5 horizontal value gridlines are drawn; the time axis is
   labels only, with no vertical gridlines running up from them, keeping the added scale as visually
   quiet as possible.

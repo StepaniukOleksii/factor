@@ -109,6 +109,13 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
         {font &&
           valueTicks.map(tick => {
             const y = valueRatioToY(tick.ratio, plot);
+            // Right-aligned against the plot, and never truncated - a truncated
+            // number is a different number - so a label wider than the gutter
+            // would start left of the canvas and lose its leading digits with
+            // nothing to show it had. `getValueAxisTicks` scales the axis to
+            // keep labels inside the gutter; this drops what it still cannot
+            // fit, since no label reads better than a wrong one.
+            const labelX = plot.left - LABEL_GAP - measureWidth(font, tick.label);
             return (
               <React.Fragment key={`value-${tick.ratio}`}>
                 <Line
@@ -117,13 +124,15 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
                   color={GRIDLINE_COLOR}
                   strokeWidth={GRIDLINE_WIDTH}
                 />
-                <SkiaText
-                  font={font}
-                  text={tick.label}
-                  x={plot.left - LABEL_GAP - measureWidth(font, tick.label)}
-                  y={y + baselineCentreOffset(font)}
-                  color={AXIS_LABEL_COLOR}
-                />
+                {labelX >= 0 && (
+                  <SkiaText
+                    font={font}
+                    text={tick.label}
+                    x={labelX}
+                    y={y + baselineCentreOffset(font)}
+                    color={AXIS_LABEL_COLOR}
+                  />
+                )}
               </React.Fragment>
             );
           })}

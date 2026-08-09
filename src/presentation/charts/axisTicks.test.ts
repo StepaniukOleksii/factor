@@ -1,10 +1,12 @@
 import {describe, expect, it} from 'vitest';
 import {
-    formatAxisTimeLabel,
-    formatAxisValueLabel,
-    getTimeAxisTicks,
-    getTimeAxisTier,
-    getValueAxisTicks,
+  chooseValueUnit,
+  formatAxisTimeLabel,
+  formatAxisValueLabel,
+  getTimeAxisTicks,
+  getTimeAxisTier,
+  getValueAxisTicks,
+  PLAIN_UNIT,
 } from './axisTicks';
 import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
 
@@ -181,6 +183,117 @@ describe('getValueAxisTicks', () => {
   it('places a lone tick at the start of the range instead of dividing by zero', () => {
     expect(getValueAxisTicks(10, 20, 1)).toEqual([{ratio: 0, label: '10'}]);
   });
+
+  it('writes values plainly while they fit the gutter', () => {
+    // Five digits fit, so a step-counting range keeps every digit it has rather
+    // than being rounded into a unit that buys it nothing.
+    expect(getValueAxisTicks(8000, 15000, 5).map(tick => tick.label)).toEqual([
+      '8000',
+      '9750',
+      '11500',
+      '13250',
+      '15000',
+    ]);
+  });
+
+  it('keeps a range straddling a unit boundary plain rather than flattening it', () => {
+    // Scaling at 1000 would write all five of these as `1k`: the unit is chosen
+    // from what fits, so a value hovering near a boundary keeps its resolution.
+    expect(getValueAxisTicks(999, 1001, 5).map(tick => tick.label)).toEqual([
+      '999',
+      '1000',
+      '1000',
+      '1001',
+      '1001',
+    ]);
+  });
+
+  it('scales the whole axis once a label would overrun the gutter', () => {
+    expect(getValueAxisTicks(100000, 500000, 5).map(tick => tick.label)).toEqual([
+      '100k',
+      '200k',
+      '300k',
+      '400k',
+      '500k',
+    ]);
+  });
+
+  it('scales every label to the same unit, including the ones that would have fit', () => {
+    // `90000` fits and `120000` does not. Writing them as they come would put
+    // `90000` beside `120k` on one axis, which reads as two different scales.
+    expect(getValueAxisTicks(90000, 120000, 5).map(tick => tick.label)).toEqual([
+      '90k',
+      '97.5k',
+      '105k',
+      '113k',
+      '120k',
+    ]);
+  });
+
+  it('writes a zero tick bare whatever unit the axis is in', () => {
+    expect(getValueAxisTicks(0, 200000, 5).map(tick => tick.label)).toEqual([
+      '0',
+      '50k',
+      '100k',
+      '150k',
+      '200k',
+    ]);
+  });
+
+  it('counts the minus sign against the gutter it has to fit', () => {
+    // `-50000` is six characters and overruns where `50000` would not.
+    expect(getValueAxisTicks(-50000, -10000, 5).map(tick => tick.label)).toEqual([
+      '-50k',
+      '-40k',
+      '-30k',
+      '-20k',
+      '-10k',
+    ]);
+  });
+
+  it('climbs the unit ladder with the magnitude', () => {
+    expect(getValueAxisTicks(1e6, 5e6, 5).map(tick => tick.label)).toEqual([
+      '1M',
+      '2M',
+      '3M',
+      '4M',
+      '5M',
+    ]);
+    expect(getValueAxisTicks(1e9, 2e9, 5).map(tick => tick.label)).toEqual([
+      '1B',
+      '1.25B',
+      '1.5B',
+      '1.75B',
+      '2B',
+    ]);
+    expect(getValueAxisTicks(1e12, 2e12, 5).map(tick => tick.label)).toEqual([
+      '1T',
+      '1.25T',
+      '1.5T',
+      '1.75T',
+      '2T',
+    ]);
+  });
+});
+
+describe('chooseValueUnit', () => {
+  it('leaves values unscaled while the widest of them fits', () => {
+    expect(chooseValueUnit([8000, 15000])).toBe(PLAIN_UNIT);
+    expect(chooseValueUnit([-99.9, 99.9])).toBe(PLAIN_UNIT);
+    expect(chooseValueUnit([])).toBe(PLAIN_UNIT);
+  });
+
+  it('answers the smallest unit that brings the widest value under 1000', () => {
+    expect(chooseValueUnit([999999]).suffix).toBe('k');
+    expect(chooseValueUnit([1e6]).suffix).toBe('M');
+    expect(chooseValueUnit([5e9]).suffix).toBe('B');
+    expect(chooseValueUnit([5e12]).suffix).toBe('T');
+  });
+
+  it('reads the widest label rather than the first', () => {
+    expect(chooseValueUnit([0, 200000]).suffix).toBe('k');
+    expect(chooseValueUnit([-5e6, 100]).suffix).toBe('M');
+  });
 });
 
 describe('formatAxisValueLabel', () => {
@@ -194,5 +307,16 @@ describe('formatAxisValueLabel', () => {
     [-3.256, '-3.26'],
   ])('formats %s as %s', (value, expected) => {
     expect(formatAxisValueLabel(value)).toBe(expected);
+  });
+
+  it.each([
+    [123456, '123k'],
+    [12345, '12.3k'],
+    [1234, '1.23k'],
+    [-1234, '-1.23k'],
+    [0, '0'],
+    [4, '0'],
+  ])('formats %s under a unit as %s', (value, expected) => {
+    expect(formatAxisValueLabel(value, {factor: 1e3, suffix: 'k'})).toBe(expected);
   });
 });
