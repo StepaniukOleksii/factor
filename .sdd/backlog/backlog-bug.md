@@ -18,8 +18,7 @@ they're ready to become a real spec.
    set the same way, so the presets likely have the same gap (not driven on-device, inferred from the code).
    Guarding on `loadingTrends` alone cannot close it; the tap handler would need to notice that the rendered
    window no longer matches the active selection, or the flag would have to be set before the render commits.
-4. It is possible to create multiple Observations with the same name.
-5. A preset and a custom range covering the same span bucket their Records differently, so switching from `1Y`
+4. A preset and a custom range covering the same span bucket their Records differently, so switching from `1Y`
    to the custom range the modal pre-fills from it redraws every chart at a different resolution without the
    window having moved. Seen on `mixed metrics`: `yearly` draws 13 points labelled `2`/`3` at the preset and
    ~26 unlabelled ones at the custom range; the Enum `category` redraws its marks at a fifth of their width,
@@ -34,7 +33,7 @@ they're ready to become a real spec.
    closing it means changing 3-5 rather than fixing code against it, and it changes what every existing custom
    range draws. The obvious shape is one span-keyed tier table both paths call, the way the axis labels
    already work; zoom would inherit it, since a zoomed window is a custom range.
-6. The Create Observation screen marks no field as required until a save is refused. Requiredness is only
+5. The Create Observation screen marks no field as required until a save is refused. Requiredness is only
    inferable from a placeholder *not* reading `Optional — ...`, and MIN/MAX carry no placeholder at all, so
    optional bounds read as required on the same reasoning. Unmarked: OBSERVATION NAME, METRIC NAME, and a
    Choice Metric's first two VALUE rows.
