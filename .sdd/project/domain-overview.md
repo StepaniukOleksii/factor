@@ -34,7 +34,9 @@ Examples:
 * Quality
 * Temperature
 
-Metrics may be reused across multiple Observations.
+A Metric belongs to exactly one Observation and is removed with it.
+
+Two Observations may define Metrics with the same name; those are separate Metrics.
 
 ---
 
