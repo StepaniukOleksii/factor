@@ -5,8 +5,10 @@
  * reaches for it through `SafeAreaProviderCompat`, so any test rendering the
  * navigator pulls it in. Activated globally in `vitest.setup.ts`.
  *
- * Insets are zero throughout: no screen consumes this package, so nothing under
- * test depends on real values (see ADR-2).
+ * Insets are zero throughout, which renders every screen as if it had no system
+ * chrome below it. Screens reach them only through `useBottomInset`, and no test
+ * here asserts on the spacing that derives - `FooterBar.test.tsx` replaces this
+ * mock with its own to cover that (see ADR-2).
  */
 import React, {type ReactNode} from 'react';
 

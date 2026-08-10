@@ -32,11 +32,11 @@ import {Record as DomainRecord} from '../../domain/Record';
 import {
     CenteredState,
     Dialog,
-    FOOTER_CLEARANCE,
     FooterBar,
     PrimaryActionButton,
     ScreenContainer,
-    ScreenHeader
+    ScreenHeader,
+    useFooterClearance
 } from "@presentation/components";
 import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatMetricValue} from "@presentation/metricDisplay";
@@ -130,6 +130,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
     const [recordDeleteModalVisible, setRecordDeleteModalVisible] = useState(false);
     const [recordToDelete, setRecordToDelete] = useState<DomainRecord | null>(null);
     const [deletingRecord, setDeletingRecord] = useState(false);
+    const footerClearance = useFooterClearance();
 
     // On focus rather than on mount: this screen stays mounted while a Record
     // screen sits on top of it, so a mount effect would fire once and never
@@ -386,7 +387,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
             </Modal>
 
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView contentContainerStyle={[styles.scrollContent, {paddingBottom: footerClearance}]}>
 
                 {observation.description ? (
                     <Text style={styles.description}>{observation.description}</Text>
@@ -712,7 +713,6 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: 24,
-        paddingBottom: FOOTER_CLEARANCE,
     },
     description: {
         color: COLORS.onSurfaceVariant,

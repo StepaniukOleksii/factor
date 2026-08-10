@@ -29,7 +29,6 @@ import {
 } from '../../domain/validationLimits';
 import {MaterialIcons} from '@expo/vector-icons';
 import {
-    FOOTER_CLEARANCE,
     FooterBar,
     LabeledTextField,
     PrimaryActionButton,
@@ -37,6 +36,7 @@ import {
     ScreenHeader,
     SelectField,
     type SelectFieldOption,
+    useFooterClearance,
 } from "@presentation/components";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatMetricType} from "@presentation/metricDisplay";
@@ -85,6 +85,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
     const [description, setDescription] = useState('');
     const [metrics, setMetrics] = useState<MetricDraft[]>([EMPTY_METRIC]);
     const [attemptedSave, setAttemptedSave] = useState(false);
+    const footerClearance = useFooterClearance();
 
     const input: CreateObservationInput = {
         name: observationName,
@@ -190,7 +191,8 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                     </View>
                 </View>
 
-                <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+                <ScrollView style={styles.scrollView}
+                            contentContainerStyle={[styles.scrollContent, {paddingBottom: footerClearance}]}>
                     <View style={styles.descriptionSection}>
                         <LabeledTextField
                             label="DESCRIPTION"
@@ -375,7 +377,6 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 16,
-        paddingBottom: FOOTER_CLEARANCE,
     },
     section: {
         marginBottom: 0,

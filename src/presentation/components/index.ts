@@ -43,5 +43,11 @@ export {CenteredState} from './CenteredState';
 export {CenteredStateProps} from './CenteredState';
 
 /** Fixed bottom action bar that hosts a screen's primary call-to-action - translucent with a top divider */
-export {FooterBar, FOOTER_CLEARANCE} from './FooterBar';
+export {FooterBar} from './FooterBar';
 export {FooterBarProps} from './FooterBar';
+
+/** Bottom padding a scrolling screen must reserve so its last element clears the FooterBar floating over it */
+export {useFooterClearance} from './FooterBar';
+
+/** System chrome below `bottom: 0` that a screen's own floating elements must clear - the Android navigation bar */
+export {useBottomInset} from './useBottomInset';

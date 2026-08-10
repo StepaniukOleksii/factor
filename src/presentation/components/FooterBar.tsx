@@ -1,32 +1,37 @@
 import React, {ReactNode} from "react";
-import {Platform, StyleSheet, View} from "react-native";
+import {StyleSheet, View} from "react-native";
 import {COLORS, withAlpha} from "@presentation/theme";
+import {useBottomInset} from "./useBottomInset";
 
 export interface FooterBarProps {
     children: ReactNode;
 }
 
-/**
- * Bottom padding a screen's scrolling content must reserve so its last element
- * clears the `FooterBar` floating over it. Lives here rather than in each
- * screen because it answers to the paddings below: a screen that copies the
- * number instead drifts from them silently, and the content it ends on is what
- * the footer then covers.
- *
- * Sized for the tallest case - Android, whose footer adds the navigation-bar
- * padding - so one value serves both platforms.
- */
-export const FOOTER_CLEARANCE = 120;
+const PADDING = 16;
+
+/** A `PrimaryActionButton` measures a little under this, rounded up to the minimum touch target. */
+const ACTION_HEIGHT = 56;
+
+const BAR_HEIGHT = 1 + PADDING + ACTION_HEIGHT + PADDING;
+
+/** Bottom padding a screen's scrolling content reserves so its last element clears the bar floating over it. */
+export function useFooterClearance(): number {
+    const bottomInset = useBottomInset();
+
+    return BAR_HEIGHT + bottomInset;
+}
 
 /**
  * Fixed action bar pinned to the bottom of a screen, holding the primary
  * call-to-action (typically a `PrimaryActionButton`). It floats translucently
  * over the scrolling content with a hairline top divider that mirrors the
- * `ScreenHeader` bottom border, and adds extra bottom padding to clear the
- * Android navigation bar.
+ * `ScreenHeader` bottom border. Screens reserve room for it with
+ * `useFooterClearance`.
  */
 export function FooterBar({children}: FooterBarProps) {
-    return <View style={styles.footer}>{children}</View>;
+    const bottomInset = useBottomInset();
+
+    return <View style={[styles.footer, {paddingBottom: PADDING + bottomInset}]}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -38,9 +43,8 @@ const styles = StyleSheet.create({
         backgroundColor: withAlpha(COLORS.background, 0.8),
         borderTopWidth: 1,
         borderTopColor: COLORS.outlineVariant,
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: Platform.OS === 'android' ? 40 : 16,
+        paddingHorizontal: PADDING,
+        paddingTop: PADDING,
         zIndex: 50,
     },
 });

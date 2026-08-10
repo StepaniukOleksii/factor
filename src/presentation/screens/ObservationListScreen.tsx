@@ -6,7 +6,7 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {GetObservationsUseCase, ObservationListItem} from '../../application/GetObservationsUseCase';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
-import {CenteredState, ScreenContainer, ScreenHeader} from "@presentation/components";
+import {CenteredState, ScreenContainer, ScreenHeader, useBottomInset} from "@presentation/components";
 import {COLORS, RADIUS} from "@presentation/theme";
 import type {RootStackParamList} from '../navigation/routes';
 
@@ -16,9 +16,14 @@ const useCase = new GetObservationsUseCase(repository, recordRepository);
 
 export type ObservationListScreenProps = NativeStackScreenProps<RootStackParamList, 'ObservationList'>;
 
+const GUTTER = 16;
+
+const FAB_SIZE = 56;
+
 export function ObservationListScreen({navigation}: ObservationListScreenProps) {
     const [observations, setObservations] = useState<ObservationListItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const fabBottom = useBottomInset() + GUTTER;
 
     // As the stack's root this screen stays mounted for the whole session, so a
     // mount effect would only ever fire once. Reloading on focus is what keeps
@@ -109,12 +114,14 @@ export function ObservationListScreen({navigation}: ObservationListScreenProps) 
                     keyExtractor={item => item.observation.id}
                     renderItem={renderItem}
                     ListEmptyComponent={renderEmptyComponent}
-                    contentContainerStyle={styles.listContent}
+                    // The FAB floats over the list rather than in it, so nothing
+                    // pushes the last card clear of it.
+                    contentContainerStyle={[styles.listContent, {paddingBottom: fabBottom + FAB_SIZE + GUTTER}]}
                 />
             )}
 
             <TouchableOpacity
-                style={styles.fab}
+                style={[styles.fab, {bottom: fabBottom}]}
                 onPress={() => navigation.navigate('CreateObservation')}
                 accessibilityLabel="Create observation"
             >
@@ -126,8 +133,7 @@ export function ObservationListScreen({navigation}: ObservationListScreenProps) 
 
 const styles = StyleSheet.create({
     listContent: {
-        padding: 16,
-        paddingBottom: 100, // Clears the FAB.
+        padding: GUTTER,
     },
     emptyContainer: {
         padding: 40,
@@ -203,10 +209,9 @@ const styles = StyleSheet.create({
     },
     fab: {
         position: 'absolute',
-        bottom: 96,
-        right: 16,
-        width: 56,
-        height: 56,
+        right: GUTTER,
+        width: FAB_SIZE,
+        height: FAB_SIZE,
         borderRadius: RADIUS.lg,
         backgroundColor: COLORS.primaryContainer,
         justifyContent: 'center',

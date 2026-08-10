@@ -17,7 +17,6 @@ import {RECORD_NOTE_MAX_LENGTH} from '../../domain/validationLimits';
 import {
     CenteredState,
     Dialog,
-    FOOTER_CLEARANCE,
     FooterBar,
     LabeledTextField,
     PrimaryActionButton,
@@ -25,6 +24,7 @@ import {
     ScreenHeader,
     SegmentedField,
     SelectField,
+    useFooterClearance,
 } from "@presentation/components";
 import {
     BOOLEAN_METRIC_OPTIONS,
@@ -151,6 +151,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
     const [openPicker, setOpenPicker] = useState<'date' | 'time' | null>(null);
     /** The removal an exit was intercepted on, held while the user decides. */
     const [pendingExit, setPendingExit] = useState<NavigationAction | null>(null);
+    const footerClearance = useFooterClearance();
     /**
      * Saving removes this route too, and the form is still dirty against the
      * Record it loaded at that moment, so that one removal has to pass. A ref
@@ -470,7 +471,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
                 style={styles.container}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+                <ScrollView contentContainerStyle={[styles.scrollContent, {paddingBottom: footerClearance}]}>
                     <View style={styles.metricsList}>
                         {observation.metrics.map(renderMetricInput)}
                     </View>
@@ -594,7 +595,6 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: 16,
-        paddingBottom: FOOTER_CLEARANCE,
     },
     metricsList: {
         gap: 12,
