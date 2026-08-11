@@ -1,3 +1,4 @@
+import {collidingNamePositions, nameKey} from '../domain/nameIdentity';
 import {
   METRIC_DESCRIPTION_MAX_LENGTH,
   METRIC_ENUM_MAX_VALUES,
@@ -145,18 +146,33 @@ function metricErrors(metric: CreateObservationInput['metrics'][number]): Metric
  *
  * Returns the rules alone; refusing the save is `firstErrorMessage`'s job and
  * marking the fields is the screen's.
+ *
+ * @param takenNames the names this submission must not collide with; leaving out
+ * the subject's own, where there is one, is the caller's job.
  */
-export function validateCreateObservation(input: CreateObservationInput): CreateObservationErrors {
-  const errors: CreateObservationErrors = {perMetric: (input.metrics ?? []).map(metricErrors)};
+export function validateCreateObservation(
+  input: CreateObservationInput,
+  takenNames: readonly string[]
+): CreateObservationErrors {
+  const metrics = input.metrics ?? [];
+  const errors: CreateObservationErrors = {perMetric: metrics.map(metricErrors)};
 
   const name = input.name?.trim() ?? '';
   if (name === '') {
     errors.name = 'Observation name cannot be empty';
   } else if (name.length > OBSERVATION_NAME_MAX_LENGTH) {
     errors.name = `Observation name cannot exceed ${OBSERVATION_NAME_MAX_LENGTH} characters`;
+  } else if (takenNames.some(taken => nameKey(taken) === nameKey(name))) {
+    errors.name = 'An observation with this name already exists';
   }
 
-  if (!input.metrics || input.metrics.length === 0) {
+  // The aggregate is what enforces the rule (ADR-4); this is what decides which
+  // field the refusal marks.
+  for (const position of collidingNamePositions(metrics.map(metric => metric.name ?? ''))) {
+    errors.perMetric[position].name ??= 'Metric names must be unique';
+  }
+
+  if (metrics.length === 0) {
     errors.metrics = 'At least one metric is required';
   }
 

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -84,8 +84,18 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
     const [observationName, setObservationName] = useState('');
     const [description, setDescription] = useState('');
     const [metrics, setMetrics] = useState<MetricDraft[]>([EMPTY_METRIC]);
+    const [takenNames, setTakenNames] = useState<string[]>([]);
     const [attemptedSave, setAttemptedSave] = useState(false);
     const footerClearance = useFooterClearance();
+
+    // On mount rather than on focus: nothing that can create an Observation
+    // opens above this screen, so the names cannot go stale underneath it
+    // (ADR-2). A failed load leaves them empty; the use case still refuses.
+    useEffect(() => {
+        repository.findAll()
+            .then(observations => setTakenNames(observations.map(o => o.name)))
+            .catch(error => console.error('Failed to load observation names', error));
+    }, []);
 
     const input: CreateObservationInput = {
         name: observationName,
@@ -100,7 +110,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
         })),
     };
 
-    const errors = validateCreateObservation(input);
+    const errors = validateCreateObservation(input, takenNames);
     // Judged every render but withheld until the user has tried to save: a form
     // that opens marked has faulted them for nothing they did yet. Afterwards
     // the marks answer to what is on screen, so a field clears as it is fixed.
@@ -143,8 +153,8 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
             await useCase.execute(input);
             navigation.goBack();
         } catch (error: any) {
-            // Nothing the fields could have shown - the input passed the same
-            // rules the use case applies, so anything left is the save failing.
+            // The last resort, for what no field is holding: the save failing,
+            // or a name the use case refused before the existing names arrived.
             Alert.alert('Error', error.message || 'An error occurred while saving.');
         }
     };

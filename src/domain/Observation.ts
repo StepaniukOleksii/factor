@@ -1,6 +1,13 @@
 import {Entity} from './Entity';
 import {Metric} from './Metric';
+import {collidingNamePositions} from './nameIdentity';
 import {Record} from './Record';
+
+function requireDistinctMetricNames(names: string[]): void {
+  if (collidingNamePositions(names).length > 0) {
+    throw new Error('Metric names must be unique within an observation');
+  }
+}
 
 export class Observation extends Entity<string> {
   public name: string;
@@ -11,6 +18,7 @@ export class Observation extends Entity<string> {
     super(id);
     this.name = name;
     this.description = description;
+    requireDistinctMetricNames(metrics.map(m => m.name));
     this._metrics = new Map(metrics.map(m => [m.id, m]));
   }
 
@@ -19,6 +27,10 @@ export class Observation extends Entity<string> {
   }
 
   public addMetric(metric: Metric): void {
+    // Keyed by id, so a Metric replacing itself does not collide with the name
+    // it replaces.
+    const siblings = this.metrics.filter(m => m.id !== metric.id);
+    requireDistinctMetricNames([...siblings.map(m => m.name), metric.name]);
     this._metrics.set(metric.id, metric);
   }
 

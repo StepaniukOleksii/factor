@@ -59,7 +59,9 @@ export class CreateObservationUseCase {
   constructor(private readonly observationRepository: ObservationRepository) {}
 
   public async execute(input: CreateObservationInput): Promise<void> {
-    const message = firstErrorMessage(validateCreateObservation(input));
+    const stored = await this.observationRepository.findAll();
+
+    const message = firstErrorMessage(validateCreateObservation(input, stored.map(o => o.name)));
     if (message !== undefined) {
       throw new Error(message);
     }

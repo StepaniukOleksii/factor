@@ -34,38 +34,57 @@ Observation.
 
 ### 3.1 Domain
 
-Unchanged. Neither rule can be an invariant of `Observation`. One compares against Observations the entity has
-no knowledge of; and both would be bypassed on every load, since reconstructing an entity from storage does not
-pass through the behaviour that creates one — the objection
-[ADR-3](../../../adr/3-record-metric-value-requirements.md) raises against its own alternative 2, and it applies
-here unchanged.
+Where each rule is enforced, and why the two differ, is settled by
+[ADR-4](../../../adr/4-name-uniqueness-rule-placement.md). This section states what that decision requires
+built; it does not restate the reasoning.
+
+**`nameIdentity.ts`** — a new module beside `validationLimits.ts`, holding the definition of "the same name"
+for the whole app:
+
+* `nameKey(name)` — what a name is compared by: trimmed and lower-cased.
+* A helper reporting the positions of the entries in a list of names that collide with an earlier one under
+  `nameKey`, skipping blanks. It reports positions rather than a boolean because the screen has to know which
+  field to mark, and returns every occurrence after the first rather than all members of a group: the first is
+  the one being kept, and faulting it too would mark a name that is sound on its own.
+
+Both are pure functions over strings, so the domain defines name identity without holding names.
+
+**`Observation`** enforces Metric-name uniqueness as its own invariant, in the constructor and in `addMetric` —
+the two places its Metric collection is set or added to. It throws
+`Error('Metric names must be unique within an observation')`, in the style of the existing `validateValues`.
+
+The constructor is the significant half: it is on the load path, since `SQLiteObservationRepository.findAll`
+rebuilds every Observation through it, and ADR-4 records the accepted cost of that.
 
 ### 3.2 Application
 
-`validateCreateObservation` gains a second parameter carrying the names of the Observations that already exist.
+`validateCreateObservation` gains a second parameter, `takenNames` — *the names this submission must not
+collide with*, rather than "every name that exists". The distinction is the whole of what makes it reusable:
+creation passes every stored name, and a future rename passes every stored name but the subject's own, which is
+what keeps a casing correction from being refused against itself. Excluding the subject is the caller's job, and
+the parameter's name says so.
+
 It stays pure and synchronous, because the Create Observation screen calls it on every render and reading
 storage from it would put a query behind every keystroke. The parameter is required rather than optional, so
-that the compiler rather than review is what stops a caller from silently skipping the rule; both call sites
-have the names to hand.
+that the compiler rather than review is what stops a caller from skipping the rule.
 
-* **Observation name** — compared trimmed and lower-cased against each supplied name, likewise trimmed and
-  lower-cased. A collision reports `'An observation with this name already exists'` in `errors.name`, the slot
-  the empty and over-length rules already write to, so `firstErrorMessage`'s precedence needs no change. A blank
-  name is left to the empty-name rule rather than compared against anything.
-* **Metric names** — a cross-Metric rule, so it cannot live in the per-Metric pass `perMetric` is built from. A
-  second pass over the built list marks every Metric whose name collides with an earlier one, writing
-  `'Metric names must be unique'` into its `name` slot and leaving the first occurrence unmarked: the first is
-  the one being kept, and marking it too would fault a name that is sound on its own. Blank names are skipped,
-  so two empty rows report the empty-name rule instead of reporting each other, and a name already carrying an
-  error keeps it, since a name too long to accept has a problem of its own to fix first.
+* **Observation name** — compared through `nameKey` against each name in `takenNames`. A collision reports
+  `'An observation with this name already exists'` in `errors.name`, the slot the empty and over-length rules
+  already write to, so `firstErrorMessage`'s precedence needs no change. A blank name is left to the empty-name
+  rule rather than compared against anything.
+* **Metric names** — the domain helper over the submitted Metric names, writing
+  `'Metric names must be unique'` into the `name` slot of each position it reports. This marks the field; the
+  aggregate is what enforces the rule. A name already carrying an error keeps it, since a name too long to
+  accept has a problem of its own to fix first.
 
 The two messages are worded differently on purpose. One names a conflict with something outside the form, which
 the user cannot see and has to be told about; the other names a conflict between two fields both on screen.
+Neither matches the aggregate's message, which no user reads.
 
 `CreateObservationUseCase.execute` reads the existing names through `ObservationRepository.findAll` before
-validating, and passes them in. It fetches rather than trusting a list handed to it, because it is the layer
-that decides whether a write is legitimate. `findAll` rather than a narrower repository method: it is already
-the only read the interface offers, and this is a local database holding a handful of Observations.
+validating, and passes them as `takenNames`. It fetches rather than trusting a list handed to it, because it is
+the layer that decides whether a write is legitimate. `findAll` rather than a narrower repository method: it is
+already the only read the interface offers, and this is a local database holding a handful of Observations.
 
 `ObservationRepository` gains no methods.
 
@@ -76,10 +95,10 @@ Two unique indexes in `Database.ts`, declared beside the `CREATE TABLE` statemen
 than `COLLATE NOCASE` on the columns themselves, which would quietly make every other comparison against those
 columns case-insensitive too.
 
-`NOCASE` folds ASCII letters only, where the application rule folds by JavaScript's own case rules — so the
-index accepts every name pair the application rule accepts, and some it does not. That direction is what makes
-the backstop safe: it can never refuse a name the Create Observation screen has just told the user is fine.
-Trimming needs no counterpart, since names are trimmed before they reach the insert.
+`NOCASE` folds ASCII letters only, where `nameKey` folds by JavaScript's own case rules — so the index accepts
+every name pair the application accepts, and some it does not. That direction is what makes the backstop safe:
+it can never refuse a name the Create Observation screen has just told the user is fine. Trimming needs no
+counterpart, since names are trimmed before they reach the insert.
 
 A colliding insert therefore surfaces as SQLite's own constraint error, untranslated. By the argument above the
 path is unreachable from the UI, and the writer it can genuinely catch is a dev fixture — where the index's own
@@ -90,7 +109,9 @@ the reasons [Observation Description](../1-5-observation-description/spec.md) §
 of any database already holding duplicates, which no index could be added over.
 
 `SQLiteObservationRepository` is unchanged. So is the seeded fixture, which already satisfies both rules: its
-four Observation names are distinct, as are the Metric names within each.
+four Observation names are distinct, as are the Metric names within each. That is now load-bearing rather than
+incidental — the fixture builds `Observation` instances directly, so a colliding pair added to it would throw
+at §3.1's constructor guard before reaching the database at all.
 
 ### 3.4 Presentation
 
@@ -133,11 +154,17 @@ Clear the app's storage first, since the indexes are new and there is no in-plac
 
 ### Automated Tests
 
-* **Unit — `validateCreateObservation`:** reports the Observation-name collision against an existing name
+* **Unit — `nameIdentity`:** `nameKey` equates names differing only in case or surrounding whitespace and
+  separates names differing in interior spacing or accents; the collision helper reports every position after
+  the first of a group and not the first, reports nothing for a distinct list, and skips blanks.
+* **Unit — `Observation`:** the constructor rejects two Metrics whose names differ only in case or surrounding
+  whitespace, and accepts distinct ones; `addMetric` rejects a Metric colliding with one already held; the
+  message is the one stated in §3.1.
+* **Unit — `validateCreateObservation`:** reports the Observation-name collision against a `takenNames` entry
   differing only in case or surrounding whitespace, and nothing against a distinct one; leaves a blank name to
-  the empty-name rule; marks every Metric after the first of a colliding group and not the first; skips blank
-  Metric names; leaves an existing Metric-name error in place; `firstErrorMessage` reports each message in the
-  precedence already defined.
+  the empty-name rule; marks every Metric after the first of a colliding group and not the first; leaves an
+  existing Metric-name error in place; `firstErrorMessage` reports each message in the precedence already
+  defined.
 * **Unit — `CreateObservationUseCase`:** reads the existing names before validating and refuses a colliding
   Observation; accepts a distinct one; refuses two Metrics colliding inside the submitted Observation; accepts a
   Metric name already used on a different Observation.

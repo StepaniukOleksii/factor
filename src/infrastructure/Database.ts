@@ -2,48 +2,65 @@ import * as SQLite from 'expo-sqlite';
 
 let dbInstance: SQLite.SQLiteDatabase | null = null;
 
+/**
+ * The database's shape, exported so a test can raise the same one in a SQLite of
+ * its own.
+ *
+ * The application refuses a colliding name before it reaches the unique indexes
+ * (ADR-4), which are here for a writer that never passed through it.
+ */
+export const SCHEMA = `
+  CREATE TABLE IF NOT EXISTS observations (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    createdAt INTEGER NOT NULL
+  );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_observations_name_unique
+    ON observations (name COLLATE NOCASE);
+
+  CREATE TABLE IF NOT EXISTS metrics (
+    id TEXT PRIMARY KEY NOT NULL,
+    observationId TEXT NOT NULL,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    constraintJson TEXT,
+    description TEXT,
+    FOREIGN KEY (observationId) REFERENCES observations (id) ON DELETE CASCADE
+  );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_metrics_observation_name_unique
+    ON metrics (observationId, name COLLATE NOCASE);
+
+  CREATE TABLE IF NOT EXISTS records (
+    id TEXT PRIMARY KEY NOT NULL,
+    observationId TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    note TEXT,
+    FOREIGN KEY (observationId) REFERENCES observations (id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS record_values (
+    recordId TEXT NOT NULL,
+    metricId TEXT NOT NULL,
+    valueJson TEXT,
+    PRIMARY KEY (recordId, metricId),
+    FOREIGN KEY (recordId) REFERENCES records (id) ON DELETE CASCADE,
+    FOREIGN KEY (metricId) REFERENCES metrics (id) ON DELETE CASCADE
+  );
+`;
+
 export async function initDatabase(): Promise<void> {
   console.log('[Database] Initializing database...');
   try {
     const db = await getDatabase();
-    
+
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
       PRAGMA foreign_keys = ON;
 
-      CREATE TABLE IF NOT EXISTS observations (
-        id TEXT PRIMARY KEY NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT,
-        createdAt INTEGER NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS metrics (
-        id TEXT PRIMARY KEY NOT NULL,
-        observationId TEXT NOT NULL,
-        name TEXT NOT NULL,
-        type TEXT NOT NULL,
-        constraintJson TEXT,
-        description TEXT,
-        FOREIGN KEY (observationId) REFERENCES observations (id) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS records (
-        id TEXT PRIMARY KEY NOT NULL,
-        observationId TEXT NOT NULL,
-        timestamp INTEGER NOT NULL,
-        note TEXT,
-        FOREIGN KEY (observationId) REFERENCES observations (id) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS record_values (
-        recordId TEXT NOT NULL,
-        metricId TEXT NOT NULL,
-        valueJson TEXT,
-        PRIMARY KEY (recordId, metricId),
-        FOREIGN KEY (recordId) REFERENCES records (id) ON DELETE CASCADE,
-        FOREIGN KEY (metricId) REFERENCES metrics (id) ON DELETE CASCADE
-      );
+      ${SCHEMA}
     `);
     console.log('[Database] Initialization complete.');
   } catch (error) {

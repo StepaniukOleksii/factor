@@ -3,10 +3,11 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
 import {Alert} from 'react-native';
 import {CreateObservationScreen} from './CreateObservationScreen';
+import {Observation} from '../../domain/Observation';
 import {METRIC_ENUM_VALUE_MAX_LENGTH} from '../../domain/validationLimits';
 
-const {mockCreateObservationExecute} = vi.hoisted(() => {
-    return {mockCreateObservationExecute: vi.fn()};
+const {mockCreateObservationExecute, mockFindAll} = vi.hoisted(() => {
+    return {mockCreateObservationExecute: vi.fn(), mockFindAll: vi.fn()};
 });
 
 vi.mock('react-native', () => {
@@ -24,7 +25,9 @@ vi.mock('@expo/vector-icons', () => ({
 }));
 
 vi.mock('../../infrastructure/SQLiteObservationRepository', () => ({
-    SQLiteObservationRepository: vi.fn(),
+    SQLiteObservationRepository: vi.fn().mockImplementation(() => ({
+        findAll: mockFindAll,
+    })),
 }));
 vi.mock('../../application/CreateObservationUseCase', () => ({
     CreateObservationUseCase: vi.fn().mockImplementation(() => ({
@@ -88,25 +91,32 @@ async function typeInto(root: any, testID: string, text: string) {
     });
 }
 
-/**
- * The name fields carry no testID, and are the only unlabelled inputs before the
- * bounds - found through the placeholder each one's label row shows.
- */
-async function nameMetric(root: any, name: string) {
+/** Names the Metric of the card at `index`. */
+async function nameMetric(root: any, name: string, index = 0) {
     await act(async () => {
-        root.root.findByProps({placeholder: 'e.g., Duration'}).props.onChangeText(name);
+        fieldsByLabel(root, 'METRIC NAME')[index].props.onChangeText(name);
     });
 }
 
 async function nameObservation(root: any, name: string) {
     await act(async () => {
-        root.root.findByProps({placeholder: 'e.g., Sleep Quality, Mood'}).props.onChangeText(name);
+        fieldByLabel(root, 'OBSERVATION NAME').props.onChangeText(name);
     });
 }
 
-/** A form field by the caption above it, which only `LabeledTextField` carries. */
+/** The form fields captioned `label`, which only `LabeledTextField` carries, in screen order. */
+function fieldsByLabel(root: any, label: string) {
+    return root.root.findAllByProps({label});
+}
+
 function fieldByLabel(root: any, label: string) {
-    return root.root.findAllByProps({label})[0];
+    return fieldsByLabel(root, label)[0];
+}
+
+async function addMetric(root: any) {
+    await act(async () => {
+        findTouchableWithText(root.root, 'Add Metric')!.props.onPress();
+    });
 }
 
 /** Whether the screen has `message` on it anywhere, as the user would read it. */
@@ -146,6 +156,7 @@ describe('CreateObservationScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockCreateObservationExecute.mockResolvedValue(undefined);
+        mockFindAll.mockResolvedValue([]);
         alerted = vi.spyOn(Alert, 'alert').mockImplementation(() => {
         });
     });
@@ -239,6 +250,55 @@ describe('CreateObservationScreen', () => {
 
             expect(alerted).toHaveBeenCalledWith('Error', 'Database is locked');
             expect(goBack).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('name uniqueness', () => {
+        it('marks the Observation name against one already stored, and clears it as the name is changed', async () => {
+            mockFindAll.mockResolvedValue([new Observation('o1', 'Sleep', [])]);
+            const {root} = await renderScreen();
+
+            await nameObservation(root, 'sleep');
+            await nameMetric(root, 'Hours');
+            await saveObservation(root);
+
+            expect(fieldByLabel(root, 'OBSERVATION NAME').props.error)
+                .toBe('An observation with this name already exists');
+            expect(mockCreateObservationExecute).not.toHaveBeenCalled();
+
+            await nameObservation(root, 'sleep 2');
+
+            expect(fieldByLabel(root, 'OBSERVATION NAME').props.error).toBeUndefined();
+        });
+
+        it('marks the second of two identically-named Metrics and not the first', async () => {
+            const {root} = await renderScreen();
+
+            await nameObservation(root, 'Sleep');
+            await nameMetric(root, 'Hours');
+            await addMetric(root);
+            await nameMetric(root, ' HOURS ', 1);
+            await saveObservation(root);
+
+            expect(fieldsByLabel(root, 'METRIC NAME')[0].props.error).toBeUndefined();
+            expect(fieldsByLabel(root, 'METRIC NAME')[1].props.error).toBe('Metric names must be unique');
+            expect(mockCreateObservationExecute).not.toHaveBeenCalled();
+        });
+
+        it('stays usable when the existing names cannot be loaded', async () => {
+            const logged = vi.spyOn(console, 'error').mockImplementation(() => {
+            });
+            mockFindAll.mockRejectedValue(new Error('Database is locked'));
+            const {root, goBack} = await renderScreen();
+
+            await nameObservation(root, 'Sleep');
+            await nameMetric(root, 'Hours');
+            await saveObservation(root);
+
+            expect(mockCreateObservationExecute).toHaveBeenCalledTimes(1);
+            expect(goBack).toHaveBeenCalled();
+            expect(logged).toHaveBeenCalled();
+            logged.mockRestore();
         });
     });
 

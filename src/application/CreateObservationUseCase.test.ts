@@ -1,6 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {CreateObservationUseCase} from './CreateObservationUseCase';
 import {ObservationRepository} from './ObservationRepository';
+import {Metric} from '../domain/Metric';
 import {Observation} from '../domain/Observation';
 
 vi.mock('expo-crypto', () => ({
@@ -14,7 +15,7 @@ describe('CreateObservationUseCase', () => {
   beforeEach(() => {
     mockRepository = {
       save: vi.fn().mockResolvedValue(undefined),
-      findAll: vi.fn(),
+      findAll: vi.fn().mockResolvedValue([]),
       delete: vi.fn(),
     };
     useCase = new CreateObservationUseCase(mockRepository);
@@ -179,6 +180,51 @@ describe('CreateObservationUseCase', () => {
 
     const savedObservation = (mockRepository.save as any).mock.calls[0][0] as Observation;
     expect(savedObservation.description).toBeNull();
+  });
+
+  describe('name uniqueness', () => {
+    function stored(name: string, metricName = 'Cups'): Observation {
+      return new Observation(`stored-${name}`, name, [new Metric('stored-metric', metricName, 'Numeric')]);
+    }
+
+    it.each([
+      ['case', ' coffee '],
+      ['surrounding whitespace', '  Coffee  '],
+    ])('should refuse an observation whose name matches a stored one but for %s', async (_kind, name) => {
+      (mockRepository.findAll as any).mockResolvedValue([stored('Coffee')]);
+      const input = {name, metrics: [{name: 'Cups', type: 'Numeric'}]};
+
+      await expect(useCase.execute(input)).rejects.toThrow('An observation with this name already exists');
+      expect(mockRepository.findAll).toHaveBeenCalled();
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should accept an observation whose name no stored one holds', async () => {
+      (mockRepository.findAll as any).mockResolvedValue([stored('Tea')]);
+
+      await useCase.execute({name: 'Coffee', metrics: [{name: 'Cups', type: 'Numeric'}]});
+
+      expect(mockRepository.save).toHaveBeenCalledTimes(1);
+    });
+
+    it('should refuse two metrics colliding inside the submitted observation', async () => {
+      const input = {
+        name: 'Coffee',
+        metrics: [{name: 'Cups', type: 'Numeric'}, {name: ' CUPS ', type: 'Numeric'}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('Metric names must be unique');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should accept a metric name already used on a different observation', async () => {
+      (mockRepository.findAll as any).mockResolvedValue([stored('Tea', 'Cups')]);
+
+      await useCase.execute({name: 'Coffee', metrics: [{name: 'Cups', type: 'Numeric'}]});
+
+      const savedObservation = (mockRepository.save as any).mock.calls[0][0] as Observation;
+      expect(savedObservation.metrics[0].name).toBe('Cups');
+    });
   });
 
   describe('metric descriptions', () => {
