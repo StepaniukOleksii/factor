@@ -1,0 +1,62 @@
+appId: com.anonymous.factor
+---
+# The Custom segment and the range modal behind it: dismissed, then applied, then
+# displaced by a preset.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "mixed metrics"
+
+- tapOn: "mixed metrics"
+- assertVisible: "Custom"
+- assertVisible:
+    id: "time-range-custom"
+    selected: false
+
+# Cancelled
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-custom"
+- assertVisible: "Custom time range"
+- assertVisible: "Start"
+- assertVisible: "End"
+- tapOn: "Cancel custom time range"
+- assertNotVisible: "Custom time range"
+- assertVisible:
+    id: "time-range-preset-1M"
+    selected: true
+- assertVisible:
+    id: "time-range-custom"
+    selected: false
+
+# Applied. Start opens on the day 30 days back, whose month always has a 15th
+# that falls on or before today - so the applied range reads the same whenever
+# the flow runs.
+- tapOn:
+    id: "time-range-custom"
+- tapOn:
+    id: "custom-range-start-date"
+- tapOn: "15"
+- tapOn: "OK"
+- tapOn: "Apply custom time range"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertNotVisible: "Custom time range"
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+- assertVisible: "[A-Za-z]{3} 15 .*"
+- assertVisible:
+    id: "time-range-preset-1M"
+    selected: false
+
+# A preset takes the selection back, and the segment stops showing the range.
+- tapOn:
+    id: "time-range-preset-1W"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible:
+    id: "time-range-preset-1W"
+    selected: true
+- assertVisible: "Custom"
+- assertNotVisible: "[A-Za-z]{3} 15 .*"

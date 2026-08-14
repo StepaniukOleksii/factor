@@ -1,0 +1,26 @@
+appId: com.anonymous.factor
+---
+# Adding a Record, entered from the Details screen.
+#
+# `no records` is the fixture: its empty state gives an unambiguous before and after.
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no records"
+
+- tapOn: "no records"
+- assertVisible: "No records yet."
+
+- tapOn: "Add Record"
+# The form labels each input "<metric name> value", and this Observation's single
+# Metric is itself named `value` - hence the doubled selector. It still matches
+# only the input; nothing else on the screen carries that label.
+- tapOn: "value value"
+- inputText: "7"
+- hideKeyboard
+- tapOn: "Add Record"
+
+# Submitting returns to the Details screen, not the List.
+- assertVisible: "Today.*"
+- assertNotVisible: "No records yet."

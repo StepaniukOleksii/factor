@@ -1,0 +1,40 @@
+appId: com.anonymous.factor
+---
+# The menu a long press on a Record opens, and the confirmation sitting behind
+# its Delete action. Every path here is dismissed rather than carried out.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no numeric"
+
+# `no numeric` charts its Enum `mood` and its Boolean `done`, so two trend cards
+# sit above its Records rather than the five `mixed metrics` would put there.
+- tapOn: "no numeric"
+
+# The menu
+- longPressOn: "Today.*"
+- assertVisible: "Record actions"
+- assertVisible: "Today.*"
+- assertVisible: "Edit Record"
+- assertVisible: "Delete Record"
+- tapOn: "Cancel"
+- assertNotVisible: "Record actions"
+
+# Delete asks first
+- longPressOn: "Today.*"
+- tapOn: "Delete Record"
+- assertVisible: "Delete this record?"
+- assertVisible: "Delete"
+- tapOn: "Cancel record deletion"
+- assertNotVisible: "Delete this record?"
+
+# Edit leaves for the form
+- longPressOn: "Today.*"
+- tapOn: "Edit Record"
+- assertNotVisible: "Record actions"
+- assertVisible: "Save Record"
+- back
+
+- assertVisible: "Today.*"

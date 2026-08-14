@@ -1,0 +1,33 @@
+appId: com.anonymous.factor
+---
+# Deleting an Observation, cancelling once first to show that Cancel is safe.
+# Covers the header kebab menu, the confirmation modal, and the pop-to-list
+# navigation reset that follows a confirmed delete.
+
+# Start with a list of Observations and make sure target Observation is displayed
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no records"
+
+- tapOn: "no records"
+
+# Cancel path
+- tapOn: "More options"
+- tapOn: "Delete observation"
+- assertVisible: "Delete Observation?"
+- tapOn: "Cancel deletion"
+- assertNotVisible: "Delete Observation?"
+- assertVisible: "no records"
+
+# Confirm path
+- tapOn: "More options"
+- tapOn: "Delete observation"
+- assertVisible: "Delete Observation?"
+- tapOn: "Confirm deletion"
+
+- assertNotVisible: "no records"
+# An Observation this flow never touched, asserted to show the delete took one row
+# rather than clearing the list.
+- assertVisible: "mixed metrics"

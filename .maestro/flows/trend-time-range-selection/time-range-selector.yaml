@@ -1,0 +1,54 @@
+appId: com.anonymous.factor
+---
+# The window every chart in the Trends section shares: the one it opens on, the
+# switch to another, and how long that choice lasts.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "mixed metrics"
+
+# `mixed metrics`' five Numeric Metrics are recorded at different resolutions, so
+# any window leaves some of them charting and some not.
+- tapOn: "mixed metrics"
+- assertVisible:
+    id: "time-range-preset-1M"
+    selected: true
+- assertVisible:
+    id: "time-range-preset-1D"
+    selected: false
+
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1D"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible:
+    id: "time-range-preset-1D"
+    selected: true
+- assertVisible:
+    id: "time-range-preset-1M"
+    selected: false
+- assertVisible:
+    id: "trend-chart"
+
+# The window outlives a trip to a Record screen and back.
+- tapOn: "Add Record"
+- back
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible:
+    id: "time-range-preset-1D"
+    selected: true
+
+# `insufficient`'s one Record is five days old, so a day-wide window leaves it
+# with nothing to draw while the Metrics above it still chart.
+- scrollUntilVisible:
+    element: "Not enough data yet"
+    direction: DOWN
+
+# Reopening the Observation is a new visit, back at the default.
+- tapOn: "Back"
+- tapOn: "mixed metrics"
+- assertVisible:
+    id: "time-range-preset-1M"
+    selected: true

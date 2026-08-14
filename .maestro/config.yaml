@@ -1,4 +1,7 @@
-# Without this glob `maestro test .maestro/` recurses and runs every fragment in
-# subflows/ as a flow of its own.
+# Flows live one folder per feature under flows/, with property flows belonging
+# to no feature directly inside it. Both levels are globbed explicitly rather
+# than recursively, so that fragments in subflows/ stay outside the glob and are
+# never run as flows of their own.
 flows:
-  - "*.yaml"
+  - "flows/*.yaml"
+  - "flows/*/*.yaml"

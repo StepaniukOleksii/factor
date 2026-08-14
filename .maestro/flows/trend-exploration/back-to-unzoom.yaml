@@ -1,0 +1,183 @@
+appId: com.anonymous.factor
+---
+# System back steps back up the zoom ladder, one window per press, and leaves the
+# screen only once there is no zoom left to undo.
+#
+# The charts are Skia canvases and expose nothing a flow can read, so the window
+# on show is checked through the time range selector's `selected` segment instead.
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "stale records"
+
+# --- The screen opens at the default window, with nothing behind it ----------
+# `stale records` is the fixture every zoom below works from: its three Records
+# sit 42-58 days back, so a year-long window folds all three into one aggregated
+# point - and a chart drawing a single point draws it in the canvas's vertical
+# middle, which is where Maestro taps.
+- tapOn: "stale records"
+- assertVisible: "TRENDS"
+- assertVisible:
+    id: "time-range-preset-1M"
+    selected: true
+- assertVisible:
+    id: "time-range-custom"
+    selected: false
+
+# --- Windows picked outright leave nothing to undo ---------------------------
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1D"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1Y"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible:
+    id: "time-range-preset-1Y"
+    selected: true
+- back
+- assertVisible: "Observations"
+
+# --- Zoom --------------------------------------------------------------------
+# Reopening is a new visit: the default window is back, and the 1Y picked above
+# went with the screen that held it.
+- tapOn: "stale records"
+- assertVisible:
+    id: "time-range-preset-1M"
+    selected: true
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1Y"
+- runFlow: ../../subflows/wait-for-trends.yaml
+# The one step in the suite that cannot go by text: a chart point is drawn inside
+# a Skia canvas, which exposes neither text nor an accessibility label, so this
+# aims at the chart's own testID. The Observation has a single Numeric metric, so
+# there is exactly one chart to hit.
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+
+# --- A screen pushed on top does not take the zoom with it -------------------
+# The listener is registered on focus rather than on mount, so the press that
+# leaves the Record form cannot reach the charts underneath and unzoom them. A
+# mount-scoped listener would fail here and nowhere else.
+- tapOn: "Add Record"
+- assertNotVisible: "TRENDS"
+- back
+- assertVisible: "TRENDS"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+
+# --- A dialog over the zoom takes the press itself ---------------------------
+# Each runs in its own Android window and closes through its own onRequestClose,
+# so the screen's listener never sees the press and the window stays put.
+- tapOn: "More options"
+- assertVisible: "Delete"
+- back
+- assertNotVisible: "Delete"
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+
+- tapOn:
+    id: "time-range-custom"
+- assertVisible: "Custom time range"
+- back
+- assertNotVisible: "Custom time range"
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+
+# --- The feature -------------------------------------------------------------
+# The press restores the window the zoom started from rather than leaving.
+- back
+- assertVisible:
+    id: "time-range-preset-1Y"
+    selected: true
+- assertVisible:
+    id: "time-range-custom"
+    selected: false
+- assertVisible: "stale records"
+# Nothing left to undo, so this one leaves, exactly as a back press did before.
+- runFlow: ../../subflows/wait-for-trends.yaml
+- back
+- assertVisible: "Observations"
+
+# --- A cancelled range modal forgets nothing ---------------------------------
+- tapOn: "stale records"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1Y"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-custom"
+- assertVisible: "Custom time range"
+- tapOn: "Cancel custom time range"
+- back
+- assertVisible:
+    id: "time-range-preset-1Y"
+    selected: true
+- runFlow: ../../subflows/wait-for-trends.yaml
+- back
+- assertVisible: "Observations"
+
+# --- An applied range is a fresh starting point ------------------------------
+# Applied unchanged, so the window on show is the zoom's own - but choosing it is
+# still a statement of where to be, and what was behind it is forgotten.
+- tapOn: "stale records"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1Y"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-custom"
+- assertVisible: "Custom time range"
+- tapOn: "Apply custom time range"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- back
+- assertVisible: "Observations"
+
+# --- So is a preset picked after a zoom --------------------------------------
+- tapOn: "stale records"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1Y"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+- tapOn:
+    id: "time-range-preset-1W"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- back
+- assertVisible: "Observations"
+
+# --- The header arrow leaves whether or not a zoom is showing ----------------
+- tapOn: "stale records"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1Y"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+- tapOn: "Back"
+- assertVisible: "Observations"

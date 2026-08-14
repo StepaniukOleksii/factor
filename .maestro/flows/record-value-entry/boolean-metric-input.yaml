@@ -1,0 +1,62 @@
+appId: com.anonymous.factor
+---
+# The two segments a Boolean Metric renders as: neither chosen to begin with, one
+# tap to choose, one on the chosen segment to clear it, and the words a stored
+# value reads back as.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no numeric"
+
+# `no numeric` carries the Boolean `done` beside a single other Metric, which
+# makes its form the shortest one holding the control.
+- tapOn: "no numeric"
+
+# One tap, not two, on the segment standing for `false`.
+- tapOn: "Add Record"
+- assertVisible:
+    text: "Yes"
+    selected: false
+- assertVisible:
+    text: "No"
+    selected: false
+- tapOn: "No"
+- assertVisible:
+    text: "No"
+    selected: true
+- back
+- tapOn: "Discard unsaved changes"
+
+# A stored value
+- longPressOn: "Today.*"
+- tapOn: "Edit Record"
+# The fixture picks `done` at random, so both segments are tapped: from either
+# starting point that leaves "Yes".
+- tapOn: "No"
+- tapOn: "Yes"
+- assertVisible:
+    text: "Yes"
+    selected: true
+- assertVisible:
+    text: "No"
+    selected: false
+- tapOn: "Save Record"
+
+- tapOn: "Today.*"
+- assertVisible: "Yes"
+
+- longPressOn: "Today.*"
+- tapOn: "Edit Record"
+- assertVisible:
+    text: "Yes"
+    selected: true
+
+# Cleared
+- tapOn: "Yes"
+- assertVisible:
+    text: "Yes"
+    selected: false
+- tapOn: "Save Record"
+- assertVisible: "-"

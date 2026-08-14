@@ -1,0 +1,33 @@
+appId: com.anonymous.factor
+---
+# An Observation name another Observation already holds: refused on the Create
+# screen, accepted once changed.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no records"
+
+- tapOn: "Create observation"
+- tapOn: "e.g., Sleep Quality, Mood"
+# Cased differently from the seeded `no records` it collides with: names are
+# compared ignoring case.
+- inputText: "No Records"
+- tapOn: "e.g., Duration"
+- inputText: "Hours"
+- hideKeyboard
+- tapOn: "Create Observation"
+
+- assertVisible: "An observation with this name already exists"
+
+- tapOn: "No Records"
+- eraseText
+- inputText: "no records 2"
+- hideKeyboard
+- tapOn: "Create Observation"
+
+# The name field would still hold this text had the save been refused, so the
+# list's own header is what tells the two apart.
+- assertVisible: "Observations"
+- assertVisible: "no records 2"
