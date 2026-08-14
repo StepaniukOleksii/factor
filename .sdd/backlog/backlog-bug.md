@@ -27,13 +27,30 @@ they're ready to become a real spec.
    `getAggregationForCustomRange` ignores tiers and targets ~30 buckets across whatever span it is given,
    so 366 days becomes `366 d / 30 = 292.8 h → 293 h` ≈ 12.2-day buckets, 2.4× finer. The time axis already
    does it the other way: `getTimeAxisTier` picks labels from the span alone "never from which preset produced
-   it", which is why both charts read `Aug '25 … Aug '26` while bucketing differently. Currently as specified —
-   [3-1](../epics/3-observation-visualization/3-1-visualization-foundation/spec.md) chose the preset table and
-   [3-5](../epics/3-observation-visualization/3-5-custom-time-range-input/spec.md) the ~30-bucket rule — so
-   closing it means changing 3-5 rather than fixing code against it, and it changes what every existing custom
-   range draws. The obvious shape is one span-keyed tier table both paths call, the way the axis labels
-   already work; zoom would inherit it, since a zoomed window is a custom range.
+   it", which is why both charts read `Aug '25 … Aug '26` while bucketing differently. Both halves are the
+   behaviour as described — [Trend Charting](../features/trend-charting.md) carries the preset table and the
+   ~30-bucket rule side by side — so closing it is a change to what the app does rather than a fix of code
+   against a document, and it changes what every existing custom range draws. The obvious shape is one
+   span-keyed tier table both paths call, the way the axis labels already work; zoom would inherit it, since a
+   zoomed window is a custom range.
 5. The Create Observation screen marks no field as required until a save is refused. Requiredness is only
    inferable from a placeholder *not* reading `Optional — ...`, and MIN/MAX carry no placeholder at all, so
    optional bounds read as required on the same reasoning. Unmarked: OBSERVATION NAME, METRIC NAME, and a
    Choice Metric's first two VALUE rows.
+6. The Create Observation screen's header carries a ⋮ button that does nothing — it has no press handler and
+   no accessibility label, so it is a control in name only. Either give it the menu it implies or remove it;
+   the Observation Details screen's ⋮ is the real one.
+7. A failed Observation list load is indistinguishable from an empty one. The load logs and leaves the list
+   as it was, which on first load is empty, so `No observations created yet.` is shown to a user whose
+   Observations simply could not be read — with `Tap the + button to create one.` under it.
+8. A failed Observation deletion tells the user nothing: the confirmation stays open with its buttons live
+   again and the error only reaches the console. Record deletion, one screen away, alerts on the same
+   failure.
+9. Deleting an Observation is not atomic, though its spec asked for "a single atomic operation to prevent
+   partial data removal". `DeleteObservationUseCase` awaits two independent writes: the Records go first,
+   through a bare `DELETE FROM records WHERE observationId = ?`, and the Observation follows in a
+   transaction of its own. A failure between them leaves the Observation holding nothing, with every Record
+   already gone and no way to tell that from an Observation nobody ever recorded against. The fix is
+   probably a deletion rather than a transaction: `records.observationId` is declared
+   `ON DELETE CASCADE` and `PRAGMA foreign_keys` is on, so deleting the Observation alone already takes its
+   Records with it, and dropping the first write makes the whole thing one statement.

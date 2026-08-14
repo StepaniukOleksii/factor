@@ -8,21 +8,27 @@ together.
 
 ## What gets a flow
 
-Most client-facing features get one, so that a green suite means the app works rather than that a
+Most client-facing behaviour gets a flow, so that a green suite means the app works rather than that a
 handful of paths do.
 
-* **One flow per spec**, named after the spec's folder — `.maestro/3-10-back-to-unzoom-trend-chart.yaml`
-  covers `.sdd/epics/3-observation-visualization/3-10-back-to-unzoom-trend-chart/`. The filename is
-  the entire coverage map, so there is nothing to keep in sync.
-* **One representative pass per feature.** A flow walks the path a user would take, once. Variations,
-  edge cases, validation and error states stay in Vitest, which is faster and needs no emulator.
-  Covering each requirement separately instead would give a six-requirement spec six flows. The suite
-  then grows slow enough to start skipping, and a suite that isn't run protects nothing.
-* **Property flows** cover invariants belonging to no single spec — that data survives a process
-  restart, for instance. They take a descriptive name with no numeric prefix, which is what marks
-  them as not a spec's flow.
-* **Whether a feature gets a flow is decided when its spec is written**, and recorded in that spec's
-  Verification section — the only place that decision is written down.
+* **Every feature gets a folder**, `.maestro/flows/<feature>/`, named for its feature file without the
+  `.md`. The folder is the coverage map — whether a feature is covered is a directory check, and
+  nothing has to be kept in sync. It stays a folder even holding a single flow.
+* **One flow per feature, by preference.** A slice touching a feature that already has coverage extends
+  that flow rather than adding one beside it: a small addition to an existing screen is a few more
+  steps, not a whole new pass. Split into a second flow only when the case is genuinely separate, or
+  when one flow has grown long enough that a failure in it no longer names what broke.
+* **One representative pass.** A flow walks the path a user would take, once. Variations, edge cases,
+  validation and error states stay in Vitest, which is faster and needs no emulator. Covering each
+  requirement separately instead would give a six-requirement spec six flows. The suite then grows slow
+  enough to start skipping, and a suite that isn't run protects nothing.
+* **Property flows** cover invariants belonging to no single feature — that data survives a process
+  restart, for instance. They sit directly in `flows/`, and being outside every feature folder is what
+  marks them as nobody's.
+* **Whether a slice needs coverage is decided when its spec is written**, and recorded in that spec's
+  Verification section — as a flow to extend as often as one to write. That spec is deleted once the
+  slice retires, so a reason that generalises past the one slice is written here as a rule instead — as
+  the Skia one below was.
 * **What a chart draws is out of reach.** `NumericTrendChart` renders inside a Skia canvas, and Skia's
   own text and marks never enter the Android view hierarchy Maestro reads. A flow can assert a chart
   is present, tap it, and read the platform elements around it — never what it drew. A feature living
@@ -49,7 +55,7 @@ fixed host-loopback alias, which does not resolve on a physical device.
 
 ```bash
 npm run e2e                            # = bash scripts/e2e.sh — all flows
-npm run e2e -- .maestro/<flow>.yaml    # a single flow
+npm run e2e -- .maestro/flows/<feature>/<flow>.yaml    # a single flow
 ```
 
 `npm run e2e` runs [`scripts/e2e.sh`](scripts/e2e.sh), which wraps the run end to end:
@@ -73,7 +79,7 @@ Booting and rebuilding on every run is wasteful while authoring. Keep the emulat
 
 ```bash
 E2E_KEEP_EMULATOR=1 npm run e2e     # leaves the emulator + Metro running at the end
-maestro test .maestro/<flow>.yaml   # re-run directly against the still-running app
+maestro test .maestro/flows/<feature>/<flow>.yaml   # re-run directly against the still-running app
 maestro studio                      # interactive inspector for discovering selectors
 ```
 
@@ -82,16 +88,17 @@ Tear down manually when done: `bash scripts/emulator-teardown.sh`.
 ## How flows are written
 
 Each flow is one file of declarative [Maestro](https://maestro.mobile.dev) YAML (`tapOn`, `inputText`,
-`assertVisible`, …) directly in `.maestro/`, opening with the app id — `com.anonymous.factor`, matching
+`assertVisible`, …) under `.maestro/flows/`, opening with the app id — `com.anonymous.factor`, matching
 `app.json`'s `android.package`.
 
-`.maestro/subflows/` holds fragments shared between flows. `.maestro/config.yaml` limits the runner's
-glob to `*.yaml` in `.maestro/` itself; without it, `maestro test .maestro/` recurses and runs every
-fragment as a flow.
+`.maestro/subflows/` holds fragments shared between flows, and sits outside `flows/` on purpose.
+`.maestro/config.yaml` globs `flows/*.yaml` and `flows/*/*.yaml`, so a fragment is never picked up and
+run as a flow of its own — which is what a plain recursive glob over `.maestro/` would do. A flow
+therefore reaches a fragment two levels up: `runFlow: ../../subflows/launch.yaml`.
 
 Conventions this project follows:
 
-* **Open with `subflows/launch.yaml`.** It starts the app against Metro and puts the database into a
+* **Open with `../../subflows/launch.yaml`.** It starts the app against Metro and puts the database into a
   known state, parameterised by `DEV_COMMAND` (`reset` for empty, `seed` for the
   [testing-data.md](testing-data.md) fixture set) and `READY_TEXT`. Starting from a stated fixture is
   what makes a re-run idempotent. `READY_TEXT` must be text the *empty* list does not show — the

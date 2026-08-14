@@ -7,13 +7,7 @@
 * Follow existing patterns.
 * Refactor instead of duplicating.
 * Remove dead code.
-
----
-
-## UI Components
-
-* Always check `src/presentation/components/index.ts` for existing components before creating new ones.
-* Document new shared components by adding exports to `index.ts`.
+* Do not introduce dependencies without justification.
 
 ---
 
@@ -40,8 +34,6 @@
 * Test business-critical behavior.
 * Add tests for bug fixes.
 * Keep tests readable and maintainable.
-* End-to-end coverage is decided per spec rather than per class — see
-  [testing-android-e2e.md](../../testing-android-e2e.md).
 
 ---
 
@@ -49,14 +41,3 @@
 
 * Do not comment code that explains itself. Where the reason behind the code cannot be read from the code, state that
   reason and nothing else.
-* Update specifications and ADRs when behavior or decisions change.
-
----
-
-## AI-Assisted Development
-
-* Implement only specified functionality.
-* Reuse existing patterns before introducing new ones.
-* Do not introduce dependencies without justification.
-* Do not introduce new architectural patterns without an ADR.
-* When requirements are unclear, update the specification before implementing.

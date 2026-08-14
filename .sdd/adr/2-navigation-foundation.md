@@ -10,7 +10,7 @@ is now five, with more anticipated — an Observation Config screen, an Observat
 eventually a Home screen or tab bar.
 
 Rendering one screen and destroying the others has three consequences, all surfaced while implementing
-`3-5-custom-time-range-input`:
+the custom time range input (see [Trend Time Range Selection](../features/trend-time-range-selection.md)):
 
 1. **A screen's state does not survive one step of navigation.** This shipped as a bug: applying a
    custom time range, tapping a chart point to inspect the Record behind it, and coming back discarded
@@ -101,7 +101,4 @@ Costs:
   remains unused anywhere in `src/` as of this decision.
 * Refreshing on focus becomes a standing convention for every screen that displays data another screen
   can modify, not a one-off in the Observation details screen.
-* `3-4-time-range-selector` and `3-5-custom-time-range-input` document the superseded arrangement and
-  are corrected by the implementing slice; the user-visible behaviour they describe is unchanged.
 * `tech-stack.md` gains a Navigation entry.
-* Implemented by `0-1-navigation-foundation`.
