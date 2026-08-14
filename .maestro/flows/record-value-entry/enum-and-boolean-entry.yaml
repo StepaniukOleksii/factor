@@ -1,0 +1,108 @@
+appId: com.anonymous.factor
+---
+# What an Enum Metric's field and a Boolean Metric's segments accept: unanswered
+# to begin with, answered, cleared again, and read back from a stored Record.
+# Leaving the form with an answer changed asks first.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no numeric"
+
+# `no numeric` carries an Enum and a Boolean and nothing else, which makes its
+# form the shortest one holding both controls. Its Enum values are words, where
+# single-letter ones would collide with other text on screen.
+- tapOn: "no numeric"
+- tapOn: "Add Record"
+
+# --- Neither Metric answered -------------------------------------------------
+- assertVisible: "mood: None.*"
+- assertVisible:
+    text: "Yes"
+    selected: false
+- assertVisible:
+    text: "No"
+    selected: false
+
+# --- The Enum field opens the declared values --------------------------------
+- tapOn: "mood: None.*"
+- assertVisible: "low"
+- assertVisible: "ok"
+- tapOn: "high"
+- assertVisible: "mood: high.*"
+
+# --- One tap on a segment chooses, one on the chosen segment clears -----------
+- tapOn: "No"
+- assertVisible:
+    text: "No"
+    selected: true
+- tapOn: "No"
+- assertVisible:
+    text: "No"
+    selected: false
+- tapOn: "Yes"
+- assertVisible:
+    text: "Yes"
+    selected: true
+
+- tapOn: "Add Record"
+
+# --- Read back off the stored Record -----------------------------------------
+# Newest first, so the Record just added is the first row; a collapsed row shows
+# no values, so these can only be coming from this one.
+- tapOn:
+    text: "Today.*"
+    index: 0
+- assertVisible: "high"
+- assertVisible: "Yes"
+- tapOn:
+    text: "Today.*"
+    index: 0
+
+# --- Leaving with a change unsaved asks first --------------------------------
+- longPressOn: "Today.*"
+- tapOn: "Edit Record"
+- assertVisible: "Save Record"
+- assertVisible:
+    text: "Yes"
+    selected: true
+
+# Back to unanswered, the one state it cannot already be in - nothing else
+# guarantees the form comes out dirty.
+- tapOn: "mood: high.*"
+- tapOn: "None"
+- tapOn: "Cancel editing"
+- assertVisible: "Discard changes?"
+
+- tapOn: "Keep editing this record"
+- assertNotVisible: "Discard changes?"
+- assertVisible: "mood: None.*"
+
+- tapOn: "Cancel editing"
+- tapOn: "Discard unsaved changes"
+- assertVisible: "RECENT RECORDS"
+
+# --- What was discarded never reached the Record -----------------------------
+- tapOn:
+    text: "Today.*"
+    index: 0
+- assertVisible: "high"
+- tapOn:
+    text: "Today.*"
+    index: 0
+
+# --- A stored answer cleared -------------------------------------------------
+- longPressOn: "Today.*"
+- tapOn: "Edit Record"
+- tapOn: "Yes"
+- assertVisible:
+    text: "Yes"
+    selected: false
+- tapOn: "Save Record"
+
+# A row carries its values only while expanded, and a cleared Boolean reads "-".
+- tapOn:
+    text: "Today.*"
+    index: 0
+- assertVisible: "-"

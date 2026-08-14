@@ -1,8 +1,7 @@
 appId: com.anonymous.factor
 ---
-# Creating an Observation and defining a Metric for it, then confirming both were
-# persisted. Creation has no screen of its own to confirm on, so the Observation
-# List is where the result is read.
+# Creating an Observation: what the form refuses, what it accepts, and that a
+# name already taken is among the refusals.
 
 # Empty to start, so a re-run doesn't stack a second "Sleep" beside the first.
 - runFlow:
@@ -13,6 +12,19 @@ appId: com.anonymous.factor
 
 - tapOn: "Create observation"
 - assertVisible: "New Observation"
+
+# Nothing filled in: each rule marked on the field it belongs to.
+- tapOn: "Create Observation"
+- assertVisible: "Observation name cannot be empty"
+- assertVisible: "Metric name cannot be empty"
+# The title of the Alert these inline marks replaced.
+- assertNotVisible: "Error"
+
+# Nothing was written by the refused submission.
+- back
+- assertVisible: "No observations created yet."
+
+- tapOn: "Create observation"
 - tapOn: "e.g., Sleep Quality, Mood"
 - inputText: "Sleep"
 - tapOn: "e.g., Duration"
@@ -27,3 +39,26 @@ appId: com.anonymous.factor
 # the list would not by itself prove the Metric was saved alongside it.
 - tapOn: "Sleep"
 - assertVisible: "Hours"
+- tapOn: "Back"
+
+# The name just taken, cased differently: names are compared ignoring case.
+- tapOn: "Create observation"
+- tapOn: "e.g., Sleep Quality, Mood"
+- inputText: "sleep"
+- tapOn: "e.g., Duration"
+- inputText: "Hours"
+- hideKeyboard
+- tapOn: "Create Observation"
+
+- assertVisible: "An observation with this name already exists"
+
+- tapOn: "sleep"
+- eraseText
+- inputText: "Sleep 2"
+- hideKeyboard
+- tapOn: "Create Observation"
+
+# The name field would still hold this text had the save been refused, so the
+# list's own header is what tells the two apart.
+- assertVisible: "Observations"
+- assertVisible: "Sleep 2"

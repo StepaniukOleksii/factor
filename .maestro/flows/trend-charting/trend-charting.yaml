@@ -1,0 +1,78 @@
+appId: com.anonymous.factor
+---
+# Which Metrics the Trends section gives a chart card to, and where the line
+# falls between a card with something to draw and the placeholder. What a canvas
+# draws is out of reach - Skia puts nothing into the view hierarchy.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "mixed metrics"
+
+# --- Every Metric type with a renderer, and the one without ------------------
+# `mixed metrics` carries five Numeric Metrics beside a Boolean, an Enum and a
+# Text one.
+- tapOn: "mixed metrics"
+- assertVisible: "TRENDS"
+- assertVisible:
+    id: "trend-chart"
+- assertVisible: "dense"
+- assertVisible: "sparse"
+- assertVisible: "hourly"
+- scrollUntilVisible:
+    element: "insufficient"
+    direction: DOWN
+- assertVisible: "yearly"
+- scrollUntilVisible:
+    element: "category"
+    direction: DOWN
+- assertVisible: "flag"
+- assertNotVisible: "note"
+- tapOn: "Back"
+
+# --- An Observation with no Numeric Metric still gets the section ------------
+- tapOn: "no numeric"
+- assertVisible: "TRENDS"
+- assertVisible:
+    id: "time-range-preset-1M"
+    selected: true
+- assertVisible: "mood"
+- assertVisible: "done"
+# Cards come in the Observation's own Metric order, so the second canvas is the
+# Boolean's.
+- assertVisible:
+    id: "trend-chart"
+    index: 1
+- assertVisible: "RECENT RECORDS"
+- tapOn: "Back"
+
+# --- A single point to draw is a card; nothing to draw is the placeholder -----
+# `stale records` has one Numeric Metric, so there is exactly one card on screen
+# and no need to say which one an assertion is about. Its three Records are
+# 40-60 days old: outside the default window, and inside a year together closely
+# enough to share one bucket.
+- tapOn: "stale records"
+- assertVisible: "Not enough data yet"
+- assertNotVisible:
+    id: "trend-chart"
+
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1Y"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible:
+    id: "trend-chart"
+- assertNotVisible: "Not enough data yet"
+
+# No Records at all is the placeholder wherever the window is put.
+- tapOn: "Back"
+- tapOn: "no records"
+- assertVisible: "Not enough data yet"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1Y"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible: "Not enough data yet"
+- assertNotVisible:
+    id: "trend-chart"

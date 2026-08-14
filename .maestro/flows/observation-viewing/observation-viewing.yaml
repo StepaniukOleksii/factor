@@ -1,13 +1,17 @@
 appId: com.anonymous.factor
 ---
-# Opening an Observation from the list and reading its Records: a tile collapsed,
-# the same tile expanded, the route on to a new Record, and the empty state.
+# Opening an Observation from the list and reading it: its description, its
+# Records collapsed and expanded, the route on to a new Record, and the empty
+# state.
 
 - runFlow:
     file: ../../subflows/launch.yaml
     env:
       DEV_COMMAND: seed
       READY_TEXT: "no numeric"
+
+# The description belongs to the Observation's own screen; the list carries none.
+- assertNotVisible: "All three records are 40-60 days old.*"
 
 # `no numeric` charts its Enum `mood` and its Boolean `done`, so two trend cards
 # sit above its Records rather than the five `mixed metrics` would put there.
@@ -34,5 +38,12 @@ appId: com.anonymous.factor
 # Records are still loading, and the re-focus above started exactly that load.
 - tapOn: "Back"
 
+- tapOn: "stale records"
+- assertVisible: "All three records are 40-60 days old.*"
+- tapOn: "Back"
+
+# `no records` is the one seeded Observation left without a description, and the
+# text from the screen just visited is what its absence is read against.
 - tapOn: "no records"
 - assertVisible: "No records yet."
+- assertNotVisible: "All three records are 40-60 days old.*"

@@ -1,0 +1,81 @@
+appId: com.anonymous.factor
+---
+# What pressing a chart point does, which depends on how many Records it stands
+# for: one opens that Record, several narrow the window onto them.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no records"
+
+# --- A point standing for one Record opens it --------------------------------
+- tapOn: "no records"
+# Nothing plotted, so nothing to press.
+- assertVisible: "Not enough data yet"
+- assertNotVisible:
+    id: "numeric-trend-chart-pressable"
+
+# The Record is entered here rather than seeded because the press has to be
+# unambiguous: one Record in the window is one point, drawn in the canvas's
+# vertical middle, which is where Maestro presses.
+- tapOn: "Add Record"
+- tapOn: "value value"
+- inputText: "77"
+- hideKeyboard
+- tapOn: "Add Record"
+
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- assertVisible: "Save Record"
+- assertVisible: "77"
+
+- tapOn: "Cancel editing"
+- assertVisible: "TRENDS"
+
+# What is saved there comes back with the return trip.
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- tapOn: "value value"
+- eraseText
+- inputText: "88"
+- hideKeyboard
+- tapOn: "Save Record"
+
+- tapOn: "Today.*"
+- assertVisible: "88"
+- tapOn: "Back"
+
+# --- A point standing for several narrows the window instead ------------------
+# `stale records` is the fixture the tap can be aimed at: its three Records sit
+# 42-58 days back, so a year-long window folds all three into one point - and a
+# chart drawing a single point draws it in the canvas's vertical middle, which is
+# where Maestro presses.
+- tapOn: "stale records"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1Y"
+- runFlow: ../../subflows/wait-for-trends.yaml
+
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible: "TRENDS"
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+- assertVisible:
+    id: "time-range-preset-1Y"
+    selected: false
+# The segment showing a range in place of the word is the zoomed window itself.
+- assertNotVisible: "Custom"
+
+- tapOn:
+    id: "time-range-custom"
+- assertVisible: "Custom time range"
+- tapOn: "Cancel custom time range"
+- assertVisible:
+    id: "time-range-custom"
+    selected: true

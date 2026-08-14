@@ -1,0 +1,89 @@
+appId: com.anonymous.factor
+---
+# The rest of what a Record form asks for: a Numeric Metric's declared range, the
+# help behind a described Metric's label, and the note at the foot.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "mixed metrics"
+
+# `mixed metrics` is the only fixture carrying a closed range, and the only one
+# with both kinds of Metric on one form: four described, four not.
+- tapOn: "mixed metrics"
+- tapOn: "Add Record"
+
+# --- Described and undescribed Metrics ---------------------------------------
+- assertVisible: "About dense"
+- assertNotVisible: "About sparse"
+
+# --- The range states itself before anything is entered ----------------------
+- assertVisible: "0-100"
+
+# Entered before the dialog opens, so closing it can be shown to leave the form
+# as it was.
+- tapOn: "dense value"
+- inputText: "150"
+- hideKeyboard
+
+- tapOn: "About dense"
+- assertVisible: "One point per day for 45 days.*"
+- tapOn: "Close dense description"
+- assertNotVisible: "One point per day for 45 days.*"
+- assertVisible: "150"
+
+# --- Outside the range, refused with the bound it broke -----------------------
+- tapOn: "Add Record"
+- assertVisible: "Must be between 0 and 100"
+
+# --- Corrected onto the bound ------------------------------------------------
+- tapOn: "dense value"
+- eraseText
+- inputText: "100"
+- hideKeyboard
+- assertNotVisible: "Must be between 0 and 100"
+
+# `flag` is the described Metric that renders as segments rather than a field.
+- scrollUntilVisible:
+    element: "About flag"
+    direction: DOWN
+- tapOn: "About flag"
+- assertVisible: "Boolean, so it charts as two lanes.*"
+- tapOn: "Close flag description"
+- assertNotVisible: "Boolean, so it charts as two lanes.*"
+
+- scrollUntilVisible:
+    element: "note value"
+    direction: DOWN
+- assertNotVisible: "About category"
+- assertNotVisible: "About note"
+
+# --- The note, which this Observation's own `note` Metric sits beside ---------
+- scrollUntilVisible:
+    element: "Note"
+    direction: DOWN
+- tapOn: "Note"
+- inputText: "typed here, not on any metric"
+- hideKeyboard
+
+# The form is left only by a save the range accepted, so landing back on the
+# Details screen is what shows a value sitting exactly on a bound is legal.
+- tapOn: "Add Record"
+- assertVisible: "TRENDS"
+
+- scrollUntilVisible:
+    element: "RECENT RECORDS"
+    direction: DOWN
+# That stops as soon as the header shows, which leaves the rows beneath it under
+# the footer button; this is the last section, so one more scroll reaches their
+# end.
+- scroll
+- assertNotVisible: "typed here, not on any metric"
+
+# Several rows can read "Today, <time>" at once; the list is newest first, so the
+# Record just added is the first of them.
+- tapOn:
+    text: "Today.*"
+    index: 0
+- assertVisible: "typed here, not on any metric"

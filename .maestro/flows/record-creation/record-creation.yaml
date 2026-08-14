@@ -1,14 +1,18 @@
 appId: com.anonymous.factor
 ---
-# Adding a Record, entered from the Details screen.
+# Adding a Record by both routes in. They open the same form and differ in where
+# saving leaves you: the Observation you came from, or its screen put in the
+# form's place.
 #
 # `no records` is the fixture: its empty state gives an unambiguous before and after.
+
 - runFlow:
     file: ../../subflows/launch.yaml
     env:
       DEV_COMMAND: seed
       READY_TEXT: "no records"
 
+# --- From the Observation's own screen ---------------------------------------
 - tapOn: "no records"
 - assertVisible: "No records yet."
 
@@ -24,3 +28,23 @@ appId: com.anonymous.factor
 # Submitting returns to the Details screen, not the List.
 - assertVisible: "Today.*"
 - assertNotVisible: "No records yet."
+- tapOn: "Back"
+
+# --- From the list, where no Details screen sits beneath the form -------------
+- tapOn: "Add record to no records"
+
+# `stale records` carries a Metric named `value` too, so the Observation name in
+# the header is what shows the card's own button opened that card's form.
+- assertVisible: "no records"
+- tapOn: "value value"
+- inputText: "9"
+- hideKeyboard
+- tapOn: "Add Record"
+
+- assertVisible: "RECENT RECORDS"
+- assertVisible: "Today.*"
+
+# Saving put this screen in the form's place, so the press that follows reaches
+# the list rather than re-entering the form.
+- back
+- assertVisible: "Observations"
