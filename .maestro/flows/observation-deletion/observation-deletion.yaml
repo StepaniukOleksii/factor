@@ -9,9 +9,11 @@ appId: com.anonymous.factor
     file: ../../subflows/launch.yaml
     env:
       DEV_COMMAND: seed
-      READY_TEXT: "no records"
+      READY_TEXT: "stale records"
 
-- tapOn: "no records"
+# `stale records` carries three Records, so the delete has to take them with it
+# rather than only the row the list shows.
+- tapOn: "stale records"
 
 # Cancel path
 - tapOn: "More options"
@@ -19,7 +21,7 @@ appId: com.anonymous.factor
 - assertVisible: "Delete Observation?"
 - tapOn: "Cancel deletion"
 - assertNotVisible: "Delete Observation?"
-- assertVisible: "no records"
+- assertVisible: "stale records"
 
 # Confirm path
 - tapOn: "More options"
@@ -27,7 +29,19 @@ appId: com.anonymous.factor
 - assertVisible: "Delete Observation?"
 - tapOn: "Confirm deletion"
 
-- assertNotVisible: "no records"
+- assertNotVisible: "stale records"
 # An Observation this flow never touched, asserted to show the delete took one row
 # rather than clearing the list.
 - assertVisible: "mixed metrics"
+
+# --- The name is free again --------------------------------------------------
+- tapOn: "Create observation"
+- tapOn: "e.g., Sleep Quality, Mood"
+- inputText: "stale records"
+- tapOn: "e.g., Duration"
+- inputText: "value"
+- hideKeyboard
+- tapOn: "Create Observation"
+
+- assertVisible: "Observations"
+- assertVisible: "stale records"

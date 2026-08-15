@@ -62,3 +62,78 @@ appId: com.anonymous.factor
 # list's own header is what tells the two apart.
 - assertVisible: "Observations"
 - assertVisible: "Sleep 2"
+
+# --- A second Metric, given a type of its own --------------------------------
+- tapOn: "Create observation"
+- tapOn: "e.g., Sleep Quality, Mood"
+- inputText: "Energy"
+- tapOn: "e.g., Duration"
+- inputText: "Level"
+- hideKeyboard
+
+# Every scroll below centres what it is after: an element merely scrolled into
+# view can still sit under the keyboard, where the tap reaches the keyboard and
+# the text lands in whichever field had focus before.
+- scrollUntilVisible:
+    element: "Add Metric"
+    direction: DOWN
+    centerElement: true
+- tapOn: "Add Metric"
+
+# Two cards from here on, and their name fields differ in nothing a flow can
+# read: same label, and Android keeps the placeholder on the filled one too.
+- scrollUntilVisible:
+    element:
+      id: "metric-name-1"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "metric-name-1"
+- inputText: "Weather"
+- hideKeyboard
+
+- scrollUntilVisible:
+    element:
+      id: "metric-type-1"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "metric-type-1"
+- tapOn: "Choice"
+
+- scrollUntilVisible:
+    element:
+      id: "metric-value-1-0"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "metric-value-1-0"
+- inputText: "sunny"
+- hideKeyboard
+
+- scrollUntilVisible:
+    element:
+      id: "metric-value-1-1"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "metric-value-1-1"
+- inputText: "rainy"
+- hideKeyboard
+- tapOn: "Create Observation"
+
+- assertVisible: "Observations"
+- tapOn: "Energy"
+
+# Trend cards come in the Observation's own Metric order, so their order on
+# screen is the order the two were declared in.
+- assertVisible: "Level"
+- assertVisible:
+    text: "Weather"
+    below: "Level"
+
+# --- The picked type reaches the Record form ---------------------------------
+- tapOn: "Add Record"
+- tapOn: "Weather: None.*"
+- assertVisible: "sunny"
+- assertVisible: "rainy"

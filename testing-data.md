@@ -47,6 +47,13 @@ No seeded observation hides the TRENDS section any more: `no numeric` charts its
 `done`, and only a Text-only observation would leave the section off. That state is covered by an
 `ObservationDetailsScreen` test instead of a fixture.
 
+The **zoom ladder** is the one per-metric scenario deliberately kept off `mixed metrics`. Zooming is driven by
+tapping a chart, and a tap can only be aimed at the middle of a canvas — so a fixture for it has to be an
+observation with a single Numeric metric, where there is exactly one canvas and no need to pick between them.
+`stale records` already was that observation, and already folded its records into one 30-day bucket at `1Y`,
+which is the ladder's first rung; it holds the rest of the ladder rather than a sixth `mixed metrics` metric
+that no tap could reliably find.
+
 `mixed metrics`, `no numeric` and `stale records` each carry an optional Observation **description**
 summarizing what the observation covers and why (`no records` deliberately leaves its empty) so both the
 "description shown under the title" and the "no description, no empty gap" states on the details screen
@@ -75,7 +82,7 @@ card, where nothing should invite confusing them.
 |                 | Numeric `insufficient` (max 100)                     | exactly 1 point, 5 days ago                        | Both sides of the placeholder-vs-dot boundary: "Not enough data yet" at `1D`, a single dot at every wider preset             |
 |                 | Boolean `flag`, Enum `category` (a/b/c), Text `note` | shared records, every other day, 20 days           | Two swimlane cards interleaved after the Numeric ones — a two-lane one and a three-lane one; `note` still never charts; one record carrying several value types at once |
 | `no numeric`    | Enum `mood` (low/ok/high), Boolean `done`            | shared records, every other day, 8 days            | No Numeric metric at all, so the whole TRENDS section is two swimlanes — an Enum one and a Boolean one                        |
-| `stale records` | Numeric `value` (min 0)                              | 3 points, all 40-60 days ago                       | "Not enough data yet" at `1D`/`1W`/`1M`, and a single dot labelled "3" at `1Y` (where the 3 points share one bucket), alongside a *stale* last-record time |
+| `stale records` | Numeric `value` (min 0)                              | 4 Records across 3 days, all 40-60 days ago — the middle day carrying two of them half an hour apart | "Not enough data yet" at `1D`/`1W`/`1M`, and a single dot labelled "4" at `1Y` (where all four share one bucket), alongside a *stale* last-record time; also the one zoom ladder a chart tap can descend twice |
 | `no records`    | Numeric `value` (min 0)                              | none                                               | "No records yet" everywhere — the true empty state                                                                            |
 
 ### Which metric charts at which time range
@@ -108,7 +115,8 @@ on the same schedule and draw 5 marks at `1M` and 2 columns at `1Y`.
 `hourly`'s extra day-3 Records share a day with one it already had, so they change none of these counts —
 they only show up once a chart is zoomed down to that day, where the two inside 09:00-10:00 stay folded
 into one aggregated point while the 15:00 one gives the chart a second point beside it. That is the shape
-zoom comes to rest on, and the only place in the dataset it can be reached by hand.
+zoom comes to rest on, reached here by picking the day out by hand — `stale records` is where it can be
+reached by tapping, and the two differ in what the resting day still has left to draw.
 
 ## Manual verification checklist
 
@@ -202,10 +210,22 @@ Still on **`no numeric`**, tap **Add Record** (and again via **Edit Record** —
 Open **`stale records`** details screen:
 
 - description — small muted text appears under the title, above the METRICS section.
-- `value` — trend chart shows `Not enough data yet` at `1D`, `1W` and `1M` (all 3 records fall outside
-  those windows), and a single dot carrying a `3` count label at `1Y`, where those records are close
+- `value` — trend chart shows `Not enough data yet` at `1D`, `1W` and `1M` (all 4 records fall outside
+  those windows), and a single dot carrying a `4` count label at `1Y`, where those records are close
   enough together to share a single 30-day bucket; RECENT RECORDS shows entries dated well outside the
   last 30 days.
+
+Still on **`stale records`**, at `1Y`, tap the middle of the chart — the zoom ladder, and the only place in
+the dataset it can be walked by tapping:
+
+- one tap — the window narrows to the ~17 days the four records span, the time range selector's last segment
+  shows that range in place of the word `Custom`, and the chart draws three points: a low one, a middle one
+  standing for the two records half an hour apart, and a high one.
+- a second tap on the middle — the window narrows again, to the single day those two share, where they fold
+  into one dot.
+- a third tap — nothing moves. A day is as narrow as zoom goes, so the window it would open is the one
+  already on screen.
+- back three times — the ~17-day window, then `1Y`, then the observation list. Each press undoes one step.
 
 Open **`no records`** details screen:
 

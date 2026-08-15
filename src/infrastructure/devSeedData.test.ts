@@ -1,8 +1,17 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {buildSeedData} from './devSeedData';
-import {GetMetricSeriesUseCase, isCategoryPoint} from '../application/GetMetricSeriesUseCase';
 import {
+    type AggregationStrategy,
+    GetMetricSeriesUseCase,
+    isCategoryPoint,
+    isNumericPoint,
+    type MetricSeriesPoint,
+    type TimeRange,
+} from '../application/GetMetricSeriesUseCase';
+import {
+    getAggregationForCustomRange,
     getAggregationForPreset,
+    getDayAlignedRange,
     getTimeRangeForPreset,
     TIME_RANGE_PRESETS,
     type TimeRangePreset,
@@ -201,6 +210,83 @@ describe('seeded chart coverage', () => {
     for (const preset of PRESETS.filter(preset => preset !== '1D')) {
       expect(pointCount('mixed metrics', 'insufficient', preset)).toBe(1);
     }
+  });
+});
+
+// `stale records` is the one fixture a chart tap can descend twice, and each rung
+// holds only while two properties of the data do. A tap lands on the canvas centre,
+// which the chart resolves to the point nearest it horizontally and then drops
+// unless that point is near the middle of the plot vertically - so the rung that
+// zooms has to be both the nearest point to ~45% across the window and a mid-range
+// one, and it has to stand for more than one Record or it opens that Record
+// instead. These walk the same computation the details screen does.
+describe('seeded zoom ladder', () => {
+  /** Where a centre tap lands, as a fraction across the window. */
+  const TAP_FRACTION = 0.45;
+
+  function ladderPoints(range: TimeRange, aggregation: AggregationStrategy): MetricSeriesPoint[] {
+    const {observation, records} = entry('stale records');
+    const metric = observation.metrics.find(candidate => candidate.name === 'value')!;
+    return getMetricSeries.execute(records, metric, range, aggregation);
+  }
+
+  /** The window and resolution a tap on `point` moves the section to. */
+  function zoomedInto(point: MetricSeriesPoint) {
+    const range = getDayAlignedRange(new Date(point.firstRecordAt), new Date(point.lastRecordAt));
+    return {range, aggregation: getAggregationForCustomRange(range)};
+  }
+
+  function topPoints(): MetricSeriesPoint[] {
+    return ladderPoints(getTimeRangeForPreset('1Y'), getAggregationForPreset('1Y'));
+  }
+
+  function firstZoomPoints(): MetricSeriesPoint[] {
+    const {range, aggregation} = zoomedInto(topPoints()[0]);
+    return ladderPoints(range, aggregation);
+  }
+
+  function nearestToTap(points: MetricSeriesPoint[], range: TimeRange): MetricSeriesPoint {
+    const startMs = range.start.getTime();
+    const spanMs = range.end.getTime() - startMs;
+    const tapMs = startMs + TAP_FRACTION * spanMs;
+    return points.reduce((nearest, point) =>
+      Math.abs(point.x - tapMs) < Math.abs(nearest.x - tapMs) ? point : nearest);
+  }
+
+  it('folds every Record into a single 1Y point', () => {
+    const points = topPoints();
+
+    expect(points).toHaveLength(1);
+    expect(points[0].recordCount).toBe(entry('stale records').records.length);
+  });
+
+  it('opens three points on the first zoom, only the middle one folding a pair', () => {
+    expect(firstZoomPoints().map(point => point.recordCount)).toEqual([1, 2, 1]);
+  });
+
+  it('puts that pair where a centre tap resolves, and between the other two by value', () => {
+    const {range, aggregation} = zoomedInto(topPoints()[0]);
+    const points = ladderPoints(range, aggregation);
+    const [low, middle, high] = points.filter(isNumericPoint);
+
+    expect(nearestToTap(points, range)).toBe(points[1]);
+    expect(middle.y).toBeGreaterThan(Math.min(low.y, high.y));
+    expect(middle.y).toBeLessThan(Math.max(low.y, high.y));
+  });
+
+  it('draws the second zoom as one point standing for the pair', () => {
+    const {range, aggregation} = zoomedInto(firstZoomPoints()[1]);
+    const points = ladderPoints(range, aggregation);
+
+    expect(points).toHaveLength(1);
+    expect(points[0].recordCount).toBe(2);
+  });
+
+  it('cannot narrow past that day, so a third tap has nowhere to go', () => {
+    const day = zoomedInto(firstZoomPoints()[1]).range;
+    const again = zoomedInto(ladderPoints(day, getAggregationForCustomRange(day))[0]).range;
+
+    expect(again).toEqual(day);
   });
 });
 

@@ -246,16 +246,21 @@ export function buildSeedData(): SeedEntry[] {
       Crypto.randomUUID(),
       'stale records',
       [valueMetric],
-      'All three records are 40-60 days old, outside the 30-day trend window — the chart shows "not enough data yet" even though the last record date is stale rather than missing.'
+      'All four records are 40-60 days old — outside the 30-day trend window, so the chart reads empty while the last record date is stale, not missing.'
     );
-    const records: Record[] = [42, 51, 58].map(i =>
-      observation.createRecord(
-        Crypto.randomUUID(),
-        daysAgo(i),
-        new Map([[valueMetric.id, bounded(randRange(10, 90))]])
-      )
-    );
-    entries.push({observation, records});
+
+    // These four also make the zoom ladder: one 30-day bucket at 1Y, three days
+    // inside the window that opens, and one of those days holding a second Record
+    // in the same clock hour (see testing-data.md). The values are fixed rather
+    // than drawn from `rand` because a tap only reaches the middle day while its
+    // value sits between the other two.
+    const recordValues: TimestampValues = new Map();
+    setValueAt(recordValues, daysAgo(58), valueMetric.id, 20);
+    setValueAt(recordValues, daysAgo(50), valueMetric.id, 52);
+    setValueAt(recordValues, daysAgo(50, 9, 30), valueMetric.id, 58);
+    setValueAt(recordValues, daysAgo(42), valueMetric.id, 85);
+
+    entries.push({observation, records: buildRecords(observation, recordValues)});
   }
 
   // "no records" - no records at all => "No records yet" in both the list and details screens.

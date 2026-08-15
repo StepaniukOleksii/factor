@@ -49,8 +49,8 @@ appId: com.anonymous.factor
 - tapOn: "Back"
 
 # --- A point standing for several narrows the window instead ------------------
-# `stale records` is the fixture the tap can be aimed at: its three Records sit
-# 42-58 days back, so a year-long window folds all three into one point - and a
+# `stale records` is the fixture the taps can be aimed at: its four Records sit
+# 42-58 days back, so a year-long window folds all four into one point - and a
 # chart drawing a single point draws it in the canvas's vertical middle, which is
 # where Maestro presses.
 - tapOn: "stale records"
@@ -70,7 +70,28 @@ appId: com.anonymous.factor
     id: "time-range-preset-1Y"
     selected: false
 # The segment showing a range in place of the word is the zoomed window itself.
+# A window one day wide is the only one whose label reads the same date on both
+# sides, which is what tells this rung from the one below it.
 - assertNotVisible: "Custom"
+- assertNotVisible: '(.+) – \1'
+
+# --- And again, one rung further down ----------------------------------------
+# The window is the three days those Records fall on, and its middle day - the
+# one holding two of them - is both the nearest point to the canvas centre and
+# the only one left that folds anything.
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible: '(.+) – \1'
+
+# A day is as narrow as zoom goes: this lands on the point and changes nothing.
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible: '(.+) – \1'
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
 
 - tapOn:
     id: "time-range-custom"

@@ -12,8 +12,8 @@ appId: com.anonymous.factor
       READY_TEXT: "stale records"
 
 # --- The screen opens at the default window, with nothing behind it ----------
-# `stale records` is the fixture every zoom below works from: its three Records
-# sit 42-58 days back, so a year-long window folds all three into one aggregated
+# `stale records` is the fixture every zoom below works from: its four Records
+# sit 42-58 days back, so a year-long window folds all four into one aggregated
 # point - and a chart drawing a single point draws it in the canvas's vertical
 # middle, which is where Maestro taps.
 - tapOn: "stale records"
@@ -61,6 +61,15 @@ appId: com.anonymous.factor
     id: "time-range-custom"
     selected: true
 
+# Two rungs rather than one, so the back presses below have something to step
+# through. A window one day wide is the only one whose label reads the same date
+# on both sides, which is how each rung is told from the other.
+- assertNotVisible: '(.+) – \1'
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible: '(.+) – \1'
+
 # --- A screen pushed on top does not take the zoom with it -------------------
 # The listener is registered on focus rather than on mount, so the press that
 # leaves the Record form cannot reach the charts underneath and unzoom them. A
@@ -95,7 +104,15 @@ appId: com.anonymous.factor
     selected: true
 
 # --- The feature -------------------------------------------------------------
-# The press restores the window the zoom started from rather than leaving.
+# One press per rung, innermost first: the day gives way to the days it was
+# reached through, and only then to the preset behind them.
+- back
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+- assertNotVisible: '(.+) – \1'
+
 - back
 - assertVisible:
     id: "time-range-preset-1Y"

@@ -229,6 +229,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                                         <View style={styles.metricField}>
                                             <LabeledTextField
                                                 label="METRIC NAME"
+                                                testID={`metric-name-${index}`}
                                                 labelAccessory={metrics.length > 1 ? (
                                                     <TouchableOpacity onPress={() => handleRemoveMetric(index)}
                                                                       style={styles.deleteButton}>
