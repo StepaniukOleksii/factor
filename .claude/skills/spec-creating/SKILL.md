@@ -2,7 +2,7 @@
 name: spec-creating
 description: Creates a new feature specification based on the skill's worked example and the project guidelines. Triggered when the user asks to create or write a spec for a new feature.
 metadata:
-  version: "2.0.0"
+  version: "2.0.1"
 ---
 
 # Spec Creating
@@ -112,10 +112,10 @@ Follow `design.md` and the screens the app already has, and take colors, type an
 
 **Write the ADR if needed, and cite it.** Where the Technical Design weighs an alternative and rejects it, that
 reasoning outlives the spec — so it goes into an ADR as part of writing this spec, not left as a note for
-someone to extract later. Nothing rescues it once the spec is deleted. Save it as
-`.sdd/adr/[next-id]-[title].md` from `adr-template.md`, and have the Technical Design link to it rather than
-argue the decision twice. `architecture.md` states the bar, which is low: a decision a later change would get
-wrong without knowing is enough.
+someone to extract later. Nothing rescues it once the spec is deleted. Write it from
+[adr-template.md](adr-template.md), save it to `.sdd/adr/[next-id]-[title].md`, and have the Technical Design
+link to it rather than argue the decision twice. `architecture.md` states the bar, which is low: a decision a
+later change would get wrong without knowing is enough.
 
 ## 5. Saving the Spec
 
