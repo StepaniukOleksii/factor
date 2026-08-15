@@ -54,3 +54,21 @@ they're ready to become a real spec.
    probably a deletion rather than a transaction: `records.observationId` is declared
    `ON DELETE CASCADE` and `PRAGMA foreign_keys` is on, so deleting the Observation alone already takes its
    Records with it, and dropping the first write makes the whole thing one statement.
+10. A swimlane mark takes its lane's insets off after scaling rather than scaling the band between them, so
+    only the tallest mark in a chart is drawn at its true share and every mark below it is short — the more
+    so the smaller its count. `toMark` in
+    [CategorySwimlaneChart](../../src/presentation/charts/CategorySwimlaneChart.tsx) computes
+    `(count / tallestCount) * laneHeight - 2 * MARK_INSET`, so the 6px of reserve is a flat toll on every
+    mark instead of coming off the lane once. Four lanes make a lane 22px with 16px between its insets: with
+    a busiest bucket of 12 Records, 9 draw 10.5px where 12px is their share, 6 draw 5px where 8px is, and 4
+    and 3 both land on `MIN_MARK_HEIGHT`. Any count under 9/22 ≈ 41% of the chart's largest clamps to the
+    same 3px sliver, where the minimum was meant to catch only what falls under 3/16 ≈ 19% — the flat bottom
+    is half the scale rather than its last fifth. Two lanes are bent the same way, clamping under 9/44 ≈ 20%
+    against an intended 8%. The renderer's own comment states the invariant this breaks — "every mark divided
+    by the same constant, so their proportions to one another are still that bucket's own split" — which
+    subtracting a constant after scaling is not, and
+    [Trend Charting](../features/trend-charting.md) carries the same promise, that "within a bucket the marks
+    keep that bucket's own proportions". The fix is a parenthesis:
+    `(count / tallestCount) * (laneHeight - 2 * MARK_INSET)`. The tests move with it — the proportion is
+    checked by adding the inset back to both heights (`half.height + 6` against `(largest.height + 6) / 2`,
+    and its Boolean twin), which holds for the drawn heights only because both are wrong in the same way.

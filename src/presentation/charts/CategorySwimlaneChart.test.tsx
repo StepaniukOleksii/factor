@@ -150,11 +150,11 @@ describe('CategorySwimlaneChart drawing an Enum Metric', () => {
   it('fills a lane with the largest count anywhere in the series', () => {
     const [half, largest] = marks(render([bucket(0, ['ok', 2]), bucket(5, ['ok', 4])]));
 
-    // A mark is its lane less the 3px inset it keeps at each end, so adding that
-    // inset back is what leaves the lane the scale actually gave it.
+    // A lane is scaled against less the 3px inset it keeps at each end, and every
+    // mark is a share of that same band rather than of its own inset lane.
     expect(largest.height).toBeCloseTo(LANE_HEIGHT - 6);
     expect(largest.y).toBeCloseTo(laneFloor(1) - 3 - largest.height);
-    expect(half.height + 6).toBeCloseTo((largest.height + 6) / 2);
+    expect(half.height).toBeCloseTo(largest.height / 2);
   });
 
   // One Record against thirty: measured against its own bucket's total the lone
@@ -165,6 +165,15 @@ describe('CategorySwimlaneChart drawing an Enum Metric', () => {
     const [lone, busyLow, busyHigh] = marks(root);
     expect(lone.height).toBeLessThan(busyLow.height);
     expect(busyHigh.height).toBeCloseTo(LANE_HEIGHT - 6);
+  });
+
+  // A fifth of the busiest count is a fifth of a lane, not the minimum: it drew
+  // the minimum while the insets were a toll on every mark whatever its count.
+  it('holds a count far below the tallest at its own share of the lane', () => {
+    const [small, tallest] = marks(render([bucket(0, ['low', 1]), bucket(5, ['high', 5])]));
+
+    expect(small.height).toBeCloseTo(tallest.height / 5);
+    expect(small.height).toBeGreaterThan(3);
   });
 
   it('draws a count too small to see at a minimum height rather than rounding it away', () => {
@@ -345,7 +354,7 @@ describe('CategorySwimlaneChart drawing a Boolean Metric', () => {
 
     const [yes, no, busiest] = marks(root);
     expect(busiest.height).toBeCloseTo(BOOLEAN_LANE_HEIGHT - 6);
-    expect(yes.height + 6).toBeCloseTo(2 * (no.height + 6));
+    expect(yes.height).toBeCloseTo(2 * no.height);
   });
 
   it('neither draws a count matching no lane nor lets it set the height scale', () => {

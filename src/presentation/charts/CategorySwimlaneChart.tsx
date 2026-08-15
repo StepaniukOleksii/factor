@@ -188,7 +188,7 @@ function toMark(
 ): Mark {
   const x = timeToX(point.x, timeRange, plot);
   const markHeight = Math.max(
-    (count / tallestCount) * laneHeight - 2 * MARK_INSET,
+    (count / tallestCount) * (laneHeight - 2 * MARK_INSET),
     MIN_MARK_HEIGHT,
   );
   return {
