@@ -11,6 +11,17 @@ until they're ready to become a real spec.
       that time position; a second tap navigates to the Record detail view. Replaces 3-3's immediate-navigate-
       on-tap behavior and needs state shared across every chart on screen rather than per card; needs its own
       pass on exact tap semantics (what counts as "the second tap", how/when it resets) once picked up.
+    - A Numeric chart tap should act only where a point is. Hit-testing today takes the nearest point by x with
+      no horizontal limit at all and rejects only on vertical distance from the curve, so a tap anywhere along
+      the curve's height reaches a point however far away it is — on a single-point chart, that is the whole
+      canvas. What [Trend Exploration](../features/trend-exploration.md) describes as landing "on the nearest
+      point" is closer to "on the chart". A horizontal tolerance beside the vertical one is the obvious fix,
+      leaving empty stretches inert. Two things to settle when picked up: whether the two axes share one
+      tolerance or keep their own, and what happens to the E2E flows —
+      `.maestro/flows/trend-exploration/*.yaml` tap the canvas centre and reach their target only because
+      nothing rejects a distant tap (`stale records` at 1Y draws its one point at ~82% across the plot), so
+      tightening this breaks both flows and needs the taps re-aimed or the fixture moved. Worth doing before
+      the swimlane tap below, which wants the same rule.
     - Tap an Enum swimlane. The renderer ships inert — it reports no point and a tap does nothing, while every
       Numeric chart beside it navigates or zooms, which is where
       [Trend Exploration](../features/trend-exploration.md) currently draws the line. The screen's
