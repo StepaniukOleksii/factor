@@ -12,8 +12,8 @@ least one of them.
 
 Each charting Metric gets a card titled with its name, in the order the Observation declares its Metrics, so cards
 interleave by declaration rather than grouping by type. Every card in the section is drawn over one shared window,
-chosen once at the top of the section ([Trend Time Range Selection](trend-time-range-selection.md)), and a tap on a card
-is the way into the Records behind it ([Trend Exploration](trend-exploration.md)).
+chosen once at the top of the section ([Trend Time Range Selection](trend-time-range-selection.md)), and the Records
+behind a card are reached through the points drawn on it ([Trend Exploration](trend-exploration.md)).
 
 **Aggregation.** Charts plot buckets rather than Records. The window is cut into fixed buckets — an hour each for a
 one-day window, a day for a week or a month, a month for a year, and roughly thirty whole-hour buckets for a window

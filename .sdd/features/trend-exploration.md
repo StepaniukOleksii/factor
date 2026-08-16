@@ -8,8 +8,10 @@ section onto them, so they separate into points of their own.
 
 ## Behaviour
 
-**What a tap does.** A tap lands on the nearest point horizontally, provided it also falls within a comfortable distance
-of the curve vertically, which is what keeps the empty space above and below the line clear of it.
+**What a tap does.** A tap is answered by the point nearest it horizontally, and only when it also lands within a
+comfortable distance of that point on both axes — near enough across, and near enough up or down. The same distance
+serves each axis and every window, so a point's target is a fingertip-sized patch of chart wherever it is drawn and
+however many neighbours it has.
 
 A point standing for exactly one Record opens that Record for editing ([Record Editing](record-editing.md)).
 
@@ -46,7 +48,10 @@ harder to take back than the wait for one.
 
 ## Usage
 
-On a Numeric card, tap a point. If it stands for one Record, that Record opens for editing; if it stands for several,
-the section zooms onto the days behind it.
+On a Numeric card, tap the dot itself rather than the card around it — the stretches between dots belong to the chart,
+and a tap there leaves the card as it is. If the dot stands for one Record, that Record opens for editing ([Record
+Editing](record-editing.md)); if it stands for several, the section zooms onto the days behind it and you stay where
+you are, on a narrower window.
 
-Press back to undo a zoom, or pick a window from the selector to start over.
+Press back to undo a zoom, or pick a window from the selector ([Trend Time Range
+Selection](trend-time-range-selection.md)) to start over.
