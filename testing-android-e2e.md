@@ -116,6 +116,16 @@ Conventions this project follows:
 * **`testID` only where nothing readable exists**, or where a flow must read state text cannot express.
   Both current uses qualify: `numeric-trend-chart-pressable` is a Skia canvas, `time-range-preset-1Y`
   is matched on its `selected` state.
+* **A tap on a chart canvas is aimed inside it** — the one place coordinates are allowed, a canvas
+  holding no element to select. A chart acts only where a point is, within 24px of one on both axes, and
+  the centre of a canvas is not where a point is. `tapOn` takes an element-relative `point` beside its
+  selector, so `{id: "numeric-trend-chart-pressable", point: "83%,50%"}` is 83% across *that canvas*
+  rather than across the screen. A point falling a fraction `f` through the window is drawn at
+  `f + (32 − 36f) / W` across a canvas of width `W` (`LABEL_GUTTER` and `PLOT_RIGHT_INSET` in
+  [`chartAxis.tsx`](src/presentation/charts/chartAxis.tsx)), which is within a percentage point of `f`
+  itself at any phone width. Take `f` from the fixture's bucket grid and comment each aim with that
+  derivation: the number is meaningless alone, and a tap that silently stops landing is the hardest
+  failure in the suite to read.
 * **Comment why a step exists, not what it does.** `tapOn: "Add Record"` explains itself; the reason a
   flow waits, reseeds, or reaches for a `testID` does not.
 

@@ -36,10 +36,11 @@ const LINE_COLOR = COLORS.primaryContainer;
 const FILL_COLOR_TOP = withAlpha(COLORS.primaryContainer, 0.22);
 const FILL_COLOR_BOTTOM = withAlpha(COLORS.primaryContainer, 0);
 const STROKE_WIDTH = 2.5;
-// A tap counts as hitting a point only if it falls within this many pixels of the
-// curve vertically - a comfortable touch-target radius that still rejects taps in
-// the empty space above or below the line.
-const VERTICAL_TOLERANCE = 24;
+// A tap counts as hitting a point only if it falls within this many pixels of it
+// on each axis, which puts a 48x48px box around every point - the platform's
+// minimum touch target, and what leaves the empty stretches of a chart inert
+// however few points it draws (ADR-5).
+const TAP_TOLERANCE = 24;
 // Without a marker the hit targets on a sparse curve are invisible. The halo
 // takes the card's own colour so a dot reads as a node, not a bulge in the line.
 const POINT_RADIUS = 2.5;
@@ -98,7 +99,11 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
   const handlePress = (event: GestureResponderEvent) => {
     const {locationX, locationY} = event.nativeEvent;
     const nearestIndex = nearestPointIndex(screenPoints, locationX);
-    if (Math.abs(screenPoints[nearestIndex].y - locationY) <= VERTICAL_TOLERANCE) {
+    const nearest = screenPoints[nearestIndex];
+    if (
+      Math.abs(nearest.x - locationX) <= TAP_TOLERANCE &&
+      Math.abs(nearest.y - locationY) <= TAP_TOLERANCE
+    ) {
       onPointPress(numericPoints[nearestIndex]);
     }
   };
@@ -195,9 +200,10 @@ function valueRatioToY(ratio: number, plot: PlotRect): number {
 }
 
 /**
- * Index of the screen point whose `x` is closest to `locationX`. Hit-testing is
- * horizontal-nearest rather than an exact hit on the drawn curve, since adjacent
- * points can sit only a few pixels apart. Ties keep the earlier (leftmost) point.
+ * Index of the screen point whose `x` is closest to `locationX`, ties keeping the
+ * earlier (leftmost) point. Nearest rather than an exact hit on the drawn curve,
+ * since adjacent points can sit only a few pixels apart; whether that nearest
+ * point is close enough to have been meant is the caller's tolerance to apply.
  */
 function nearestPointIndex(screenPoints: Point[], locationX: number): number {
   let nearestIndex = 0;

@@ -286,14 +286,14 @@ function recordAt(id: string, at: Date, values: [string, number][] = [['m1', 5]]
 
 /**
  * Taps the leftmost point of a chart. An unmeasured chart collapses every
- * point onto the plotting rectangle's left edge, so the nearest-by-x
- * hit-test always resolves there; 50 is where a flat series sits within the
- * 108px chart's plot.
+ * point onto the plotting rectangle's left edge, 32px in, and a tap has to
+ * fall within tolerance of a point on both axes to reach it; 50 is where a
+ * flat series sits within the 108px chart's plot.
  */
 async function pressChartPoint(root: any, chartIndex = 0) {
     const pressable = root.root.findAllByProps({testID: 'numeric-trend-chart-pressable'})[chartIndex];
     await act(async () => {
-        pressable.props.onPress({nativeEvent: {locationX: 0, locationY: 50}});
+        pressable.props.onPress({nativeEvent: {locationX: 32, locationY: 50}});
     });
 }
 
@@ -896,8 +896,9 @@ describe('ObservationDetailsScreen Trends', () => {
 
         const pressable = root.root.findByProps({testID: 'numeric-trend-chart-pressable'});
         await act(async () => {
-            // 45 is the mid-line of the 90px trend chart, where a flat series sits.
-            pressable.props.onPress({nativeEvent: {locationX: 0, locationY: 45}});
+            // 32 is the plot's left edge, where an unmeasured chart's points all
+            // collapse; 45 the mid-line of the 90px chart, where a flat series sits.
+            pressable.props.onPress({nativeEvent: {locationX: 32, locationY: 45}});
         });
 
         expect(navigate).toHaveBeenCalledWith('EditRecord', {observationId: 'obs-1', recordId: 'earliest'});

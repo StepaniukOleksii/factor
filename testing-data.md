@@ -48,8 +48,8 @@ No seeded observation hides the TRENDS section any more: `no numeric` charts its
 `ObservationDetailsScreen` test instead of a fixture.
 
 The **zoom ladder** is the one per-metric scenario deliberately kept off `mixed metrics`. Zooming is driven by
-tapping a chart, and a tap can only be aimed at the middle of a canvas — so a fixture for it has to be an
-observation with a single Numeric metric, where there is exactly one canvas and no need to pick between them.
+tapping a chart, and a tap has to find a point rather than the canvas holding it — so a fixture for it has to be
+an observation with a single Numeric metric, where there is exactly one canvas and no need to pick between them.
 `stale records` already was that observation, and already folded its records into one 30-day bucket at `1Y`,
 which is the ladder's first rung; it holds the rest of the ladder rather than a sixth `mixed metrics` metric
 that no tap could reliably find.
@@ -215,15 +215,16 @@ Open **`stale records`** details screen:
   enough together to share a single 30-day bucket; RECENT RECORDS shows entries dated well outside the
   last 30 days.
 
-Still on **`stale records`**, at `1Y`, tap the middle of the chart — the zoom ladder, and the only place in
-the dataset it can be walked by tapping:
+Still on **`stale records`**, at `1Y`, tap the dot itself, about four-fifths across — the zoom ladder, and the
+only place in the dataset it can be walked by tapping. A tap reaches a point only from within 24px of it on
+both axes, so tapping the empty stretch left of the dot does nothing and leaves the selector reading `1Y`:
 
-- one tap — the window narrows to the ~17 days the four records span, the time range selector's last segment
-  shows that range in place of the word `Custom`, and the chart draws three points: a low one, a middle one
-  standing for the two records half an hour apart, and a high one.
-- a second tap on the middle — the window narrows again, to the single day those two share, where they fold
-  into one dot.
-- a third tap — nothing moves. A day is as narrow as zoom goes, so the window it would open is the one
+- one tap on the dot — the window narrows to the ~17 days the four records span, the time range selector's
+  last segment shows that range in place of the word `Custom`, and the chart draws three points: a low one, a
+  middle one standing for the two records half an hour apart, and a high one.
+- a second tap, on that middle point — the window narrows again, to the single day those two share, where they
+  fold into one dot.
+- a third tap on it — nothing moves. A day is as narrow as zoom goes, so the window it would open is the one
   already on screen.
 - back three times — the ~17-day window, then `1Y`, then the observation list. Each press undoes one step.
 

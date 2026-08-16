@@ -134,6 +134,9 @@ function render(
   return root!;
 }
 
+/** How far from a point a tap may fall on either axis and still land on it. */
+const TAP_TOLERANCE = 24;
+
 /** The line-coloured circles are the record dots; each also has a halo behind it. */
 function recordDots(root: any) {
   return root.root
@@ -396,6 +399,31 @@ describe('NumericTrendChart', () => {
     expect(onPointPress).not.toHaveBeenCalled();
   });
 
+  it('ignores a tap that falls outside the tolerance horizontally of its nearest point', () => {
+    const onPointPress = vi.fn();
+    const root = render(points(10, 20, 15, 25), onPointPress);
+
+    // On the first point's own line, 38px along the 88px gap to the second: still
+    // nearest the first, and past reach of it.
+    press(root, PLOT.left + 38, PLOT.bottom);
+
+    expect(onPointPress).not.toHaveBeenCalled();
+  });
+
+  it('lands a tap exactly one tolerance away, on either axis', () => {
+    const onPointPress = vi.fn();
+    const chartPoints = points(10, 20, 15, 25);
+    const root = render(chartPoints, onPointPress);
+
+    // The bound is inclusive, so the edge of the box around the first point at
+    // (32, 94) still belongs to that point.
+    press(root, PLOT.left + TAP_TOLERANCE, PLOT.bottom);
+    press(root, PLOT.left, PLOT.bottom - TAP_TOLERANCE);
+
+    expect(onPointPress).toHaveBeenNthCalledWith(1, chartPoints[0]);
+    expect(onPointPress).toHaveBeenNthCalledWith(2, chartPoints[0]);
+  });
+
   it('keeps hit-testing against the plotting rectangle once the axis labels are drawn', () => {
     loadFont();
     const onPointPress = vi.fn();
@@ -419,6 +447,17 @@ describe('NumericTrendChart', () => {
     press(root, PLOT.left, PLOT.top + PLOT_HEIGHT / 2);
 
     expect(onPointPress).toHaveBeenCalledWith(chartPoints[0]);
+  });
+
+  it('ignores a distant tap on a single-point chart, whose one dot is always the nearest', () => {
+    const onPointPress = vi.fn();
+    const root = render(points(10), onPointPress);
+
+    // At the dot's own height, and most of the plot away from it: with no second
+    // point to be nearer than, the tolerance is the whole of what rejects this.
+    press(root, PLOT.left + 150, PLOT.top + PLOT_HEIGHT / 2);
+
+    expect(onPointPress).not.toHaveBeenCalled();
   });
 
   it('renders no pressable for zero points and never opens a record', () => {
