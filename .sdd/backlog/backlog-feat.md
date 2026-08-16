@@ -38,3 +38,22 @@ until they're ready to become a real spec.
    already used in CreateRecordScreen), with a deletingRecord loading state disabling the buttons meanwhile.
 3. Metric units. An attribute set by user that contains unit information. Limit to three chars. Should be displayed in
    paratheses above the chart after the metric name.
+4. Observation Editing — **Edit** beside **Delete** in the Observation's ⋮ menu
+   ([Observation Viewing](../features/observation-viewing.md)), pairing both actions on one object the way the Record
+   actions dialog already does, and reopening the Observation form pre-filled the way
+   [Record Editing](../features/record-editing.md) reopens the Record form. Name and description only — metrics stay
+   out, see the metric-editing entry below — so what the form does with the Metric cards Creation currently requires
+   (read-only, or absent) is the first thing to settle. The rename rule is already provided for:
+   `validateCreateObservation` takes the names a submission must not collide with, and
+   [ADR-4](../adr/4-name-uniqueness-rule-placement.md) planned rename as the caller passing every name but the
+   subject's own. What is missing is a write path — `ObservationRepository` has only an INSERT-only `save`.
+5. Observation metadata on the Details screen — created date and record count on one small glanceable line.
+   `createdAt` is already stored and already orders the Observation list, so nothing needs migrating or backfilling;
+   it is simply dropped on the way out of `findAll`, and `Observation` has no field to carry it. The record count is
+   new work — `RecordRepository` fetches recent Records and Records in a range, but cannot count them.
+6. Metric editing on an existing Observation — add, remove, rename, or change bounds and Choice values. Deliberately
+   not part of Observation Editing above. [Observation Creation](../features/observation-creation.md) frames metric
+   declaration as one-time and complete ("every Metric it will ever ask for"), and stored Records are validated
+   against the current constraint, so a narrowed bound or a dropped Choice value strands Records the Observation would
+   now refuse, and removing a Metric deletes its stored values outright. What happens to those Records is the question
+   to answer before this becomes a spec.
