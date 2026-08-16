@@ -13,9 +13,10 @@ appId: com.anonymous.factor
 
 # --- The screen opens at the default window, with nothing behind it ----------
 # `stale records` is the fixture every zoom below works from: its four Records
-# sit 42-58 days back, so a year-long window folds all four into one aggregated
-# point - and a chart drawing a single point draws it in the canvas's vertical
-# middle, which is where Maestro taps.
+# sit 42-58 days back, so a year-long window folds all four into the 30-day
+# bucket starting 300 days in - one aggregated point, drawn 300/365 across the
+# plot and at its vertical middle. That is the `"83%,50%"` every 1Y tap below
+# carries; a chart acts only where a point is, per testing-android-e2e.md.
 - tapOn: "stale records"
 - assertVisible: "TRENDS"
 - assertVisible:
@@ -56,6 +57,7 @@ appId: com.anonymous.factor
 # there is exactly one chart to hit.
 - tapOn:
     id: "numeric-trend-chart-pressable"
+    point: "83%,50%"
 - runFlow: ../../subflows/wait-for-trends.yaml
 - assertVisible:
     id: "time-range-custom"
@@ -65,8 +67,12 @@ appId: com.anonymous.factor
 # through. A window one day wide is the only one whose label reads the same date
 # on both sides, which is how each rung is told from the other.
 - assertNotVisible: '(.+) – \1'
+# This window is the 17 days those Records span, in 14-hour buckets, and the day
+# holding two of them is the point that folds anything: its bucket starts 196
+# hours in, and its value between the other two keeps it near the plot's middle.
 - tapOn:
     id: "numeric-trend-chart-pressable"
+    point: "52%,50%"
 - runFlow: ../../subflows/wait-for-trends.yaml
 - assertVisible: '(.+) – \1'
 
@@ -134,6 +140,7 @@ appId: com.anonymous.factor
 - runFlow: ../../subflows/wait-for-trends.yaml
 - tapOn:
     id: "numeric-trend-chart-pressable"
+    point: "83%,50%"
 - runFlow: ../../subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-custom"
@@ -157,6 +164,7 @@ appId: com.anonymous.factor
 - runFlow: ../../subflows/wait-for-trends.yaml
 - tapOn:
     id: "numeric-trend-chart-pressable"
+    point: "83%,50%"
 - runFlow: ../../subflows/wait-for-trends.yaml
 - tapOn:
     id: "time-range-custom"
@@ -174,6 +182,7 @@ appId: com.anonymous.factor
 - runFlow: ../../subflows/wait-for-trends.yaml
 - tapOn:
     id: "numeric-trend-chart-pressable"
+    point: "83%,50%"
 - runFlow: ../../subflows/wait-for-trends.yaml
 - assertVisible:
     id: "time-range-custom"
@@ -192,6 +201,7 @@ appId: com.anonymous.factor
 - runFlow: ../../subflows/wait-for-trends.yaml
 - tapOn:
     id: "numeric-trend-chart-pressable"
+    point: "83%,50%"
 - runFlow: ../../subflows/wait-for-trends.yaml
 - assertVisible:
     id: "time-range-custom"

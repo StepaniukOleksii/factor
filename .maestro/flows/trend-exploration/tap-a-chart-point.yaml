@@ -2,6 +2,12 @@ appId: com.anonymous.factor
 ---
 # What pressing a chart point does, which depends on how many Records it stands
 # for: one opens that Record, several narrow the window onto them.
+#
+# A chart acts only where a point is, so every tap below is aimed with a
+# percentage derived from the window's bucket grid, per testing-android-e2e.md.
+# The 50% vertical serves all of them: a chart drawing a single point draws it at
+# the plot's vertical middle, and the middle point of the zoomed three sits within
+# a few pixels of it, its value lying between the other two.
 
 - runFlow:
     file: ../../subflows/launch.yaml
@@ -17,8 +23,7 @@ appId: com.anonymous.factor
     id: "numeric-trend-chart-pressable"
 
 # The Record is entered here rather than seeded because the press has to be
-# unambiguous: one Record in the window is one point, drawn in the canvas's
-# vertical middle, which is where Maestro presses.
+# unambiguous: one Record in the window is one point.
 - tapOn: "Add Record"
 - tapOn: "value value"
 - inputText: "77"
@@ -26,8 +31,18 @@ appId: com.anonymous.factor
 - tapOn: "Add Record"
 
 - runFlow: ../../subflows/wait-for-trends.yaml
+# The default 1M window is thirty day buckets and a Record entered now falls in
+# the last of them, so the one point is drawn 29/30 across the plot: 96% of the
+# canvas. Nothing is drawn in the left of it, and a tap there reaches nothing.
 - tapOn:
     id: "numeric-trend-chart-pressable"
+    point: "20%,50%"
+- assertVisible: "TRENDS"
+- assertNotVisible: "Save Record"
+
+- tapOn:
+    id: "numeric-trend-chart-pressable"
+    point: "96%,50%"
 - assertVisible: "Save Record"
 - assertVisible: "77"
 
@@ -38,6 +53,7 @@ appId: com.anonymous.factor
 - runFlow: ../../subflows/wait-for-trends.yaml
 - tapOn:
     id: "numeric-trend-chart-pressable"
+    point: "96%,50%"
 - tapOn: "value value"
 - eraseText
 - inputText: "88"
@@ -50,9 +66,8 @@ appId: com.anonymous.factor
 
 # --- A point standing for several narrows the window instead ------------------
 # `stale records` is the fixture the taps can be aimed at: its four Records sit
-# 42-58 days back, so a year-long window folds all four into one point - and a
-# chart drawing a single point draws it in the canvas's vertical middle, which is
-# where Maestro presses.
+# 42-58 days back, so a year-long window folds all four into the 30-day bucket
+# starting 300 days in - one point, drawn 300/365 across the plot.
 - tapOn: "stale records"
 - runFlow: ../../subflows/wait-for-trends.yaml
 - tapOn:
@@ -61,6 +76,7 @@ appId: com.anonymous.factor
 
 - tapOn:
     id: "numeric-trend-chart-pressable"
+    point: "83%,50%"
 - runFlow: ../../subflows/wait-for-trends.yaml
 - assertVisible: "TRENDS"
 - assertVisible:
@@ -76,17 +92,20 @@ appId: com.anonymous.factor
 - assertNotVisible: '(.+) – \1'
 
 # --- And again, one rung further down ----------------------------------------
-# The window is the three days those Records fall on, and its middle day - the
-# one holding two of them - is both the nearest point to the canvas centre and
-# the only one left that folds anything.
+# The window is the 17 days those Records span, in 14-hour buckets, and the day
+# holding two of them is both the only point left that folds anything and the one
+# whose bucket starts 196 hours in.
 - tapOn:
     id: "numeric-trend-chart-pressable"
+    point: "52%,50%"
 - runFlow: ../../subflows/wait-for-trends.yaml
 - assertVisible: '(.+) – \1'
 
 # A day is as narrow as zoom goes: this lands on the point and changes nothing.
+# The day is bucketed by the hour, and both its Records share the 09:00 one.
 - tapOn:
     id: "numeric-trend-chart-pressable"
+    point: "43%,50%"
 - runFlow: ../../subflows/wait-for-trends.yaml
 - assertVisible: '(.+) – \1'
 - assertVisible:
