@@ -1,0 +1,47 @@
+appId: com.anonymous.factor
+---
+# Renaming an Observation through the details screen's kebab menu: where the new
+# name shows once it is saved, and the refusal a name another Observation already
+# holds earns.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no records"
+
+# --- The rename --------------------------------------------------------------
+- tapOn: "no records"
+- tapOn: "More options"
+- tapOn: "Edit observation"
+- assertVisible: "Edit Observation"
+
+# The name field, matched by the name it arrived holding.
+- tapOn: "no records"
+- eraseText
+- inputText: "renamed"
+- hideKeyboard
+- tapOn: "Save Observation"
+
+# The details screen's header is the Observation's own name.
+- assertVisible: "renamed"
+
+# The header arrow rather than a back press: this screen swallows one while its
+# Records are loading, and returning from the save started exactly that load.
+- tapOn: "Back"
+- assertVisible: "Observations"
+- assertVisible: "renamed"
+
+# --- A name another Observation already holds --------------------------------
+- tapOn: "renamed"
+- tapOn: "More options"
+- tapOn: "Edit observation"
+- tapOn: "renamed"
+- eraseText
+- inputText: "stale records"
+- hideKeyboard
+- tapOn: "Save Observation"
+
+- assertVisible: "An observation with this name already exists"
+# A refused save leaves the form up, with the mark on the field it belongs to.
+- assertVisible: "Edit Observation"

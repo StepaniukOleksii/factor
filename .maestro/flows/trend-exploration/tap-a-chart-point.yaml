@@ -1,13 +1,16 @@
 appId: com.anonymous.factor
 ---
 # What pressing a chart point does, which depends on how many Records it stands
-# for: one opens that Record, several narrow the window onto them.
+# for: one opens that Record, several narrow the window onto them. Both renderers
+# answer that way, so the pass runs once on a Numeric chart and once on a
+# swimlane.
 #
 # A chart acts only where a point is, so every tap below is aimed with a
 # percentage derived from the window's bucket grid, per testing-android-e2e.md.
 # The 50% vertical serves all of them: a chart drawing a single point draws it at
-# the plot's vertical middle, and the middle point of the zoomed three sits within
-# a few pixels of it, its value lying between the other two.
+# the plot's vertical middle, the middle point of the zoomed three sits within
+# a few pixels of it, its value lying between the other two, and a swimlane
+# column answers anywhere down its height (ADR-7).
 
 - runFlow:
     file: ../../subflows/launch.yaml
@@ -119,3 +122,40 @@ appId: com.anonymous.factor
 - assertVisible:
     id: "time-range-custom"
     selected: true
+
+# --- Both acts again, on a chart drawing columns rather than points -----------
+# `no numeric` has no Numeric metric at all, so both cards under its window are
+# swimlanes sharing one testID - `mood` above `done` - and every tap below names
+# the index rather than leaning on which of the two matches first.
+- tapOn: "Back"
+- tapOn: "no numeric"
+- runFlow: ../../subflows/wait-for-trends.yaml
+
+# Its Records sit at 09:00 on alternate days, 0 to 8 days back, so the default 1M
+# window gives each a day bucket of its own. A column is aimed at its middle
+# rather than at the bucket start a Numeric point is drawn on, and the newest of
+# those buckets runs from 29/30 of the plot to its right edge: 97% of the canvas.
+- tapOn:
+    id: "category-swimlane-chart-pressable"
+    index: 0
+    point: "97%,50%"
+- assertVisible: "Save Record"
+- tapOn: "Cancel editing"
+- assertVisible: "TRENDS"
+
+- runFlow: ../../subflows/wait-for-trends.yaml
+- tapOn:
+    id: "time-range-preset-1Y"
+- runFlow: ../../subflows/wait-for-trends.yaml
+# A year of 30-day buckets folds those Records into two columns, of which the
+# older holds the two oldest: its bucket runs from 330/365 of the plot to 360/365,
+# putting its middle at 94% of the canvas.
+- tapOn:
+    id: "category-swimlane-chart-pressable"
+    index: 0
+    point: "94%,50%"
+- runFlow: ../../subflows/wait-for-trends.yaml
+- assertVisible:
+    id: "time-range-custom"
+    selected: true
+- assertNotVisible: "Custom"
