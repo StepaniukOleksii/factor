@@ -26,7 +26,8 @@ Selection](trend-time-range-selection.md) for the window they share, [Record Lis
 below them.
 
 At the bottom, fixed, is **Add Record**, starting a Record for this Observation ([Record Creation](record-creation.md)).
-The header's ⋮ menu holds one action, Delete ([Observation Deletion](observation-deletion.md)).
+The header's ⋮ menu holds two actions: Edit ([Observation Editing](observation-editing.md)) and Delete
+([Observation Deletion](observation-deletion.md)).
 
 Everything on the screen is re-read each time it is returned to, so a Record added, edited or deleted above it is
 reflected on arrival rather than on the next visit.
@@ -40,6 +41,6 @@ Tap an Observation on the list to open it.
 
 Read the description under the title, if there is one, and the line beneath it for how long this has been kept and how
 much has gone into it. Trends is the history; Recent Records below it is what was last put in. **Add Record** at the
-bottom captures a new one, and the ⋮ menu deletes the Observation.
+bottom captures a new one, and the ⋮ menu edits or deletes the Observation.
 
 The back arrow returns to the list.
