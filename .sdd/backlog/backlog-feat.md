@@ -47,5 +47,5 @@ until they're ready to become a real spec.
    to answer before this becomes a spec. Two decisions taken by Observation Editing are worth reopening here rather
    than inheriting: whether the edit screen should merge with the create form once both carry Metric editors (it was
    kept separate precisely because edit had no Metric half), and whether
-   [ADR-7](../adr/7-observation-update-write-path.md)'s deliberately narrow `update` should widen or gain a path
+   [ADR-6](../adr/6-observation-update-write-path.md)'s deliberately narrow `update` should widen or gain a path
    beside it.
