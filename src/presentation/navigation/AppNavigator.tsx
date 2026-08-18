@@ -3,6 +3,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {ObservationListScreen} from '../screens/ObservationListScreen';
 import {CreateObservationScreen} from '../screens/CreateObservationScreen';
+import {EditObservationScreen} from '../screens/EditObservationScreen';
 import {RecordFormScreen} from '../screens/RecordFormScreen';
 import {ObservationDetailsScreen} from '../screens/ObservationDetailsScreen';
 import type {RootStackParamList} from './routes';
@@ -31,6 +32,7 @@ export function AppNavigator() {
                 <Stack.Screen name="ObservationList" component={ObservationListScreen}/>
                 <Stack.Screen name="CreateObservation" component={CreateObservationScreen}/>
                 <Stack.Screen name="ObservationDetails" component={ObservationDetailsScreen}/>
+                <Stack.Screen name="EditObservation" component={EditObservationScreen}/>
                 {/* One screen, two routes: creating and editing differ only by
                     whether a Record id came along in the params. */}
                 <Stack.Screen name="CreateRecord" component={RecordFormScreen}/>

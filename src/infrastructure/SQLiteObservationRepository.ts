@@ -85,6 +85,21 @@ export class SQLiteObservationRepository implements ObservationRepository {
     });
   }
 
+  // `createdAt` is deliberately absent from the SET list: it is what orders the
+  // list, and a rename is not a re-creation. One statement needs no transaction,
+  // and a row that is gone updates nothing - the use case has already
+  // established the Observation exists.
+  async update(observation: Observation): Promise<void> {
+    const db = await getDatabase();
+
+    await db.runAsync(
+      'UPDATE observations SET name = ?, description = ? WHERE id = ?',
+      observation.name,
+      observation.description,
+      observation.id
+    );
+  }
+
   async delete(id: string): Promise<void> {
     const db = await getDatabase();
 

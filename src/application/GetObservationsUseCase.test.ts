@@ -10,6 +10,7 @@ describe('GetObservationsUseCase', () => {
       findAll: vi.fn().mockResolvedValue([]),
       save: vi.fn(),
       delete: vi.fn(),
+      update: vi.fn(),
     };
     const mockRecordRepo: RecordRepository = {
       save: vi.fn(),
@@ -39,6 +40,7 @@ describe('GetObservationsUseCase', () => {
       findAll: vi.fn().mockResolvedValue([obs1, obs2]),
       save: vi.fn(),
       delete: vi.fn(),
+      update: vi.fn(),
     };
 
     const d = new Date();

@@ -101,6 +101,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
     const onBack = () => navigation.goBack();
     const onCreateRecord = () => navigation.navigate('CreateRecord', {observationId});
     const onEditRecord = (recordId: string) => navigation.navigate('EditRecord', {observationId, recordId});
+    const onEditObservation = () => navigation.navigate('EditObservation', {observationId});
     // The Observation this journey was about no longer exists, so the whole
     // journey goes with it rather than leaving a screen for it behind.
     const onDeleted = () => navigation.popToTop();
@@ -264,6 +265,11 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
         setMenuVisible(prev => !prev);
     };
 
+    const handleEditMenuItemPress = () => {
+        setMenuVisible(false);
+        onEditObservation();
+    };
+
     const handleDeleteMenuItemPress = () => {
         setMenuVisible(false);
         setDeleteModalVisible(true);
@@ -391,6 +397,16 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                         style={[styles.menuDropdown, {top: MENU_TOP, right: 8}]}
                         onPress={(e) => e.stopPropagation()}
                     >
+                        {/* Non-destructive first, the order the Record actions
+                            dialog puts the same pair in. */}
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={handleEditMenuItemPress}
+                            accessibilityLabel="Edit observation"
+                        >
+                            <MaterialIcons name="edit" size={20} color={COLORS.onSurface}/>
+                            <Text style={styles.menuItemText}>Edit</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.menuItem}
                             onPress={handleDeleteMenuItemPress}
@@ -724,6 +740,11 @@ const styles = StyleSheet.create({
         gap: 12,
         paddingHorizontal: 16,
         paddingVertical: 12,
+    },
+    menuItemText: {
+        color: COLORS.onSurface,
+        fontSize: 14,
+        fontWeight: '500',
     },
     menuItemTextDestructive: {
         color: COLORS.error,

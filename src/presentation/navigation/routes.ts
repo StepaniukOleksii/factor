@@ -8,6 +8,7 @@ export type RootStackParamList = {
     ObservationList: undefined;
     CreateObservation: undefined;
     ObservationDetails: {observationId: string};
+    EditObservation: {observationId: string};
     CreateRecord: {observationId: string};
     EditRecord: {observationId: string; recordId: string};
 };

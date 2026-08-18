@@ -32,6 +32,7 @@ describe('UpdateRecordUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([observation]),
       delete: vi.fn(),
+      update: vi.fn(),
     };
 
     const mockRecordRepo = createMockRecordRepo({
@@ -65,6 +66,7 @@ describe('UpdateRecordUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([observation]),
       delete: vi.fn(),
+      update: vi.fn(),
     };
 
     const mockRecordRepo = createMockRecordRepo({
@@ -103,6 +105,7 @@ describe('UpdateRecordUseCase', () => {
         save: vi.fn(),
         findAll: vi.fn().mockResolvedValue([observation]),
         delete: vi.fn(),
+        update: vi.fn(),
       };
       const mockRecordRepo = createMockRecordRepo({
         getById: vi.fn().mockResolvedValue(existingRecord),
@@ -152,6 +155,7 @@ describe('UpdateRecordUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([]),
       delete: vi.fn(),
+      update: vi.fn(),
     };
     const mockRecordRepo = createMockRecordRepo();
 
@@ -174,6 +178,7 @@ describe('UpdateRecordUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([observation]),
       delete: vi.fn(),
+      update: vi.fn(),
     };
     const mockRecordRepo = createMockRecordRepo({
       getById: vi.fn().mockResolvedValue(null),
@@ -200,6 +205,7 @@ describe('UpdateRecordUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([observation]),
       delete: vi.fn(),
+      update: vi.fn(),
     };
     const mockRecordRepo = createMockRecordRepo({
       getById: vi.fn().mockResolvedValue(existingRecord),
@@ -226,6 +232,7 @@ describe('UpdateRecordUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([observation]),
       delete: vi.fn(),
+      update: vi.fn(),
     };
     const mockRecordRepo = createMockRecordRepo({
       getById: vi.fn().mockResolvedValue(existingRecord),

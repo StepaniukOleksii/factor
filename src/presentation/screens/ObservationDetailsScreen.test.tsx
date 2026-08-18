@@ -604,6 +604,51 @@ describe('ObservationDetailsScreen Record Actions', () => {
     });
 });
 
+describe('ObservationDetailsScreen Observation Actions', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(defaultObservation);
+        mockGetRecentRecordsExecute.mockResolvedValue([initialRecord]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+    });
+
+    async function openObservationMenu(root: any) {
+        await act(async () => {
+            root.root.findAllByProps({accessibilityLabel: 'More options'})[0].props.onPress();
+        });
+    }
+
+    /** The menu's items, top to bottom, as their visible text. */
+    function menuItems(root: any): string[] {
+        const texts = root.root
+            .findAll((node: any) => node.children?.length === 1 && typeof node.children[0] === 'string')
+            .map((node: any) => node.children[0])
+            .filter((text: string) => text === 'Edit' || text === 'Delete');
+        return [...new Set<string>(texts)];
+    }
+
+    it('holds Edit above Delete', async () => {
+        const root = await renderScreen();
+
+        await openObservationMenu(root);
+
+        expect(menuItems(root)).toEqual(['Edit', 'Delete']);
+    });
+
+    it('opens the edit form for this Observation and closes the menu', async () => {
+        const navigate = vi.fn();
+        const root = await renderScreen(navigate);
+        await openObservationMenu(root);
+
+        await act(async () => {
+            root.root.findAllByProps({accessibilityLabel: 'Edit observation'})[0].props.onPress();
+        });
+
+        expect(navigate).toHaveBeenCalledWith('EditObservation', {observationId: 'obs-1'});
+        expect(menuItems(root)).toEqual([]);
+    });
+});
+
 describe('ObservationDetailsScreen Record Values', () => {
     const observationWithBoolean = {
         id: 'obs-1',

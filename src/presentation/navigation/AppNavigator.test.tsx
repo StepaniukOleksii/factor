@@ -47,6 +47,7 @@ const ScreenProbe = 'ScreenProbe' as unknown as React.ComponentType<any>;
 vi.mock('../screens/ObservationListScreen', () => ({ObservationListScreen: makeScreen('ObservationList')}));
 vi.mock('../screens/CreateObservationScreen', () => ({CreateObservationScreen: makeScreen('CreateObservation')}));
 vi.mock('../screens/ObservationDetailsScreen', () => ({ObservationDetailsScreen: makeScreen('ObservationDetails')}));
+vi.mock('../screens/EditObservationScreen', () => ({EditObservationScreen: makeScreen('EditObservation')}));
 // One component behind both Record routes, exactly as the real navigator wires
 // it, so which route a form was opened as stays part of what is under test.
 vi.mock('../screens/RecordFormScreen', () => ({

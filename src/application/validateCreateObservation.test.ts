@@ -1,5 +1,10 @@
 import {describe, expect, it} from 'vitest';
-import {firstErrorMessage, hasErrors, validateCreateObservation} from './validateCreateObservation';
+import {
+    firstErrorMessage,
+    hasErrors,
+    validateCreateObservation,
+    validateObservationIdentity,
+} from './validateCreateObservation';
 import type {CreateObservationInput} from './CreateObservationUseCase';
 
 /** A sound draft, so each case spoils only the field it is about. */
@@ -184,5 +189,31 @@ describe('validateCreateObservation', () => {
 
       expect(firstErrorMessage(errors)).toBe('Metric names must be unique');
     });
+  });
+});
+
+describe('validateObservationIdentity', () => {
+  it('finds nothing wrong with a name absent from the list it was given', () => {
+    expect(validateObservationIdentity('Sleep', 'How I slept', ['Mood'])).toEqual({});
+  });
+
+  it('rejects an empty name', () => {
+    expect(validateObservationIdentity('   ', undefined, NOTHING_TAKEN).name)
+      .toBe('Observation name cannot be empty');
+  });
+
+  it('rejects a name past 30 characters', () => {
+    expect(validateObservationIdentity('a'.repeat(31), undefined, NOTHING_TAKEN).name)
+      .toBe('Observation name cannot exceed 30 characters');
+  });
+
+  it('rejects a name a passed name holds under name identity', () => {
+    expect(validateObservationIdentity('Sleep', undefined, ['Mood', '  sleep  ']).name)
+      .toBe('An observation with this name already exists');
+  });
+
+  it('rejects a description past 150 characters', () => {
+    expect(validateObservationIdentity('Sleep', 'a'.repeat(151), NOTHING_TAKEN).description)
+      .toBe('Observation description cannot exceed 150 characters');
   });
 });

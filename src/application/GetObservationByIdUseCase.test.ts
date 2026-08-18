@@ -12,6 +12,7 @@ describe('GetObservationByIdUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([observation1, observation2]),
       delete: vi.fn(),
+      update: vi.fn(),
     };
 
     const useCase = new GetObservationByIdUseCase(mockRepo);
@@ -25,6 +26,7 @@ describe('GetObservationByIdUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([]),
       delete: vi.fn(),
+      update: vi.fn(),
     };
 
     const useCase = new GetObservationByIdUseCase(mockRepo);

@@ -13,6 +13,7 @@ describe('DeleteObservationUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn(),
       delete: vi.fn().mockResolvedValue(undefined),
+      update: vi.fn(),
     };
     mockRecordRepository = {
       save: vi.fn(),

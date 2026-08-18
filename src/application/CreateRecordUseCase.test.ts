@@ -20,6 +20,7 @@ describe('CreateRecordUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([observation]),
       delete: vi.fn(),
+      update: vi.fn(),
     };
 
     const mockRecordRepo: RecordRepository = {
@@ -58,6 +59,7 @@ describe('CreateRecordUseCase', () => {
         save: vi.fn(),
         findAll: vi.fn().mockResolvedValue([observation]),
         delete: vi.fn(),
+        update: vi.fn(),
       };
       const mockRecordRepo: RecordRepository = {
         save: vi.fn().mockResolvedValue(undefined),
@@ -103,6 +105,7 @@ describe('CreateRecordUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([]),
       delete: vi.fn(),
+      update: vi.fn(),
     };
 
     const mockRecordRepo: RecordRepository = {
@@ -135,6 +138,7 @@ describe('CreateRecordUseCase', () => {
       save: vi.fn(),
       findAll: vi.fn().mockResolvedValue([observation]),
       delete: vi.fn(),
+      update: vi.fn(),
     };
 
     const mockRecordRepo: RecordRepository = {

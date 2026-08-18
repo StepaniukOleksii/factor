@@ -50,7 +50,8 @@ function toMetricConstraint(type: string, min?: string, max?: string, values?: s
   return constraint.min === undefined && constraint.max === undefined ? null : constraint;
 }
 
-function toStoredText(text?: string): string | null {
+/** What an optional text field stores: absence, never an empty string. */
+export function toStoredText(text?: string): string | null {
   const trimmed = text?.trim() ?? '';
   return trimmed === '' ? null : trimmed;
 }
