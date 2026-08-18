@@ -73,6 +73,18 @@ the clock while today's is pinned at 09:00, so at any time of day the list holds
 note and one without. Today's also puts the `note` metric's own value and the record's note on one expanded
 card, where nothing should invite confusing them.
 
+Each observation also states **when it was created**, backdated to before its own oldest record rather than
+left at the moment the seed ran — four observations built in one pass would otherwise share a millisecond and
+leave the list's newest-first order to break the tie. The dates below are what the details screen reads, and
+they fix the order the list shows the four in:
+
+| Observation     | Created        | Records                                                              |
+|-----------------|----------------|----------------------------------------------------------------------|
+| `no records`    | today          | 0                                                                    |
+| `no numeric`    | 30 days ago    | 5                                                                    |
+| `stale records` | 90 days ago    | 4                                                                    |
+| `mixed metrics` | 365 days ago   | 82 — 81 when the reseed ran at an hour that put one of `hourly`'s sub-day records on the 09:00 already holding one |
+
 | Observation     | Metrics                                              | Record pattern                                     | What it's for                                                                                                                 |
 |-----------------|------------------------------------------------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | `mixed metrics` | Numeric `dense` (0-100)                              | one point per day, 45 days                         | A densely-populated trend chart                                                                                               |
@@ -122,6 +134,8 @@ reached by tapping, and the two differ in what the resting day still has left to
 
 After reseeding, from the observation list screen:
 
+- the four read newest-created first: **`no records`**, **`no numeric`**, **`stale records`**,
+  **`mixed metrics`** — the order their creation dates above fix.
 - **`mixed metrics`**, **`no numeric`** and **`stale records`** all show a `Last record: <date/time>` —
   recent for the first two, 40+ days old for the last.
 - **`no records`** shows `No records yet`.

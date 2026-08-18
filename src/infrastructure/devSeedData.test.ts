@@ -319,6 +319,36 @@ describe('seeded observation-level scenarios', () => {
   });
 });
 
+// The details screen reads each Observation's creation date, and the list orders
+// by it - so the fixtures state their own rather than taking the moment they were
+// built, which four Observations built in one pass would share.
+describe('seeded creation dates', () => {
+  it('gives every Observation a distinct one', () => {
+    const created = buildSeedData().map(({observation}) => observation.createdAt.getTime());
+
+    expect(new Set(created).size).toBe(created.length);
+  });
+
+  it('creates each one before its own oldest Record', () => {
+    for (const {observation, records} of buildSeedData()) {
+      for (const record of records) {
+        expect(
+          observation.createdAt.getTime(),
+          `a Record of "${observation.name}"`,
+        ).toBeLessThan(record.timestamp.getTime());
+      }
+    }
+  });
+
+  it('puts the four in the newest-created order the list shows them in', () => {
+    const byNewest = buildSeedData()
+      .sort((a, b) => b.observation.createdAt.getTime() - a.observation.createdAt.getTime())
+      .map(({observation}) => observation.name);
+
+    expect(byNewest).toEqual(['no records', 'no numeric', 'stale records', 'mixed metrics']);
+  });
+});
+
 // One Record form has to carry every state of the Metric-description info button
 // at once, which only holds while exactly these Metrics are described and the
 // rest aren't - the claim testing-data.md makes.

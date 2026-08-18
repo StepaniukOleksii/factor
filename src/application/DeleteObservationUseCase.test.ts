@@ -19,6 +19,7 @@ describe('DeleteObservationUseCase', () => {
       getLastRecordTimestamps: vi.fn(),
       getRecentRecords: vi.fn(),
       getByObservationId: vi.fn(),
+      countByObservationId: vi.fn(),
       deleteByObservationId: vi.fn().mockResolvedValue(undefined),
       deleteById: vi.fn(),
       getById: vi.fn(),

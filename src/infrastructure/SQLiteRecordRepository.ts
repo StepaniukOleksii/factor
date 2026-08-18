@@ -101,6 +101,16 @@ export class SQLiteRecordRepository implements RecordRepository {
     return records;
   }
 
+  async countByObservationId(observationId: string): Promise<number> {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM records WHERE observationId = ?',
+      observationId
+    );
+
+    return rows[0].count;
+  }
+
   async deleteByObservationId(observationId: string): Promise<void> {
     const db = await getDatabase();
     await db.runAsync(

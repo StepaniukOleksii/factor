@@ -11,6 +11,8 @@ export interface RecordRepository {
    * retrieval for charting, independent of `getRecentRecords`.
    */
   getByObservationId(observationId: string, range: TimeRange): Promise<Record[]>;
+  /** Every Record the Observation holds, counted rather than retrieved: no window, no limit. */
+  countByObservationId(observationId: string): Promise<number>;
   deleteByObservationId(observationId: string): Promise<void>;
   deleteById(recordId: string): Promise<void>;
   getById(recordId: string): Promise<Record | null>;

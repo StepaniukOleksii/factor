@@ -10,6 +10,7 @@ function mockRecordRepository(overrides: Partial<RecordRepository> = {}): Record
     getLastRecordTimestamps: vi.fn(),
     getRecentRecords: vi.fn(),
     getByObservationId: vi.fn(),
+    countByObservationId: vi.fn(),
     deleteByObservationId: vi.fn(),
     deleteById: vi.fn(),
     getById: vi.fn(),

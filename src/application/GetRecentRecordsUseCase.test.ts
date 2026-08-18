@@ -15,6 +15,7 @@ describe('GetRecentRecordsUseCase', () => {
       getLastRecordTimestamps: vi.fn(),
       getRecentRecords: vi.fn().mockResolvedValue(mockRecords),
       getByObservationId: vi.fn(),
+      countByObservationId: vi.fn(),
       deleteByObservationId: vi.fn(),
       deleteById: vi.fn(),
       getById: vi.fn(),

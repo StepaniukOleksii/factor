@@ -10,6 +10,10 @@ import {Record} from '../domain/Record';
  * testing-data.md at the repo root is the reference for what each Observation
  * covers and how to verify it. Names here are short and all-lowercase so seeded
  * data is instantly distinguishable from anything entered by hand.
+ *
+ * Each Observation states when it was created, earlier than its own oldest
+ * Record. All four are built in one pass, so defaulted times would share a
+ * millisecond and leave the list's newest-first order to break the tie.
  */
 
 /**
@@ -144,7 +148,8 @@ export function buildSeedData(): SeedEntry[] {
       flagMetric,
       categoryMetric,
       noteMetric,
-    ], 'Covers every per-metric chart scenario in one place: daily, hourly and year-long trends, a sparse trend with gaps, a metric with too few points to chart, and non-numeric metrics that share records instead of charting.');
+    ], 'Covers every per-metric chart scenario in one place: daily, hourly and year-long trends, a sparse trend with gaps, a metric with too few points to chart, and non-numeric metrics that share records instead of charting.',
+      daysAgo(365));
 
     const recordValues: TimestampValues = new Map();
 
@@ -225,7 +230,8 @@ export function buildSeedData(): SeedEntry[] {
       Crypto.randomUUID(),
       'no numeric',
       [moodMetric, doneMetric],
-      'Has no Numeric metric at all, so its charts come entirely from an Enum one and the Boolean beside it — a swimlane each.'
+      'Has no Numeric metric at all, so its charts come entirely from an Enum one and the Boolean beside it — a swimlane each.',
+      daysAgo(30)
     );
 
     const recordValues: TimestampValues = new Map();
@@ -246,7 +252,8 @@ export function buildSeedData(): SeedEntry[] {
       Crypto.randomUUID(),
       'stale records',
       [valueMetric],
-      'All four records are 40-60 days old — outside the 30-day trend window, so the chart reads empty while the last record date is stale, not missing.'
+      'All four records are 40-60 days old — outside the 30-day trend window, so the chart reads empty while the last record date is stale, not missing.',
+      daysAgo(90)
     );
 
     // These four also make the zoom ladder: one 30-day bucket at 1Y, three days
@@ -266,7 +273,7 @@ export function buildSeedData(): SeedEntry[] {
   // "no records" - no records at all => "No records yet" in both the list and details screens.
   {
     const valueMetric = new Metric(Crypto.randomUUID(), 'value', 'Numeric', {min: 0});
-    const observation = new Observation(Crypto.randomUUID(), 'no records', [valueMetric]);
+    const observation = new Observation(Crypto.randomUUID(), 'no records', [valueMetric], null, daysAgo(0));
     entries.push({observation, records: []});
   }
 

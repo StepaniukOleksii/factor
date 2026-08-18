@@ -16,6 +16,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
 import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
+import {CountRecordsUseCase} from '../../application/CountRecordsUseCase';
 import {GetObservationByIdUseCase} from '../../application/GetObservationByIdUseCase';
 import {GetRecentRecordsUseCase} from '../../application/GetRecentRecordsUseCase';
 import {GetRecordsByTimeRangeUseCase} from '../../application/GetRecordsByTimeRangeUseCase';
@@ -40,6 +41,7 @@ import {
 } from "@presentation/components";
 import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatMetricValue} from "@presentation/metricDisplay";
+import {formatRecordCount} from '@shared/formatRecordCount';
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 import {rendererRegistry} from '../charts/rendererRegistry';
 import {
@@ -58,6 +60,7 @@ const observationRepository = new SQLiteObservationRepository();
 const recordRepository = new SQLiteRecordRepository();
 const getObservationByIdUseCase = new GetObservationByIdUseCase(observationRepository);
 const getRecentRecordsUseCase = new GetRecentRecordsUseCase(recordRepository);
+const countRecordsUseCase = new CountRecordsUseCase(recordRepository);
 const getRecordsByTimeRangeUseCase = new GetRecordsByTimeRangeUseCase(recordRepository);
 const getMetricSeriesUseCase = new GetMetricSeriesUseCase();
 const deleteObservationUseCase = new DeleteObservationUseCase(observationRepository, recordRepository);
@@ -113,6 +116,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
     const timeRangeSelection = timeRangeHistory[timeRangeHistory.length - 1];
     const [observation, setObservation] = useState<Observation | null>(null);
     const [records, setRecords] = useState<DomainRecord[]>([]);
+    const [recordCount, setRecordCount] = useState(0);
     const [chartRecords, setChartRecords] = useState<DomainRecord[]>([]);
     const [chartWindow, setChartWindow] = useState<ChartWindow | null>(null);
     const [customModalVisible, setCustomModalVisible] = useState(false);
@@ -185,6 +189,10 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
         setRecords(recentRecords);
     };
 
+    const loadRecordCount = async () => {
+        setRecordCount(await countRecordsUseCase.execute(observationId));
+    };
+
     const loadTrendData = async (selection: TimeRangeSelection) => {
         try {
             setLoadingTrends(true);
@@ -206,6 +214,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
             setObservation(obs);
             if (obs) {
                 await loadRecentRecords();
+                await loadRecordCount();
             }
         } catch (error) {
             console.error('Failed to load observation details', error);
@@ -313,6 +322,7 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
             // Deleting is the only change made without leaving the screen, so
             // the focus effect that re-queries the charts never runs for it.
             await loadRecentRecords();
+            await loadRecordCount();
             await loadTrendData(timeRangeSelection);
         } catch (error) {
             console.error('Failed to delete record', error);
@@ -339,6 +349,13 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
             </ScreenContainer>
         );
     }
+
+    const created = `Created ${observation.createdAt.toLocaleDateString()}`;
+    const counted = formatRecordCount(recordCount);
+    const metadata = `${created} · ${counted}`;
+    // A comma rather than the middle dot, which is not something a screen reader
+    // can make sense of between two halves of one phrase.
+    const metadataLabel = `${created}, ${counted}`;
 
     return (
         <ScreenContainer>
@@ -392,6 +409,8 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                 {observation.description ? (
                     <Text style={styles.description}>{observation.description}</Text>
                 ) : null}
+
+                <Text style={styles.metadata} accessibilityLabel={metadataLabel}>{metadata}</Text>
 
                 {(() => {
                     // In the Observation's own order, so cards interleave by
@@ -718,6 +737,14 @@ const styles = StyleSheet.create({
         color: COLORS.onSurfaceVariant,
         fontSize: 14,
         lineHeight: 20,
+        marginBottom: 8,
+    },
+    // The list card's own metadata line, so the same class of information reads
+    // the same on both screens.
+    metadata: {
+        color: COLORS.onSurfaceVariant,
+        fontSize: 12,
+        opacity: 0.7,
         marginBottom: 24,
     },
     section: {

@@ -18,6 +18,31 @@ describe('Observation', () => {
     expect(obs.description).toBe('How well I slept');
   });
 
+  describe('createdAt', () => {
+    it('should default to the moment of construction', () => {
+      const before = Date.now();
+      const obs = new Observation('o1', 'Sleep');
+
+      expect(obs.createdAt.getTime()).toBeGreaterThanOrEqual(before);
+      expect(obs.createdAt.getTime()).toBeLessThanOrEqual(Date.now());
+    });
+
+    it('should keep a time it is given', () => {
+      const created = new Date('2025-03-14T09:00:00.000Z');
+
+      const obs = new Observation('o1', 'Sleep', [], null, created);
+
+      expect(obs.createdAt).toEqual(created);
+    });
+
+    it('should not accept a new time once constructed', () => {
+      const obs = new Observation('o1', 'Sleep');
+
+      // @ts-expect-error the time an Observation was created cannot change
+      obs.createdAt = new Date();
+    });
+  });
+
   it('should allow adding and removing metrics', () => {
     const obs = new Observation('o1', 'Sleep');
     const metric = new Metric('m1', 'Duration', 'Numeric');

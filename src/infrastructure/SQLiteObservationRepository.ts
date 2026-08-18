@@ -29,7 +29,7 @@ export class SQLiteObservationRepository implements ObservationRepository {
         observation.id,
         observation.name,
         observation.description,
-        Date.now()
+        observation.createdAt.getTime()
       );
 
       for (const metric of observation.metrics) {
@@ -81,7 +81,7 @@ export class SQLiteObservationRepository implements ObservationRepository {
 
     return observationRows.map(row => {
       const metrics = metricsByObservation.get(row.id) ?? [];
-      return new Observation(row.id, row.name, metrics, row.description);
+      return new Observation(row.id, row.name, metrics, row.description, new Date(row.createdAt));
     });
   }
 

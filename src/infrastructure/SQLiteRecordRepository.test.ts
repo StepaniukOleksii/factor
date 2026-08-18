@@ -101,6 +101,30 @@ describe('SQLiteRecordRepository', () => {
     expect(result).toEqual([]);
   });
 
+  describe('countByObservationId', () => {
+    it('should count only the records of the observation asked about', async () => {
+      mockGetAllAsync.mockResolvedValueOnce([{count: 4}]);
+
+      const result = await repository.countByObservationId('obs-1');
+
+      expect(mockGetAllAsync).toHaveBeenCalledWith(
+        'SELECT COUNT(*) as count FROM records WHERE observationId = ?',
+        'obs-1'
+      );
+      expect(result).toBe(4);
+    });
+
+    // The aggregate returns a row whatever it counted, so an Observation with no
+    // Records is not the empty result the other reads return.
+    it('should return zero for an observation holding none', async () => {
+      mockGetAllAsync.mockResolvedValueOnce([{count: 0}]);
+
+      const result = await repository.countByObservationId('obs-1');
+
+      expect(result).toBe(0);
+    });
+  });
+
   it('should delete all records for a given observation ID', async () => {
     await repository.deleteByObservationId('obs-1');
 

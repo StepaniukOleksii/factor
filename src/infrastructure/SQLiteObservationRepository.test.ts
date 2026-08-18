@@ -135,6 +135,59 @@ describe('SQLiteObservationRepository', () => {
     );
   });
 
+  describe('createdAt', () => {
+    // A backdated one as well as a fresh one: the seed fixtures state when they
+    // were created, and only a repository that stores what the entity carries
+    // can keep that.
+    it.each([
+      ['the moment it was constructed', new Date()],
+      ['a backdated one', new Date('2025-03-14T09:00:00.000Z')],
+    ])('should write %s as the entity carries it', async (_kind, created) => {
+      const observation = new Observation('obs-1', 'Weather', [], null, created);
+
+      await repository.save(observation);
+
+      expect(mockRunAsync).toHaveBeenNthCalledWith(
+        1,
+        'INSERT INTO observations (id, name, description, createdAt) VALUES (?, ?, ?, ?)',
+        'obs-1',
+        'Weather',
+        null,
+        created.getTime()
+      );
+    });
+
+    it('should read a stored createdAt back onto the observation', async () => {
+      const created = new Date('2025-03-14T09:00:00.000Z');
+      mockGetAllAsync
+        .mockResolvedValueOnce([
+          { id: 'obs-1', name: 'Weather', description: null, createdAt: created.getTime() }
+        ])
+        .mockResolvedValueOnce([]);
+
+      const result = await repository.findAll();
+
+      expect(result[0].createdAt).toEqual(created);
+    });
+
+    it('should leave the newest-created ordering to the query, and keep it', async () => {
+      mockGetAllAsync
+        .mockResolvedValueOnce([
+          { id: 'obs-1', name: 'Newer', description: null, createdAt: 2000 },
+          { id: 'obs-2', name: 'Older', description: null, createdAt: 1000 }
+        ])
+        .mockResolvedValueOnce([]);
+
+      const result = await repository.findAll();
+
+      expect(mockGetAllAsync).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('ORDER BY createdAt DESC')
+      );
+      expect(result.map(observation => observation.name)).toEqual(['Newer', 'Older']);
+    });
+  });
+
   describe('findAll', () => {
     it('should return an empty array when no observations exist', async () => {
       mockGetAllAsync.mockResolvedValue([]);

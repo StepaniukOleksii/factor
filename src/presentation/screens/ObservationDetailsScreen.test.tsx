@@ -14,9 +14,13 @@ import {COLORS, withAlpha} from '@presentation/theme';
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
+/** Every fixture Observation carries one: the screen's metadata line reads it. */
+const CREATED_AT = new Date(2026, 4, 18);
+
 const defaultObservation = {
     id: 'obs-1',
     name: 'Test Observation',
+    createdAt: CREATED_AT,
     metrics: [{id: 'm1', name: 'Metric 1', type: 'numeric'}],
 } as unknown as Observation;
 
@@ -24,12 +28,16 @@ const {
     mockGetObservationByIdExecute,
     mockGetRecentRecordsExecute,
     mockGetRecordsByTimeRangeExecute,
+    mockCountRecordsExecute,
     mockDeleteRecordExecute,
 } = vi.hoisted(() => {
     return {
         mockGetObservationByIdExecute: vi.fn(),
         mockGetRecentRecordsExecute: vi.fn(),
         mockGetRecordsByTimeRangeExecute: vi.fn(),
+        // The one use case every describe leans on without setting up: the
+        // metadata line is on the screen whatever else a test is about.
+        mockCountRecordsExecute: vi.fn().mockResolvedValue(0),
         mockDeleteRecordExecute: vi.fn(),
     };
 });
@@ -117,6 +125,12 @@ vi.mock('../../application/GetRecentRecordsUseCase', () => ({
 vi.mock('../../application/GetRecordsByTimeRangeUseCase', () => ({
     GetRecordsByTimeRangeUseCase: vi.fn().mockImplementation(() => ({
         execute: mockGetRecordsByTimeRangeExecute,
+    })),
+}));
+
+vi.mock('../../application/CountRecordsUseCase', () => ({
+    CountRecordsUseCase: vi.fn().mockImplementation(() => ({
+        execute: mockCountRecordsExecute,
     })),
 }));
 
@@ -237,6 +251,7 @@ function numericObservation(...metrics: {id: string; name: string}[]): Observati
     return {
         id: 'obs-1',
         name: 'Sleep Quality',
+        createdAt: CREATED_AT,
         metrics: metrics.map(m => ({...m, type: 'Numeric'})),
     } as unknown as Observation;
 }
@@ -249,6 +264,7 @@ function observationOf(...metrics: {id: string; name: string; type: string; cons
     return {
         id: 'obs-1',
         name: 'Sleep Quality',
+        createdAt: CREATED_AT,
         metrics,
     } as unknown as Observation;
 }
@@ -592,6 +608,7 @@ describe('ObservationDetailsScreen Record Values', () => {
     const observationWithBoolean = {
         id: 'obs-1',
         name: 'Test Observation',
+        createdAt: CREATED_AT,
         metrics: [
             {id: 'm1', name: 'Note', type: 'Text'},
             {id: 'm2', name: 'Well Rested', type: 'Boolean'},
@@ -695,6 +712,112 @@ describe('ObservationDetailsScreen Record Values', () => {
     });
 });
 
+describe('ObservationDetailsScreen Metadata Line', () => {
+    const DESCRIPTION = 'How well I slept';
+
+    function observationCreated(createdAt: Date, description: string | null = null): Observation {
+        return {
+            id: 'obs-1',
+            name: 'Sleep Quality',
+            description,
+            createdAt,
+            metrics: [{id: 'm1', name: 'Hours', type: 'Numeric'}],
+        } as unknown as Observation;
+    }
+
+    /** The line as the screen writes it, in whatever date format the device runs. */
+    function metadataLine(createdAt: Date, count: string): string {
+        return `Created ${createdAt.toLocaleDateString()} · ${count}`;
+    }
+
+    /** Every line of text on the screen, in the order it lays them out. */
+    function textLines(root: any): string[] {
+        return root.root
+            .findAllByType(Text)
+            .map((node: any) => node.props.children)
+            .filter((child: any) => typeof child === 'string');
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(observationCreated(CREATED_AT, DESCRIPTION));
+        mockGetRecentRecordsExecute.mockResolvedValue([initialRecord]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+        mockDeleteRecordExecute.mockResolvedValue(undefined);
+        vi.stubGlobal('alert', vi.fn());
+    });
+
+    it('states when the Observation was created and how many Records it holds', async () => {
+        mockCountRecordsExecute.mockResolvedValueOnce(12);
+
+        const root = await renderScreen();
+
+        expect(mockCountRecordsExecute).toHaveBeenCalledWith('obs-1');
+        expect(findAllByText(root.root, metadataLine(CREATED_AT, '12 records')).length).toBe(1);
+    });
+
+    it('sits under the description where there is one', async () => {
+        mockCountRecordsExecute.mockResolvedValueOnce(12);
+
+        const root = await renderScreen();
+
+        expect(textLines(root).slice(0, 3)).toEqual([
+            'Sleep Quality',
+            DESCRIPTION,
+            metadataLine(CREATED_AT, '12 records'),
+        ]);
+    });
+
+    it('sits under the title where there is no description', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(observationCreated(CREATED_AT));
+        mockCountRecordsExecute.mockResolvedValueOnce(12);
+
+        const root = await renderScreen();
+
+        expect(textLines(root).slice(0, 2)).toEqual([
+            'Sleep Quality',
+            metadataLine(CREATED_AT, '12 records'),
+        ]);
+    });
+
+    // Two different statements in two places: the line counts the Observation's
+    // Records, RECENT RECORDS says the section below it has none to show.
+    it('reads No records for an Observation with none, above the section\'s own empty text', async () => {
+        mockGetRecentRecordsExecute.mockResolvedValue([]);
+        mockCountRecordsExecute.mockResolvedValueOnce(0);
+
+        const root = await renderScreen();
+
+        expect(findAllByText(root.root, metadataLine(CREATED_AT, 'No records')).length).toBe(1);
+        expect(findAllByText(root.root, 'No records yet.').length).toBe(1);
+    });
+
+    it('announces the line as one phrase, the separator read as a comma', async () => {
+        mockCountRecordsExecute.mockResolvedValueOnce(1);
+
+        const root = await renderScreen();
+
+        const line = root.root.findAllByProps({
+            accessibilityLabel: `Created ${CREATED_AT.toLocaleDateString()}, 1 record`,
+        });
+        expect(line.length).toBeGreaterThan(0);
+    });
+
+    it('re-reads the count after a Record is deleted without leaving the screen', async () => {
+        mockCountRecordsExecute.mockResolvedValueOnce(2).mockResolvedValueOnce(1);
+        const root = await renderScreen();
+        expect(findAllByText(root.root, metadataLine(CREATED_AT, '2 records')).length).toBe(1);
+
+        await openRecordMenu(root);
+        await openDeleteRecordConfirmation(root);
+        await act(async () => {
+            await findTouchableWithText(root.root, 'Delete')!.props.onPress();
+        });
+
+        expect(findAllByText(root.root, metadataLine(CREATED_AT, '1 record')).length).toBe(1);
+    });
+});
+
 describe('ObservationDetailsScreen Trends', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -724,6 +847,7 @@ describe('ObservationDetailsScreen Trends', () => {
         mockGetObservationByIdExecute.mockResolvedValue({
             id: 'obs-1',
             name: 'Journal',
+            createdAt: CREATED_AT,
             metrics: [
                 {id: 't1', name: 'Notes', type: 'Text'},
                 {id: 't2', name: 'Highlights', type: 'Text'},

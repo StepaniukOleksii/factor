@@ -12,12 +12,20 @@ function requireDistinctMetricNames(names: string[]): void {
 export class Observation extends Entity<string> {
   public name: string;
   public description: string | null;
+  public readonly createdAt: Date;
   private _metrics: Map<string, Metric>;
 
-  constructor(id: string, name: string, metrics: Metric[] = [], description: string | null = null) {
+  constructor(
+    id: string,
+    name: string,
+    metrics: Metric[] = [],
+    description: string | null = null,
+    createdAt: Date = new Date()
+  ) {
     super(id);
     this.name = name;
     this.description = description;
+    this.createdAt = createdAt;
     requireDistinctMetricNames(metrics.map(m => m.name));
     this._metrics = new Map(metrics.map(m => [m.id, m]));
   }
