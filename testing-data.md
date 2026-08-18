@@ -157,7 +157,10 @@ Open **`mixed metrics`** details screen (time range selector defaults to `1M`):
 - `category` — a swimlane card after `flag`: three lanes labelled `a`, `b`, `c` top to bottom — the order the
   Record form lists them in — ten marks in the newer two-thirds of the window each filling its lane, and lane
   separators but no value labels down the left. An `a` mark is the darkest green and a `c` mark the lightest.
-  Tapping a mark on either card, or the empty space beside it, does nothing.
+  Tapping a column on either card reaches the bucket behind it, as a tap on a Numeric point does: at `1M`
+  every column stands for one record, so a tap opens that record for editing, carrying every metric it
+  answered rather than the card's own alone. A tap in the empty older third of either plot, clear of every
+  column, leaves the card as it is.
 - `note` — the only metric here that gets no trend card; RECENT RECORDS shows entries with a boolean, an enum
   value, and a note together on the same record.
 - record notes — under RECENT RECORDS at least one collapsed row shows a note glyph beside its time and at
@@ -177,7 +180,9 @@ Still on **`mixed metrics`**, tap through the time range selector and check agai
   to two columns at that edge — one standing for seven records and one for three — each carrying a mark per
   value recorded in it, sized by how many records took that value: the commonest fills its lane and the rest
   are shorter in proportion, so the three-record column carries visibly less ink than the seven-record one.
-  Every Numeric chart is exactly as before — curve, gradient fill, axes, dots, count labels.
+  Every Numeric chart is exactly as before — curve, gradient fill, axes, dots, count labels. Tapping either
+  of `category`'s columns narrows the whole section onto the days behind it — the five Numeric cards above
+  follow it into that window rather than staying at `1Y` — and back once returns every card to `1Y`.
 - RECENT RECORDS is identical at every selection.
 
 Still on **`mixed metrics`**, tap **Add Record** (and again via **Edit Record** — identical on both routes):
@@ -212,6 +217,20 @@ Open **`no numeric`** details screen:
   lane, and only where a column splits evenly do its two marks match. At `1D`, either a single mark or
   `Not enough data yet`, per the 09:00 rule above.
 - RECENT RECORDS shows entries carrying an enum value and a boolean together.
+
+Still on **`no numeric`**, at the default `1M`, tap the cards themselves — the same act as tapping a Numeric
+point, on a card that draws columns instead. A column is tapped anywhere down its height, and a tap reaches
+one only from within 24px of its middle:
+
+- tap one of `mood`'s five marks — the record behind it opens for editing, carrying both that mark's `mood`
+  value and the same record's `done` answer.
+- cancel back, then tap the empty stretch midway between two marks — nothing moves and the selector still
+  reads `1M`.
+- tap near the top of the `mood` card, directly above one of its marks rather than on it — the same record
+  opens.
+- at `1Y`, tap the older and wider of `done`'s two columns — every card in the section narrows to the days
+  behind it, `mood` included, and the selector's last segment shows that range in place of the word `Custom`.
+  Back once returns both cards to `1Y`.
 
 Still on **`no numeric`**, tap **Add Record** (and again via **Edit Record** — identical on both routes):
 

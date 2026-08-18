@@ -296,7 +296,7 @@ function on(month: number, day: number, hour = 12, minute = 0): Date {
  * mid-line - keeping a tap's vertical hit-test independent of the width the
  * test renderer never measures.
  */
-function recordAt(id: string, at: Date, values: [string, number][] = [['m1', 5]]): DomainRecord {
+function recordAt(id: string, at: Date, values: [string, unknown][] = [['m1', 5]]): DomainRecord {
     return new DomainRecord(id, 'obs-1', at, new Map(values));
 }
 
@@ -308,6 +308,19 @@ function recordAt(id: string, at: Date, values: [string, number][] = [['m1', 5]]
  */
 async function pressChartPoint(root: any, chartIndex = 0) {
     const pressable = root.root.findAllByProps({testID: 'numeric-trend-chart-pressable'})[chartIndex];
+    await act(async () => {
+        pressable.props.onPress({nativeEvent: {locationX: 32, locationY: 50}});
+    });
+}
+
+/**
+ * Taps the earliest column of a swimlane card. An unmeasured chart collapses
+ * every column onto the plotting rectangle's left edge, 32px in, where the
+ * earliest of them answers for the rest; the vertical coordinate is not
+ * hit-tested at all, a column running the height of the plot.
+ */
+async function pressSwimlaneColumn(root: any, chartIndex = 0) {
+    const pressable = root.root.findAllByProps({testID: 'category-swimlane-chart-pressable'})[chartIndex];
     await act(async () => {
         pressable.props.onPress({nativeEvent: {locationX: 32, locationY: 50}});
     });
@@ -981,26 +994,26 @@ describe('ObservationDetailsScreen Trends', () => {
         expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(1);
     });
 
-    it('leaves the window and the Records alone however an Enum card is pressed', async () => {
+    it('opens the Record behind an Enum column standing for exactly one', async () => {
         mockGetObservationByIdExecute.mockResolvedValue(
             observationOf(enumMetric('e1', 'mood', ['low', 'ok', 'high'])),
         );
+        // Two days apart at the default 1M window, so each keeps its own bucket
+        // and its column stands for a single Record.
         mockGetRecordsByTimeRangeExecute.mockResolvedValue([
-            chartRecord('a', 3, [['e1', 'low']]),
-            chartRecord('b', 1, [['e1', 'high']]),
+            chartRecord('earliest', 3, [['e1', 'low']]),
+            chartRecord('latest', 1, [['e1', 'high']]),
         ]);
         const navigate = vi.fn();
 
         const root = await renderScreen(navigate);
+        await pressSwimlaneColumn(root);
 
-        // The card holds nothing that answers a press, which is how "not
-        // tappable" is expressed - so no window switch and no Record can follow.
-        const chartCard = root.root.findAllByProps({testID: 'trend-chart'})[0];
-        expect(
-            chartCard.findAll((node: any) => node.props && typeof node.props.onPress === 'function'),
-        ).toHaveLength(0);
+        expect(navigate).toHaveBeenCalledWith('EditRecord', {
+            observationId: 'obs-1',
+            recordId: 'earliest',
+        });
         expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(1);
-        expect(navigate).not.toHaveBeenCalled();
     });
 
     it('still opens the Record behind a Numeric point on an Observation carrying an Enum card too', async () => {
@@ -1432,6 +1445,19 @@ describe('ObservationDetailsScreen Chart Zoom', () => {
     const spanEnd = recordAt('span-end', on(5, 31));
     const nextBucket = recordAt('next-bucket', on(6, 25));
 
+    // The same three Records answered for a Choice Metric as well, so the
+    // section draws a swimlane beside the curve and the two Records sharing a
+    // 30-day bucket share a column of it.
+    const observationWithMood = observationOf(
+        {id: 'm1', name: 'Duration', type: 'Numeric'},
+        enumMetric('e1', 'mood', ['low', 'ok', 'high']),
+    );
+    const moodRecords = [
+        recordAt('span-start', on(5, 26), [['m1', 5], ['e1', 'low']]),
+        recordAt('span-end', on(5, 31), [['m1', 5], ['e1', 'high']]),
+        recordAt('next-bucket', on(6, 25), [['m1', 5], ['e1', 'ok']]),
+    ];
+
     beforeEach(() => {
         vi.useFakeTimers({shouldAdvanceTime: true});
         vi.setSystemTime(NOW);
@@ -1649,6 +1675,60 @@ describe('ObservationDetailsScreen Chart Zoom', () => {
         expect(customSegment(root).props.accessibilityState.selected).toBe(false);
     });
 
+    it('narrows every card in the section on a swimlane column standing for several', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(observationWithMood);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue(moodRecords);
+        const navigate = vi.fn();
+
+        const root = await renderScreen(navigate);
+        await selectPreset(root, '1Y');
+        const beforeZoom = mockGetRecordsByTimeRangeExecute.mock.calls.length;
+
+        await pressSwimlaneColumn(root);
+
+        // The days the column's Records fall on, exactly as a Numeric point
+        // folding the same two would have given - and the Numeric card beside it
+        // follows the swimlane into that window rather than staying at 1Y.
+        expect(navigate).not.toHaveBeenCalled();
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(beforeZoom + 1);
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenLastCalledWith(
+            'obs-1',
+            daysCovering(moodRecords[0], moodRecords[1]),
+        );
+        expect(customSegment(root).props.accessibilityState.selected).toBe(true);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(2);
+    });
+
+    it('ignores a swimlane press arriving while the section is still fetching', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(observationWithMood);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue(moodRecords);
+        const navigate = vi.fn();
+
+        const root = await renderScreen(navigate);
+        await selectPreset(root, '1Y');
+
+        let releaseFetch: (records: DomainRecord[]) => void = () => {};
+        mockGetRecordsByTimeRangeExecute.mockReturnValueOnce(
+            new Promise(resolve => {
+                releaseFetch = resolve;
+            }),
+        );
+
+        await pressSwimlaneColumn(root);
+        const inFlight = mockGetRecordsByTimeRangeExecute.mock.calls.length;
+
+        await pressSwimlaneColumn(root);
+
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(inFlight);
+        expect(navigate).not.toHaveBeenCalled();
+
+        await act(async () => {
+            releaseFetch([]);
+        });
+
+        expect(customSegment(root).props.accessibilityState.selected).toBe(true);
+    });
+
     it('ignores a second tap while the first one is still loading', async () => {
         const navigate = vi.fn();
         const root = await renderScreen(navigate);
@@ -1697,6 +1777,19 @@ describe('ObservationDetailsScreen Back Unzoom', () => {
     const spanStart = recordAt('span-start', on(5, 26));
     const spanEnd = recordAt('span-end', on(5, 31));
     const nextBucket = recordAt('next-bucket', on(6, 25));
+
+    // The same three Records answered for a Choice Metric as well, so the
+    // section draws a swimlane beside the curve and the two Records sharing a
+    // 30-day bucket share a column of it.
+    const observationWithMood = observationOf(
+        {id: 'm1', name: 'Duration', type: 'Numeric'},
+        enumMetric('e1', 'mood', ['low', 'ok', 'high']),
+    );
+    const moodRecords = [
+        recordAt('span-start', on(5, 26), [['m1', 5], ['e1', 'low']]),
+        recordAt('span-end', on(5, 31), [['m1', 5], ['e1', 'high']]),
+        recordAt('next-bucket', on(6, 25), [['m1', 5], ['e1', 'ok']]),
+    ];
 
     /** The six whole days a tap on that bucket's point zooms to. */
     const ZOOMED: TimeRange = {start: on(5, 26, 0), end: on(6, 1, 0)};

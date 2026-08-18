@@ -34,6 +34,8 @@ const LANE_LABEL_WIDTH = PLOT.left - 5;
 // A ten-bucket window, so a bucket is a tenth of the plot wide and a point's own
 // `x` reads as its bucket index.
 const BUCKET_MS = 1000;
+/** The gap a mark keeps off the next bucket's, which its own width is short by. */
+const MARK_GAP = 2;
 const TIME_RANGE: TimeRange = {start: new Date(0), end: new Date(10 * BUCKET_MS)};
 const AGGREGATION: AggregationStrategy = {bucketSizeMs: BUCKET_MS};
 
@@ -66,6 +68,7 @@ function render(
   points: MetricSeriesPoint[],
   metric: Metric = enumMetric(),
   onPointPress = vi.fn(),
+  aggregation: AggregationStrategy = AGGREGATION,
 ) {
   let root: any;
   act(() => {
@@ -74,7 +77,7 @@ function render(
         metric={metric}
         points={points}
         timeRange={TIME_RANGE}
-        aggregation={AGGREGATION}
+        aggregation={aggregation}
         width={CHART_WIDTH}
         height={CHART_HEIGHT}
         onPointPress={onPointPress}
@@ -82,6 +85,24 @@ function render(
     );
   });
   return root!;
+}
+
+/**
+ * Taps the canvas at a position across it. `locationY` defaults to the plot's
+ * own top edge, the furthest a tap can land from the marks a bucket's Records
+ * usually draw at the foot of their lanes - a column is tapped anywhere down its
+ * height, so no test needs to aim at one.
+ */
+function press(root: any, locationX: number, locationY = PLOT.top) {
+  const pressable = root.root.findByProps({testID: 'category-swimlane-chart-pressable'});
+  act(() => {
+    pressable.props.onPress({nativeEvent: {locationX, locationY}});
+  });
+}
+
+/** The middle of the column a bucket draws, which its tap target is centred on. */
+function columnCentre(bucketIndex: number): number {
+  return PLOT.left + (bucketIndex + 0.5) * (PLOT_WIDTH / 10) - MARK_GAP / 2;
 }
 
 function marks(root: any) {
@@ -287,16 +308,86 @@ describe('CategorySwimlaneChart drawing an Enum Metric', () => {
     expect(marks(root)).toHaveLength(0);
   });
 
-  it('reports no point, having nothing to press', () => {
+  it('reports the whole point of the bucket whose column a tap lands on', () => {
     const onPointPress = vi.fn();
+    const points = [bucket(0, ['low', 1]), bucket(5, ['ok', 2], ['high', 1])];
+    const root = render(points, enumMetric(), onPointPress);
 
-    const root = render([bucket(0, ['low', 1], ['high', 1])], enumMetric(), onPointPress);
+    press(root, columnCentre(5));
 
-    const pressables = root.root.findAll(
-      (node: any) => node.props && typeof node.props.onPress === 'function',
-    );
-    expect(pressables).toHaveLength(0);
+    // The point entire, counts included: what the tap means - opening the one
+    // Record or narrowing onto the three - is read off it by the screen.
+    expect(onPointPress).toHaveBeenCalledWith(points[1]);
+  });
+
+  it('answers a tap at the far end of a column as readily as one at its start', () => {
+    const onPointPress = vi.fn();
+    // A window of six buckets rather than ten, drawing each 42px wide - about
+    // the widest the app produces, at `1W`. The end of a bar that wide is
+    // further from the bucket's own start than the tolerance reaches, so only a
+    // target centred on the bar covers it.
+    const wide: AggregationStrategy = {bucketSizeMs: (10 * BUCKET_MS) / 6};
+    const points = [bucket(0, ['low', 1])];
+    const root = render(points, enumMetric(), onPointPress, wide);
+
+    press(root, PLOT.left + PLOT_WIDTH / 6 - MARK_GAP);
+
+    expect(onPointPress).toHaveBeenCalledWith(points[0]);
+  });
+
+  it('reports the nearer column when a tap falls between two', () => {
+    const onPointPress = vi.fn();
+    const points = [bucket(0, ['low', 1]), bucket(1, ['high', 1])];
+    const root = render(points, enumMetric(), onPointPress);
+
+    press(root, (columnCentre(0) + columnCentre(1)) / 2 + 1);
+
+    expect(onPointPress).toHaveBeenCalledWith(points[1]);
+  });
+
+  it('reports nothing from the empty stretch between two distant columns', () => {
+    const onPointPress = vi.fn();
+    const root = render([bucket(0, ['low', 1]), bucket(5, ['high', 1])], enumMetric(), onPointPress);
+
+    press(root, (columnCentre(0) + columnCentre(5)) / 2);
+
     expect(onPointPress).not.toHaveBeenCalled();
+  });
+
+  it('reports nothing from beyond either end of the drawn columns', () => {
+    const onPointPress = vi.fn();
+    const root = render([bucket(3, ['low', 1]), bucket(5, ['high', 1])], enumMetric(), onPointPress);
+
+    press(root, PLOT.left);
+    press(root, PLOT.right);
+
+    expect(onPointPress).not.toHaveBeenCalled();
+  });
+
+  it('answers a tap high above a bucket whose marks are drawn short', () => {
+    const onPointPress = vi.fn();
+    // A single Record against twenty: its mark is the 3px minimum, at the foot
+    // of its lane and most of the plot below the tap.
+    const points = [bucket(0, ['low', 1]), bucket(5, ['high', 20])];
+    const root = render(points, enumMetric(), onPointPress);
+
+    press(root, columnCentre(0), PLOT.top);
+
+    expect(onPointPress).toHaveBeenCalledWith(points[0]);
+  });
+
+  it('makes no target of a bucket whose counts matched no lane', () => {
+    const onPointPress = vi.fn();
+    const points = [bucket(0, ['maybe', 3]), bucket(5, ['high', 1])];
+    const root = render(points, enumMetric(), onPointPress);
+
+    press(root, columnCentre(0));
+
+    expect(onPointPress).not.toHaveBeenCalled();
+
+    press(root, columnCentre(5));
+
+    expect(onPointPress).toHaveBeenCalledWith(points[1]);
   });
 });
 
@@ -366,15 +457,13 @@ describe('CategorySwimlaneChart drawing a Boolean Metric', () => {
     expect(marks(root)[0].height).toBeCloseTo(BOOLEAN_LANE_HEIGHT - 6);
   });
 
-  it('reports no point either, the two charts being one renderer', () => {
+  it('answers a press by its column too, the two charts being one renderer', () => {
     const onPointPress = vi.fn();
+    const points = [bucket(0, ['true', 1], ['false', 1]), bucket(5, ['true', 1])];
+    const root = render(points, booleanMetric(), onPointPress);
 
-    const root = render([bucket(0, ['true', 1], ['false', 1])], booleanMetric(), onPointPress);
+    press(root, columnCentre(0));
 
-    const pressables = root.root.findAll(
-      (node: any) => node.props && typeof node.props.onPress === 'function',
-    );
-    expect(pressables).toHaveLength(0);
-    expect(onPointPress).not.toHaveBeenCalled();
+    expect(onPointPress).toHaveBeenCalledWith(points[0]);
   });
 });

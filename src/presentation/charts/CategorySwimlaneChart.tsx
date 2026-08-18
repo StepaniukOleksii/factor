@@ -1,4 +1,5 @@
 import React from 'react';
+import {type GestureResponderEvent, Pressable} from 'react-native';
 import {Canvas, Line, RoundedRect, Text as SkiaText, vec} from '@shopify/react-native-skia';
 import {
   type CategoryCount,
@@ -20,6 +21,7 @@ import {
   useAxisFont,
 } from './chartAxis';
 import {type ChartLane, getChartLanes} from './chartLanes';
+import {nearestPointIndex, TAP_TOLERANCE} from './chartHitTest';
 import {getLaneColors} from './laneColors';
 import {InsufficientData} from './InsufficientData';
 import type {ChartRendererProps} from './rendererRegistry';
@@ -49,10 +51,22 @@ const MARK_CORNER_RADIUS = 4;
  * every mark divided by the same constant, so their proportions to one another
  * are still that bucket's own split.
  *
- * Nothing here is tappable: what a tap on a lane should mean has not been
- * decided, so `onPointPress` is never called and no `Pressable` wraps the canvas.
+ * A tap is answered by the bucket whose column it is nearest horizontally, and
+ * the whole of that bucket's point is reported: which lane it landed in says
+ * nothing a column does not already carry, so it is discarded, and the vertical
+ * axis is not tested at all (ADR-7). What a tap *means* - opening a Record, or
+ * narrowing the section onto the Records behind a column - is the screen's
+ * decision, as it is for the Numeric card.
  */
-export const CategorySwimlaneChart = ({metric, points, timeRange, aggregation, width, height}: ChartRendererProps) => {
+export const CategorySwimlaneChart = ({
+  metric,
+  points,
+  timeRange,
+  aggregation,
+  width,
+  height,
+  onPointPress,
+}: ChartRendererProps) => {
   const font = useAxisFont();
 
   const lanes = getChartLanes(metric);
@@ -73,42 +87,54 @@ export const CategorySwimlaneChart = ({metric, points, timeRange, aggregation, w
     tallestCount: tallestCountIn(drawable),
   };
   const marks = drawable.map(laneCount => toMark(laneCount, swimlane));
+  const columns = toColumns(drawable, swimlane);
+
+  const handlePress = ({nativeEvent: {locationX}}: GestureResponderEvent) => {
+    const nearest = columns[nearestPointIndex(columns, locationX)];
+    // A card whose every count matched no lane draws its lanes and no column at
+    // all, leaving nothing for a tap to be near.
+    if (nearest && Math.abs(nearest.x - locationX) <= TAP_TOLERANCE) {
+      onPointPress(nearest.point);
+    }
+  };
 
   return (
-    <Canvas style={{width, height}}>
-      {laneBoundaries(lanes.length, plot, laneHeight).map(y => (
-        <Line
-          key={`separator-${y}`}
-          p1={vec(plot.left, y)}
-          p2={vec(plot.right, y)}
-          color={GRIDLINE_COLOR}
-          strokeWidth={GRIDLINE_WIDTH}
-        />
-      ))}
-      {marks.map(mark => (
-        <RoundedRect
-          key={mark.key}
-          x={mark.x}
-          y={mark.y}
-          width={mark.width}
-          height={mark.height}
-          r={cornerRadius(mark.width, mark.height)}
-          color={laneColors[mark.lane]}
-        />
-      ))}
-      {font &&
-        lanes.map(({label}, lane) => (
-          <SkiaText
-            key={`lane-label-${lane}`}
-            font={font}
-            text={truncateToWidth(font, label, LABEL_GUTTER - LABEL_GAP)}
-            x={0}
-            y={laneFloor(lane, plot, laneHeight) - laneHeight / 2 + baselineCentreOffset(font)}
-            color={AXIS_LABEL_COLOR}
+    <Pressable testID="category-swimlane-chart-pressable" style={{width, height}} onPress={handlePress}>
+      <Canvas style={{width, height}}>
+        {laneBoundaries(lanes.length, plot, laneHeight).map(y => (
+          <Line
+            key={`separator-${y}`}
+            p1={vec(plot.left, y)}
+            p2={vec(plot.right, y)}
+            color={GRIDLINE_COLOR}
+            strokeWidth={GRIDLINE_WIDTH}
           />
         ))}
-      <TimeAxisLabels font={font} timeRange={timeRange} plot={plot} />
-    </Canvas>
+        {marks.map(mark => (
+          <RoundedRect
+            key={mark.key}
+            x={mark.x}
+            y={mark.y}
+            width={mark.width}
+            height={mark.height}
+            r={cornerRadius(mark.width, mark.height)}
+            color={laneColors[mark.lane]}
+          />
+        ))}
+        {font &&
+          lanes.map(({label}, lane) => (
+            <SkiaText
+              key={`lane-label-${lane}`}
+              font={font}
+              text={truncateToWidth(font, label, LABEL_GUTTER - LABEL_GAP)}
+              x={0}
+              y={laneFloor(lane, plot, laneHeight) - laneHeight / 2 + baselineCentreOffset(font)}
+              color={AXIS_LABEL_COLOR}
+            />
+          ))}
+        <TimeAxisLabels font={font} timeRange={timeRange} plot={plot} />
+      </Canvas>
+    </Pressable>
   );
 };
 
@@ -130,15 +156,25 @@ interface LaneCount {
   lane: number;
 }
 
+/** The horizontal extent every mark of one bucket shares. */
+interface Bar {
+  x: number;
+  width: number;
+}
+
 /** The Records of one bucket that took one value, as drawn. */
-interface Mark {
+interface Mark extends Bar {
   key: string;
   /** The value's lane, counted from the plot's top. */
   lane: number;
-  x: number;
   y: number;
-  width: number;
   height: number;
+}
+
+/** A bucket as a tap is tested against it: the middle of the bar drawn for it. */
+interface Column {
+  point: CategorySeriesPoint;
+  x: number;
 }
 
 /**
@@ -182,11 +218,8 @@ function tallestCountIn(drawable: LaneCount[]): number {
   return Math.max(...drawable.map(({count}) => count.count));
 }
 
-function toMark(
-  {point, count: {value, count}, lane}: LaneCount,
-  {plot, laneHeight, timeRange, bucketSizeMs, tallestCount}: Swimlane,
-): Mark {
-  const x = timeToX(point.x, timeRange, plot);
+function toMark({point, count: {value, count}, lane}: LaneCount, swimlane: Swimlane): Mark {
+  const {plot, laneHeight, tallestCount} = swimlane;
   const markHeight = Math.max(
     (count / tallestCount) * (laneHeight - 2 * MARK_INSET),
     MIN_MARK_HEIGHT,
@@ -194,6 +227,20 @@ function toMark(
   return {
     key: `${point.x}-${value}`,
     lane,
+    ...toBar(point, swimlane),
+    y: laneFloor(lane, plot, laneHeight) - MARK_INSET - markHeight,
+    height: markHeight,
+  };
+}
+
+/**
+ * Where a bucket is drawn across the plot, which its marks and its tap target
+ * are both measured from - one derivation rather than two that could be clipped
+ * differently.
+ */
+function toBar(point: CategorySeriesPoint, {plot, timeRange, bucketSizeMs}: Swimlane): Bar {
+  const x = timeToX(point.x, timeRange, plot);
+  return {
     x,
     // The window may end mid-bucket, so the newest mark is cut off at the plot's
     // right edge rather than drawn past it.
@@ -201,9 +248,25 @@ function toMark(
       Math.max(spanToWidth(bucketSizeMs, timeRange, plot) - MARK_GAP, MIN_MARK_WIDTH),
       plot.right - x,
     ),
-    y: laneFloor(lane, plot, laneHeight) - MARK_INSET - markHeight,
-    height: markHeight,
   };
+}
+
+/**
+ * The middle of every column drawn, in bucket order. Centred on the bar rather
+ * than anchored to the bucket's own start, so the far end of a wide column is
+ * inside its target as much as the near end is (ADR-7). Built from the counts
+ * the chart could draw rather than from the buckets, which is what keeps a
+ * bucket whose values matched no lane - and which drew nothing - from being one.
+ */
+function toColumns(drawable: LaneCount[], swimlane: Swimlane): Column[] {
+  const columns = new Map<CategorySeriesPoint, Column>();
+  for (const {point} of drawable) {
+    if (!columns.has(point)) {
+      const {x, width} = toBar(point, swimlane);
+      columns.set(point, {point, x: x + width / 2});
+    }
+  }
+  return [...columns.values()];
 }
 
 /**
