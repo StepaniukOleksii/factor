@@ -40,10 +40,15 @@ appId: com.anonymous.factor
 
 - tapOn: "stale records"
 - assertVisible: "All four records are 40-60 days old.*"
+# The `.*` reaches over a date the device formats to its own locale.
+- assertVisible: "Created .*4 records"
 - tapOn: "Back"
 
 # `no records` is the one seeded Observation left without a description, and the
 # text from the screen just visited is what its absence is read against.
 - tapOn: "no records"
+# The metadata line's own wording for an empty Observation, which is what tells
+# it apart from the `No records yet.` RECENT RECORDS shows below it.
+- assertVisible: "Created .*No records"
 - assertVisible: "No records yet."
 - assertNotVisible: "All four records are 40-60 days old.*"
