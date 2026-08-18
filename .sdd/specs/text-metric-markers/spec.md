@@ -20,7 +20,6 @@ saying when something was written rather than what.
 * Every mark is the same size, whatever its bucket holds.
 * A mark standing for more than one Record shows that count, in the wording the Numeric card already uses.
 * The card never shows the text itself.
-* A Record whose value is only whitespace gets no mark.
 * Tapping the card does nothing.
 * Where the Metric has no text in the window, the card shows the section's existing placeholder.
 * The card is shorter than the others, and stays the same height whether it draws marks or the placeholder.
@@ -92,9 +91,12 @@ pairing the component with the height its cards are drawn at — `{renderer, car
 Choice register at 108, the height they have today; Text registers at 40.
 
 Both heights are declared beside the registrations, and `TREND_CHART_HEIGHT` is deleted from
-`ObservationDetailsScreen`, which stops holding a chart dimension. Why height is declared per type while
-width is measured per card, what a swimlane sized by its lane count would change, and the alternatives this
-beat are [ADR-8](../../adr/8-chart-card-height.md)'s.
+`ObservationDetailsScreen`, which stops holding a chart dimension: a card's width is the screen's column to
+decide and the renderer must accept it, while how much vertical room a drawing needs belongs to the drawing.
+
+A fixed number per type rather than one computed from the Metric. Nothing needs the latter yet — a swimlane
+sized by its lane count is what would — and it is a one-line change at the screen's single call site when
+something does.
 
 `rendererRegistry.has` is unaffected, so the filter deciding which Metrics get a card is untouched.
 
@@ -118,7 +120,8 @@ into two versions of the same axis:
 and applies `cardHeight` in the three places the constant reached: the `Renderer`'s `height` prop, the
 `trendChart` box whose layout reports the canvas width back, and the `trendEmpty` placeholder rendered in the
 renderer's stead. The last is what keeps a card from resizing as its window empties and fills, so the
-height must be applied inline in all three rather than left in the `StyleSheet` rules that hold it now.
+height must be applied inline in all three rather than left in the `StyleSheet` rules that hold it now — and
+that reason cannot be read off the result, so it earns a comment where the placeholder takes its height.
 
 Nothing else moves: the section still picks its cards by `rendererRegistry.has(metric.type)`, still falls to
 the placeholder on an empty series, and still passes `onPointPress` to a renderer free to ignore it.
