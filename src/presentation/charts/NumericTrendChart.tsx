@@ -22,7 +22,9 @@ import {
   LABEL_GAP,
   measureWidth,
   type PlotRect,
+  POINT_COUNT_LABEL_COLOR,
   TimeAxisLabels,
+  timeToX,
   toPlotRect,
   useAxisFont,
 } from './chartAxis';
@@ -43,9 +45,6 @@ const POINT_RADIUS = 2.5;
 const POINT_HALO_RADIUS = 4;
 const POINT_COLOR = LINE_COLOR;
 const POINT_HALO_COLOR = COLORS.surfaceContainerLow;
-// A point folding several Records names its count above itself. Faded below the
-// axis labels' own colour: an annotation on the curve, not a second accent.
-const POINT_COUNT_LABEL_COLOR = withAlpha(COLORS.onSurfaceVariant, 0.65);
 // How far above a point's centre the label's baseline sits - clear of the halo,
 // close enough to still read as belonging to that point.
 const POINT_COUNT_LABEL_OFFSET = 9;
@@ -245,19 +244,11 @@ function toScreenPoints(
   minY: number,
   maxY: number,
 ): Point[] {
-  // The x domain is the chart's time window, not the data's own span, so points
-  // land at their real position in time and gaps before the first or after the
-  // last Record stay visible instead of being scaled away.
-  const minX = timeRange.start.getTime();
-  const maxX = timeRange.end.getTime();
-
-  const xSpan = maxX - minX || 1;
   const ySpan = maxY - minY;
-  const plotWidth = plot.right - plot.left;
   const plotHeight = plot.bottom - plot.top;
 
   return points.map(point => ({
-    x: plot.left + ((point.x - minX) / xSpan) * plotWidth,
+    x: timeToX(point.x, timeRange, plot),
     // SVG/Skia y grows downward, so larger values map to smaller y (higher up).
     y: ySpan === 0
       ? plot.top + plotHeight / 2

@@ -1,20 +1,20 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {buildSeedData} from './devSeedData';
 import {
-    type AggregationStrategy,
-    GetMetricSeriesUseCase,
-    isCategoryPoint,
-    isNumericPoint,
-    type MetricSeriesPoint,
-    type TimeRange,
+  type AggregationStrategy,
+  GetMetricSeriesUseCase,
+  isCategoryPoint,
+  isNumericPoint,
+  type MetricSeriesPoint,
+  type TimeRange,
 } from '../application/GetMetricSeriesUseCase';
 import {
-    getAggregationForCustomRange,
-    getAggregationForPreset,
-    getDayAlignedRange,
-    getTimeRangeForPreset,
-    TIME_RANGE_PRESETS,
-    type TimeRangePreset,
+  getAggregationForCustomRange,
+  getAggregationForPreset,
+  getDayAlignedRange,
+  getTimeRangeForPreset,
+  TIME_RANGE_PRESETS,
+  type TimeRangePreset,
 } from '../presentation/charts/chartDefaults';
 import {METRIC_DESCRIPTION_MAX_LENGTH, RECORD_NOTE_MAX_LENGTH} from '../domain/validationLimits';
 import type {NumericConstraint} from '../domain/Metric';
@@ -152,9 +152,10 @@ describe('seeded chart coverage', () => {
     ).toBe(true);
   });
 
-  // `flag` writes to `category`'s own Records, so both cards carry the same
-  // bucket counts at every preset - the pair of rows testing-data.md states.
-  it.each(['category', 'flag'])(
+  // `flag` and `note` write to `category`'s own Records, so all three cards carry
+  // the same bucket counts at every preset - the rows testing-data.md states,
+  // and what makes the counts above `note`'s two 1Y marks readable off a screen.
+  it.each(['category', 'flag', 'note'])(
     'draws %s a mark per day-bucket at the shorter windows and two columns at 1Y',
     metricName => {
       expect(pointCount('mixed metrics', metricName, '1W')).toBe(4);

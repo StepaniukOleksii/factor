@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import type {SkFont} from '@shopify/react-native-skia';
-import {LABEL_GUTTER, toPlotRect, truncateToWidth} from './chartAxis';
+import {LABEL_GUTTER, timeToX, toPlotRect, truncateToWidth} from './chartAxis';
 
 // Every glyph the same width, the ellipsis included, so a width in pixels reads
 // as a number of characters.
@@ -47,5 +47,26 @@ describe('toPlotRect', () => {
 
     expect(plot.right).toBe(plot.left);
     expect(plot.bottom).toBe(plot.top);
+  });
+});
+
+describe('timeToX', () => {
+  const PLOT = {left: 32, top: 6, right: 296, bottom: 94};
+  const TIME_RANGE = {start: new Date(1000), end: new Date(2000)};
+
+  it('puts the range’s start on the plot’s left edge and its end on the right', () => {
+    expect(timeToX(1000, TIME_RANGE, PLOT)).toBe(PLOT.left);
+    expect(timeToX(2000, TIME_RANGE, PLOT)).toBe(PLOT.right);
+  });
+
+  it('puts a moment part-way through the window at that share of the plot', () => {
+    expect(timeToX(1250, TIME_RANGE, PLOT)).toBe(PLOT.left + 0.25 * (PLOT.right - PLOT.left));
+  });
+
+  // Only a custom range entered with the same day at both ends can produce one.
+  it('collapses an empty window onto the left edge rather than dividing by zero', () => {
+    const instant = {start: new Date(1000), end: new Date(1000)};
+
+    expect(timeToX(1000, instant, PLOT)).toBe(PLOT.left);
   });
 });

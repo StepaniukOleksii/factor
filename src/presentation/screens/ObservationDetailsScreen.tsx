@@ -66,9 +66,6 @@ const getMetricSeriesUseCase = new GetMetricSeriesUseCase();
 const deleteObservationUseCase = new DeleteObservationUseCase(observationRepository, recordRepository);
 const deleteRecordUseCase = new DeleteRecordUseCase(recordRepository);
 
-// Tall enough that the plotted curve keeps roughly the room it had before the
-// chart started reserving a strip along its bottom edge for time labels.
-const TREND_CHART_HEIGHT = 108;
 
 // The overflow menu lives in a full-screen Modal window, so it anchors from the
 // very top of the screen: below the Android status bar (which ScreenContainer
@@ -460,7 +457,8 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                             />
                             <View style={styles.trendsList}>
                                 {chartedMetrics.map(metric => {
-                                    const Renderer = rendererRegistry.get(metric.type);
+                                    // Filtered on `has` just above, so every one of these has a registration.
+                                    const {renderer: Renderer, cardHeight} = rendererRegistry.get(metric.type)!;
                                     const points = chartWindow
                                         ? getMetricSeriesUseCase.execute(
                                             chartRecords,
@@ -473,10 +471,10 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                     return (
                                         <View key={metric.id} style={styles.trendCard}>
                                             <Text style={styles.trendCardTitle}>{metric.name}</Text>
-                                            {hasEnoughData && Renderer ? (
+                                            {hasEnoughData ? (
                                                 <View
                                                     testID="trend-chart"
-                                                    style={styles.trendChart}
+                                                    style={[styles.trendChart, {height: cardHeight}]}
                                                     onLayout={(e) => setTrendChartWidth(e.nativeEvent.layout.width)}
                                                 >
                                                     <Renderer
@@ -485,12 +483,15 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                                         timeRange={chartWindow!.range}
                                                         aggregation={chartWindow!.aggregation}
                                                         width={trendChartWidth}
-                                                        height={TREND_CHART_HEIGHT}
+                                                        height={cardHeight}
                                                         onPointPress={handleChartPointPress}
                                                     />
                                                 </View>
                                             ) : (
-                                                <View style={styles.trendEmpty} testID="trend-empty">
+                                                // Its own chart's height, so a card keeps its size as its
+                                                // window empties and fills.
+                                                <View style={[styles.trendEmpty, {height: cardHeight}]}
+                                                      testID="trend-empty">
                                                     <MaterialIcons name="show-chart" size={22}
                                                                    color={COLORS.onSurfaceVariant}/>
                                                     <Text style={styles.trendEmptyText}>
@@ -793,10 +794,8 @@ const styles = StyleSheet.create({
     },
     trendChart: {
         width: '100%',
-        height: TREND_CHART_HEIGHT,
     },
     trendEmpty: {
-        height: TREND_CHART_HEIGHT,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 4,

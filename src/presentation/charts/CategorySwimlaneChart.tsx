@@ -15,7 +15,9 @@ import {
   LABEL_GAP,
   LABEL_GUTTER,
   type PlotRect,
+  spanToWidth,
   TimeAxisLabels,
+  timeToX,
   toPlotRect,
   truncateToWidth,
   useAxisFont,
@@ -267,25 +269,6 @@ function toColumns(drawable: LaneCount[], swimlane: Swimlane): Column[] {
     }
   }
   return [...columns.values()];
-}
-
-/**
- * A moment's place across the plot. The x domain is the chart's window, not the
- * data's own span - the same scale the Numeric chart maps its points through, so
- * two charts of the same window line up.
- */
-function timeToX(atMs: number, timeRange: TimeRange, plot: PlotRect): number {
-  const startMs = timeRange.start.getTime();
-  return plot.left + ((atMs - startMs) / spanOf(timeRange)) * (plot.right - plot.left);
-}
-
-/** How wide a stretch of time is, through that same scale. */
-function spanToWidth(durationMs: number, timeRange: TimeRange, plot: PlotRect): number {
-  return (durationMs / spanOf(timeRange)) * (plot.right - plot.left);
-}
-
-function spanOf(timeRange: TimeRange): number {
-  return timeRange.end.getTime() - timeRange.start.getTime() || 1;
 }
 
 /** Clamped to half the smaller side, so a thin mark reads as a bar and not a lozenge. */

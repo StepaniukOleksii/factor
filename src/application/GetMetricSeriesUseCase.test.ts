@@ -5,6 +5,8 @@ import {
     type CategorySeriesPoint,
     GetMetricSeriesUseCase,
     isCategoryPoint,
+    isMarkerPoint,
+    isNumericPoint,
     type MetricSeriesPoint,
     TimeRange,
 } from './GetMetricSeriesUseCase';
@@ -259,20 +261,6 @@ describe('GetMetricSeriesUseCase', () => {
     ]);
   });
 
-  it('throws for Text, whose reduction is not implemented yet', () => {
-    const metric = new Metric('x1', 'Notes', 'Text');
-    const records = [new Record('r1', 'obs1', new Date(100), new Map([['x1', 'done']]))];
-
-    expect(() =>
-      useCase.execute(
-        records,
-        metric,
-        {start: new Date(0), end: new Date(1000)},
-        {bucketSizeMs: 1000}
-      )
-    ).toThrow(/not implemented/i);
-  });
-
   it('rejects a non-positive bucket size', () => {
     expect(() =>
       useCase.execute(
@@ -426,5 +414,109 @@ describe('GetMetricSeriesUseCase Boolean reduction', () => {
     const numericSeries = useCase.execute(numericRecords, numericMetric(), TIME_RANGE, ONE_BUCKET);
 
     expect(booleanSeries.map(baseOf)).toEqual(numericSeries.map(baseOf));
+  });
+});
+
+describe('GetMetricSeriesUseCase Text reduction', () => {
+  const useCase = new GetMetricSeriesUseCase();
+  const TIME_RANGE: TimeRange = {start: new Date(0), end: new Date(2000)};
+  const ONE_BUCKET: AggregationStrategy = {bucketSizeMs: 1000};
+
+  function textMetric(): Metric {
+    return new Metric('t1', 'Notes', 'Text');
+  }
+
+  function textRecords(...values: unknown[]): Record[] {
+    return values.map((value, index) => record(`r${index}`, new Date(index * 100), 't1', value));
+  }
+
+  it('reduces a bucket holding text to a marker carrying nothing beside its kind', () => {
+    const series = useCase.execute(textRecords('slept badly'), textMetric(), TIME_RANGE, ONE_BUCKET);
+
+    expect(series).toEqual([
+      {
+        kind: 'marker',
+        x: 0,
+        recordId: 'r0',
+        recordCount: 1,
+        firstRecordAt: 0,
+        lastRecordAt: 0,
+      },
+    ]);
+  });
+
+  it('folds a bucket of several Records into one marker counting them all', () => {
+    const [point] = useCase.execute(
+      textRecords('one', 'two', 'three'),
+      textMetric(),
+      TIME_RANGE,
+      ONE_BUCKET,
+    );
+
+    expect(point.recordCount).toBe(3);
+    expect(point.recordId).toBe('r0');
+    expect(point.firstRecordAt).toBe(0);
+    expect(point.lastRecordAt).toBe(200);
+  });
+
+  it('buckets as the other types do, one marker per bucket holding text', () => {
+    const records = [
+      record('r0', new Date(100), 't1', 'first'),
+      record('r1', new Date(1400), 't1', 'second'),
+      record('r2', new Date(1600), 't1', 'third'),
+    ];
+
+    const series = useCase.execute(records, textMetric(), TIME_RANGE, ONE_BUCKET);
+
+    expect(series.map(point => [point.x, point.recordCount])).toEqual([[0, 1], [1000, 2]]);
+  });
+
+  it('drops a whitespace-only value and a non-string one', () => {
+    const series = useCase.execute(textRecords('  \n ', 42), textMetric(), TIME_RANGE, ONE_BUCKET);
+
+    expect(series).toEqual([]);
+  });
+
+  it('keeps a value with whitespace around it', () => {
+    const series = useCase.execute(textRecords('  noted  '), textMetric(), TIME_RANGE, ONE_BUCKET);
+
+    expect(series).toHaveLength(1);
+  });
+
+  it('reports the same Records a Numeric Metric of the same Records would', () => {
+    const at = [new Date(100), new Date(400), new Date(1200)];
+    const noted = at.map((timestamp, index) => record(`r${index}`, timestamp, 't1', 'noted'));
+    const numeric = at.map((timestamp, index) => record(`r${index}`, timestamp, 'm1', 7));
+
+    const textSeries = useCase.execute(noted, textMetric(), TIME_RANGE, ONE_BUCKET);
+    const numericSeries = useCase.execute(numeric, numericMetric(), TIME_RANGE, ONE_BUCKET);
+
+    expect(textSeries.map(baseOf)).toEqual(numericSeries.map(baseOf));
+  });
+});
+
+describe('isMarkerPoint', () => {
+  const base = {x: 0, recordId: 'r0', recordCount: 1, firstRecordAt: 0, lastRecordAt: 0};
+
+  it('narrows a marker point', () => {
+    const point: MetricSeriesPoint = {...base, kind: 'marker'};
+
+    expect(isMarkerPoint(point)).toBe(true);
+  });
+
+  it.each<MetricSeriesPoint>([
+    {...base, kind: 'numeric', y: 4},
+    {...base, kind: 'category', counts: [{value: 'ok', count: 1}]},
+  ])('rejects a $kind point', point => {
+    expect(isMarkerPoint(point)).toBe(false);
+  });
+
+  // The three guards partition the union, so a marker is not mistaken for either
+  // of the kinds a renderer already narrows for.
+  it('is rejected by the numeric and category guards', () => {
+    const point: MetricSeriesPoint = {...base, kind: 'marker'};
+
+    expect(isNumericPoint(point)).toBe(false);
+    expect(isCategoryPoint(point)).toBe(false);
   });
 });

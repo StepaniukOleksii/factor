@@ -197,8 +197,9 @@ export function buildSeedData(): SeedEntry[] {
     setValueAt(recordValues, daysAgo(5), insufficientMetric.id, bounded(randRange(10, 90)));
 
     // flag/category/note: every other day over 20 days, sharing a record => `flag` and
-    // `category` each draw a swimlane after the numeric cards while `note` still draws
-    // nothing, and one record can carry several value types at once.
+    // `category` each draw a swimlane after the numeric cards and `note` a marker card
+    // below them, all three over the same buckets, and one record can carry several
+    // value types at once.
     const categories = ['a', 'b', 'c'];
     for (let i = 18; i >= 0; i -= 2) {
       setValueAt(recordValues, daysAgo(i), flagMetric.id, rand() > 0.5);

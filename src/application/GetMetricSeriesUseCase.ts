@@ -83,8 +83,16 @@ export interface CategorySeriesPoint extends MetricSeriesPointBase {
   counts: CategoryCount[];
 }
 
+/**
+ * A bucket that holds text and says nothing about what was written: it folds
+ * several Records, so there is no one text for it to carry.
+ */
+export interface MarkerSeriesPoint extends MetricSeriesPointBase {
+  kind: 'marker';
+}
+
 /** A single point on a metric's chart series. */
-export type MetricSeriesPoint = NumericSeriesPoint | CategorySeriesPoint;
+export type MetricSeriesPoint = NumericSeriesPoint | CategorySeriesPoint | MarkerSeriesPoint;
 
 /**
  * Which kind a point is. The renderer registry pairs a renderer with a metric
@@ -99,19 +107,23 @@ export function isCategoryPoint(point: MetricSeriesPoint): point is CategorySeri
   return point.kind === 'category';
 }
 
+export function isMarkerPoint(point: MetricSeriesPoint): point is MarkerSeriesPoint {
+  return point.kind === 'marker';
+}
+
 /** The half of a point that its metric's value type decides. */
 type SeriesPointValue =
   | Pick<NumericSeriesPoint, 'kind' | 'y'>
-  | Pick<CategorySeriesPoint, 'kind' | 'counts'>;
+  | Pick<CategorySeriesPoint, 'kind' | 'counts'>
+  | Pick<MarkerSeriesPoint, 'kind'>;
 
 /**
  * Turns a Metric's Records into a chart-ready series.
  *
  * Records outside the range, or without a value the metric can chart, are
  * dropped; the rest are bucketed and each bucket reduced per the metric's
- * `MetricValueType` (mean for Numeric, per-value counts for Enum and Boolean).
- * Text throws until its own slice lands rather than returning something
- * plausible.
+ * `MetricValueType` (mean for Numeric, per-value counts for Enum and Boolean, a
+ * bare marker for Text).
  */
 export class GetMetricSeriesUseCase {
   execute(
@@ -173,7 +185,8 @@ export class GetMetricSeriesUseCase {
    * Enum value outside `allowedValues` has no lane to be drawn in - and with no
    * constraint there are no lanes, so nothing charts. A Boolean value that is
    * not a boolean has none either: counts are keyed by canonical string form, so
-   * the string `'true'` would otherwise be counted as the answer `true`.
+   * the string `'true'` would otherwise be counted as the answer `true`. And a
+   * Text value of whitespace alone is nothing written.
    */
   private charts(value: unknown, metric: Metric): boolean {
     if (value === undefined || value === null) {
@@ -184,6 +197,8 @@ export class GetMetricSeriesUseCase {
         return this.categoryValues(metric).includes(value as string);
       case 'Boolean':
         return typeof value === 'boolean';
+      case 'Text':
+        return typeof value === 'string' && value.trim().length > 0;
       default:
         return true;
     }
@@ -210,9 +225,7 @@ export class GetMetricSeriesUseCase {
       case 'Enum':
         return {kind: 'category', counts: this.counts(records, metric)};
       case 'Text':
-        throw new Error(
-          `Aggregation for metric type '${metric.type}' is not implemented.`
-        );
+        return {kind: 'marker'};
       default:
         return this.assertNever(metric.type);
     }

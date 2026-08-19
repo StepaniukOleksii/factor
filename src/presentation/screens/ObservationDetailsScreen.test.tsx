@@ -1,12 +1,13 @@
 import React from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
-import {Text} from 'react-native';
+import {StyleSheet, Text} from 'react-native';
 import {ObservationDetailsScreen} from './ObservationDetailsScreen';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
 import {Circle, type SkFont, Text as SkiaText, useFont} from '@shopify/react-native-skia';
 import {type TimeRangePreset, TREND_INSUFFICIENT_MESSAGE,} from '../charts/chartDefaults';
+import {rendererRegistry} from '../charts/rendererRegistry';
 import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {formatShortDate, formatTimeRange} from '@shared/formatTimeRange';
 import {COLORS, withAlpha} from '@presentation/theme';
@@ -324,6 +325,25 @@ async function pressSwimlaneColumn(root: any, chartIndex = 0) {
     await act(async () => {
         pressable.props.onPress({nativeEvent: {locationX: 32, locationY: 50}});
     });
+}
+
+const NUMERIC_CARD_HEIGHT = rendererRegistry.get('Numeric')!.cardHeight;
+const TEXT_CARD_HEIGHT = rendererRegistry.get('Text')!.cardHeight;
+
+function heightsOf(root: any, testID: string): number[] {
+    return root.root
+        .findAllByProps({testID})
+        .map((box: any) => StyleSheet.flatten(box.props.style).height);
+}
+
+function chartBoxHeights(root: any): number[] {
+    return heightsOf(root, 'trend-chart');
+}
+
+function rendererHeights(root: any): number[] {
+    return root.root
+        .findAll((node: any) => node.props?.metric && node.props?.points)
+        .map((node: any) => node.props.height);
 }
 
 /**
@@ -901,15 +921,15 @@ describe('ObservationDetailsScreen Trends', () => {
         expect(root.root.findAllByProps({testID: 'trend-empty'}).length).toBe(0);
     });
 
-    it('omits the TRENDS section when no Metric on the Observation charts at all', async () => {
+    // Every declared type has a renderer, so the section is omitted only for an
+    // Observation holding no Metrics at all - which `validateCreateObservation`
+    // refuses and no route creates.
+    it('omits the TRENDS section for an Observation carrying no Metrics at all', async () => {
         mockGetObservationByIdExecute.mockResolvedValue({
             id: 'obs-1',
             name: 'Journal',
             createdAt: CREATED_AT,
-            metrics: [
-                {id: 't1', name: 'Notes', type: 'Text'},
-                {id: 't2', name: 'Highlights', type: 'Text'},
-            ],
+            metrics: [],
         } as unknown as Observation);
 
         const root = await renderScreen();
@@ -920,6 +940,54 @@ describe('ObservationDetailsScreen Trends', () => {
         // Custom segment and its modal included.
         expect(root.root.findAllByProps({testID: 'time-range-preset-1M'}).length).toBe(0);
         expect(root.root.findAllByProps({testID: 'time-range-custom'}).length).toBe(0);
+    });
+
+    it('renders the section, its selector and a card for an Observation whose only Metric is Text', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            observationOf({id: 't1', name: 'Notes', type: 'Text'}),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['t1', 'slept badly']]),
+        ]);
+
+        const root = await renderScreen();
+
+        expect(findAllByText(root.root, 'TRENDS').length).toBeGreaterThan(0);
+        expect(root.root.findAllByProps({testID: 'time-range-preset-1M'}).length).toBeGreaterThan(0);
+        expect(chartedMetricNames(root)).toEqual(['Notes']);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(1);
+    });
+
+    it('draws each card at the height its own Metric type is registered at', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            observationOf(
+                {id: 'm1', name: 'Duration', type: 'Numeric'},
+                {id: 't1', name: 'Notes', type: 'Text'},
+            ),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['m1', 5], ['t1', 'slept badly']]),
+            chartRecord('b', 1, [['m1', 7], ['t1', 'slept well']]),
+        ]);
+
+        const root = await renderScreen();
+
+        expect(chartBoxHeights(root)).toEqual([NUMERIC_CARD_HEIGHT, TEXT_CARD_HEIGHT]);
+        expect(rendererHeights(root)).toEqual(chartBoxHeights(root));
+    });
+
+    it('gives a Metric no Record in the window a placeholder as tall as its chart', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(
+            observationOf(
+                {id: 'm1', name: 'Duration', type: 'Numeric'},
+                {id: 't1', name: 'Notes', type: 'Text'},
+            ),
+        );
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+
+        const root = await renderScreen();
+
+        expect(heightsOf(root, 'trend-empty')).toEqual([NUMERIC_CARD_HEIGHT, TEXT_CARD_HEIGHT]);
     });
 
     it('renders a card for every Metric a renderer can draw, in declaration order', async () => {
@@ -943,7 +1011,7 @@ describe('ObservationDetailsScreen Trends', () => {
         expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(4);
     });
 
-    it('renders the section and its selector for an Observation whose only chartable Metric is an Enum', async () => {
+    it('renders the section and its selector for an Observation carrying no Numeric Metric', async () => {
         mockGetObservationByIdExecute.mockResolvedValue(
             observationOf(enumMetric('e1', 'mood', ['low', 'ok', 'high']), {
                 id: 't1',
@@ -960,7 +1028,7 @@ describe('ObservationDetailsScreen Trends', () => {
 
         expect(findAllByText(root.root, 'TRENDS').length).toBeGreaterThan(0);
         expect(root.root.findAllByProps({testID: 'time-range-preset-1M'}).length).toBeGreaterThan(0);
-        expect(chartedMetricNames(root)).toEqual(['mood']);
+        expect(chartedMetricNames(root)).toEqual(['mood', 'Notes']);
     });
 
     // The section and the selector previously went with it, so this Observation

@@ -3,6 +3,7 @@ import type {Metric, MetricValueType} from '../../domain/Metric';
 import type {AggregationStrategy, MetricSeriesPoint, TimeRange,} from '../../application/GetMetricSeriesUseCase';
 import {NumericTrendChart} from './NumericTrendChart';
 import {CategorySwimlaneChart} from './CategorySwimlaneChart';
+import {TextMarkerChart} from './TextMarkerChart';
 
 /**
  * The contract every chart renderer implements. Renderers own their drawing but
@@ -34,12 +35,32 @@ export interface ChartRendererProps {
  */
 export type ChartRenderer = React.ComponentType<ChartRendererProps>;
 
+export interface ChartRegistration {
+  renderer: ChartRenderer;
+  /**
+   * A card's width is the screen's column to decide, but how much room a drawing
+   * needs belongs to the drawing - so its height is declared here rather than by
+   * the screen. One number per type rather than one computed per Metric: nothing
+   * needs the latter yet.
+   */
+  cardHeight: number;
+}
+
+// Tall enough that the plotted curve keeps roughly the room it had before the
+// chart started reserving a strip along its bottom edge for time labels.
+const PLOT_CARD_HEIGHT = 108;
+// The top padding, the time-label strip, and a 20px band between them: the
+// halo's 8px with room above it for a count label, which is the only thing a
+// marker card needs vertical space it does not occupy.
+const MARKER_CARD_HEIGHT = 40;
+
 /**
  * Chart renderers keyed by the `MetricValueType` they draw. Slices register
  * their renderer here rather than inventing their own per-type lookup.
  */
-export const rendererRegistry = new Map<MetricValueType, ChartRenderer>();
+export const rendererRegistry = new Map<MetricValueType, ChartRegistration>();
 
-rendererRegistry.set('Numeric', NumericTrendChart);
-rendererRegistry.set('Enum', CategorySwimlaneChart);
-rendererRegistry.set('Boolean', CategorySwimlaneChart);
+rendererRegistry.set('Numeric', {renderer: NumericTrendChart, cardHeight: PLOT_CARD_HEIGHT});
+rendererRegistry.set('Enum', {renderer: CategorySwimlaneChart, cardHeight: PLOT_CARD_HEIGHT});
+rendererRegistry.set('Boolean', {renderer: CategorySwimlaneChart, cardHeight: PLOT_CARD_HEIGHT});
+rendererRegistry.set('Text', {renderer: TextMarkerChart, cardHeight: MARKER_CARD_HEIGHT});

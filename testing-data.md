@@ -43,9 +43,9 @@ else is per-metric — the details screen renders one independent trend card per
 can draw — so those scenarios are combined onto a single `mixed metrics` observation instead of one
 observation each.
 
-No seeded observation hides the TRENDS section any more: `no numeric` charts its Enum `mood` and its Boolean
-`done`, and only a Text-only observation would leave the section off. That state is covered by an
-`ObservationDetailsScreen` test instead of a fixture.
+No seeded observation hides the TRENDS section, and none could: every metric type charts, so the only
+observation without the section is one carrying no metrics at all — which observation creation refuses.
+That guard is covered by an `ObservationDetailsScreen` test instead of a fixture.
 
 The **zoom ladder** is the one per-metric scenario deliberately kept off `mixed metrics`. Zooming is driven by
 tapping a chart, and a tap has to find a point rather than the canvas holding it — so a fixture for it has to be
@@ -92,7 +92,7 @@ they fix the order the list shows the four in:
 |                 | Numeric `hourly` (0-100)                             | every 3h over the last 21h, then daily for 12 days — of which the day 3 back also carries a 09:30 and a 15:00 | The only metric dense enough to fill the hour-bucketed `1D` window; its extra day-3 pair is the only hour anywhere holding two Records |
 |                 | Numeric `yearly` (min 0)                             | one point every 14 days, 350 days                  | Fills the 30-day-bucketed `1Y` window instead of clumping at its right edge                                                   |
 |                 | Numeric `insufficient` (max 100)                     | exactly 1 point, 5 days ago                        | Both sides of the placeholder-vs-dot boundary: "Not enough data yet" at `1D`, a single dot at every wider preset             |
-|                 | Boolean `flag`, Enum `category` (a/b/c), Text `note` | shared records, every other day, 20 days           | Two swimlane cards interleaved after the Numeric ones — a two-lane one and a three-lane one; `note` still never charts; one record carrying several value types at once |
+|                 | Boolean `flag`, Enum `category` (a/b/c), Text `note` | shared records, every other day, 20 days           | Two swimlane cards interleaved after the Numeric ones — a two-lane one and a three-lane one — and `note`'s marker card, visibly shorter, below them; one record carrying several value types at once |
 | `no numeric`    | Enum `mood` (low/ok/high), Boolean `done`            | shared records, every other day, 8 days            | No Numeric metric at all, so the whole TRENDS section is two swimlanes — an Enum one and a Boolean one                        |
 | `stale records` | Numeric `value` (min 0)                              | 4 Records across 3 days, all 40-60 days ago — the middle day carrying two of them half an hour apart | "Not enough data yet" at `1D`/`1W`/`1M`, and a single dot labelled "4" at `1Y` (where all four share one bucket), alongside a *stale* last-record time; also the one zoom ladder a chart tap can descend twice |
 | `no records`    | Numeric `value` (min 0)                              | none                                               | "No records yet" everywhere — the true empty state                                                                            |
@@ -102,7 +102,8 @@ they fix the order the list shows the four in:
 A Numeric trend card draws a line from **two** aggregated points upwards, a single dot (no line, no
 gradient fill) at exactly **one**, and "Not enough data yet" only at **zero**. An Enum or Boolean card draws
 a column of marks per point instead — one per value recorded in that bucket, as tall as the records behind
-it against the card's own busiest mark — and the same placeholder at zero. Aggregated point counts per metric
+it against the card's own busiest mark — and the same placeholder at zero. A Text card draws one mark per
+point on a rule across its middle, every mark the same size, and the placeholder at zero. Aggregated point counts per metric
 on `mixed metrics`, so you know what each time range preset should look like before you tap it (these
 are asserted by `devSeedData.test.ts`, so they stay true):
 
@@ -115,13 +116,14 @@ are asserted by `devSeedData.test.ts`, so they stay true):
 | `insufficient`      | 0     | 1    | 1    | 1      |
 | `flag` (Boolean)    | 0 / 1 | 4    | 10   | 2      |
 | `category` (Enum)   | 0 / 1 | 4    | 10   | 2      |
+| `note` (Text)       | 0 / 1 | 4    | 10   | 2      |
 
 Every preset has at least one metric that charts and at least one that doesn't, so a single screen shows
 both states side by side at any selection.
 
-`flag` and `category` share records sitting at 09:00 on alternate days, and a 24-hour window holds exactly
-one 09:00 — so at `1D` each draws a single mark after a reseed run past 09:00 and the placeholder after one
-run before it. Both are correct. The same is true of `no numeric`'s `mood` and `done`, which share records
+`flag`, `category` and `note` share records sitting at 09:00 on alternate days, and a 24-hour window holds
+exactly one 09:00 — so at `1D` each draws a single mark after a reseed run past 09:00 and the placeholder
+after one run before it. Both are correct. The same is true of `no numeric`'s `mood` and `done`, which share records
 on the same schedule and draw 5 marks at `1M` and 2 columns at `1Y`.
 
 `hourly`'s extra day-3 Records share a day with one it already had, so they change none of these counts —
@@ -161,8 +163,12 @@ Open **`mixed metrics`** details screen (time range selector defaults to `1M`):
   every column stands for one record, so a tap opens that record for editing, carrying every metric it
   answered rather than the card's own alone. A tap in the empty older third of either plot, clear of every
   column, leaves the card as it is.
-- `note` — the only metric here that gets no trend card; RECENT RECORDS shows entries with a boolean, an enum
-  value, and a note together on the same record.
+- `note` — a marker card after `category`, visibly shorter than every card above it: ten marks on a rule
+  across its middle, all the same size, sitting at the same positions across the card as `category`'s ten
+  columns do. Its plot starts on that same left edge, its gutter carries no labels, and its time labels read
+  as theirs do. Tapping a mark, and the empty stretch beside it, does nothing — the window selector stays
+  where it is. RECENT RECORDS shows entries with a boolean, an enum value, and a note together on the same
+  record.
 - record notes — under RECENT RECORDS at least one collapsed row shows a note glyph beside its time and at
   least one shows none, with no gap in its place and no difference in row height. Expanding the noted row
   that also holds a value for the `note` metric shows that metric's `NOTE` chip in the horizontal strip
@@ -172,15 +178,18 @@ Open **`mixed metrics`** details screen (time range selector defaults to `1M`):
 Still on **`mixed metrics`**, tap through the time range selector and check against the table above:
 
 - `1D` — only `hourly` draws a line; `dense` and `sparse` drop to a single dot each, and `insufficient`
-  (its one record is 5 days old, outside this window) shows `Not enough data yet`, as `flag` and `category`
-  do too when the reseed ran before 09:00.
+  (its one record is 5 days old, outside this window) shows `Not enough data yet`, as `flag`, `category` and
+  `note` do too when the reseed ran before 09:00 — `note`'s placeholder standing in a card of the same short
+  height its marks are drawn in, so nothing below it moves.
 - `1W` / `1M` — `dense`, `sparse` and `hourly` all chart, at progressively more points.
 - `1Y` — `yearly` fills out across the window; `dense` and `sparse` shrink to 3 points bunched at the
   right-hand edge, since all their records fall in the last two months. `flag` and `category` each collapse
   to two columns at that edge — one standing for seven records and one for three — each carrying a mark per
   value recorded in it, sized by how many records took that value: the commonest fills its lane and the rest
   are shorter in proportion, so the three-record column carries visibly less ink than the seven-record one.
-  Every Numeric chart is exactly as before — curve, gradient fill, axes, dots, count labels. Tapping either
+  `note` collapses to the same two marks, carrying `7` and `3` above them — the totals `category`'s columns
+  divide between their lanes, written the way a Numeric card writes an aggregated point's count — and its
+  card stays the height it was. Every Numeric chart is exactly as before — curve, gradient fill, axes, dots, count labels. Tapping either
   of `category`'s columns narrows the whole section onto the days behind it — the five Numeric cards above
   follow it into that window rather than staying at `1Y` — and back once returns every card to `1Y`.
 - RECENT RECORDS is identical at every selection.

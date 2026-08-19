@@ -42,6 +42,9 @@ export const AXIS_FONT_SIZE = 9;
 export const LABEL_GUTTER = 32;
 export const LABEL_GAP = 5;
 export const AXIS_LABEL_COLOR = COLORS.onSurfaceVariant;
+// Faded below the axis labels' own colour: a count written above a mark is an
+// annotation on the drawing, not a second accent.
+export const POINT_COUNT_LABEL_COLOR = withAlpha(COLORS.onSurfaceVariant, 0.65);
 // Faint enough that the gridlines read as a reference behind what the chart
 // draws rather than a grid drawn over it.
 export const GRIDLINE_COLOR = withAlpha(COLORS.outlineVariant, 0.6);
@@ -67,6 +70,25 @@ export function toPlotRect(width: number, height: number): PlotRect {
     right: Math.max(width - PLOT_RIGHT_INSET, LABEL_GUTTER),
     bottom: Math.max(height - TIME_AXIS_HEIGHT, PLOT_TOP_PADDING),
   };
+}
+
+/**
+ * A moment's place across the plot. The x domain is the chart's window, not the
+ * data's own span, so every card drawn over one window puts a moment at the same
+ * place and the cards can be read against each other down a column.
+ */
+export function timeToX(atMs: number, timeRange: TimeRange, plot: PlotRect): number {
+  const startMs = timeRange.start.getTime();
+  return plot.left + ((atMs - startMs) / spanOf(timeRange)) * (plot.right - plot.left);
+}
+
+/** How wide a stretch of time is, through that same scale. */
+export function spanToWidth(durationMs: number, timeRange: TimeRange, plot: PlotRect): number {
+  return (durationMs / spanOf(timeRange)) * (plot.right - plot.left);
+}
+
+function spanOf(timeRange: TimeRange): number {
+  return timeRange.end.getTime() - timeRange.start.getTime() || 1;
 }
 
 /**
