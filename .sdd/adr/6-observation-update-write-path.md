@@ -1,7 +1,5 @@
 # ADR-6: Observation update write path
 
-* Date: 2026-08-16
-
 ## Context
 
 `ObservationRepository` has been insert-only. `save` writes the `observations` row and every `metrics` row

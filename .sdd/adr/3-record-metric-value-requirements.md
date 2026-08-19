@@ -1,7 +1,5 @@
 # ADR-3: Record Metric value requirements
 
-* Date: 2026-07-27
-
 ## Context
 
 A Record captures values for the Metrics its Observation defines. This decision settles how many of

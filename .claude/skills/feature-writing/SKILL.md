@@ -1,8 +1,8 @@
 ---
 name: feature-writing
-description: Writes the feature file for a newly shipped capability, or rewrites the one an implemented slice made out of date, then deletes that slice's spec. Use when a slice is implemented. Not for writing specs (see spec-creating) or code (see spec-implementing).
+description: Writes the feature file for a newly shipped capability, or rewrites the one an implemented slice made out of date, then deletes that slice's spec. Use when the spec's boxes are settled. Not for writing specs (see spec-creating) or code (see spec-implementing).
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Feature Writing
@@ -11,7 +11,13 @@ A feature file describes what the app does today. Shipping a slice makes that de
 skill writes the file again from what was actually built — or writes it for the first time, where the slice
 introduced the capability — and then deletes the spec the slice came from.
 
-## 1. Read What Shipped
+## 1. Check the Slice Is Done
+
+The spec's boxes say whether it is. `Implemented` must be ticked, and `E2E` ticked or marked `n/a`. An
+unsettled box means a stage is still to run, and the flow it is waiting on can still send the code back —
+so **stop and tell the user which box is open** rather than describing behaviour that may yet change.
+
+## 2. Read What Shipped
 
 Three sources, in this order of authority:
 
@@ -23,7 +29,7 @@ Three sources, in this order of authority:
   appending to it. The spec's `* Feature:` line names the target, and marks it `(new)` where the slice is the
   first of its capability and there is nothing yet to read.
 
-## 2. Write the File
+## 3. Write the File
 
 `.sdd/features/[capability].md`. Read [example-feature.md](example-feature.md) and match its structure, depth
 and voice — it defines the format. It describes a fictional app, so take its shape and never its subject. The
@@ -63,7 +69,7 @@ files in `.sdd/features/` are the real examples; read the ones nearest your subj
   the one that copies words. The test: what would a reader not know if this sentence were deleted? Nothing —
   cut it.
 
-## 3. Update the Domain Overview if a Concept Changed
+## 4. Update the Domain Overview if a Concept Changed
 
 Where the slice changed what an Observation, a Metric or a Record *is* — a new field, a changed invariant, a
 new limit — rewrite that part of `domain-overview.md` in the same pass. The prose rules above hold there too;
@@ -71,13 +77,15 @@ the last one in particular came out of that file.
 
 A slice that only changed what a screen does with a concept leaves it alone.
 
-## 4. Retire the Slice
+## 5. Retire the Slice
 
-Delete `.sdd/specs/[slice-name]/` entirely — the spec and its `design/` mockups with it.
+Delete `.sdd/specs/[slice-name]/` entirely — the spec and its `design/` mockups with it. That deletion and the
+feature rewrite belong together.
 
-## 5. Scope Limit
+## 6. Scope Limit
 
-This skill writes documents. No application code, no tests, no flows.
+This skill writes documents. No application code, no tests, no flows. Landing the slice's branch is
+`slice-landing`'s, and it runs after this.
 
 If the rewrite reveals that the app is wrong, **report the defect — do not fix it here, and do not describe the
 intended behaviour as though it shipped.** A feature file that describes an intention is worse than one that is

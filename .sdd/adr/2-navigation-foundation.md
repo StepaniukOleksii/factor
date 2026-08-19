@@ -1,7 +1,5 @@
 # ADR-2: Navigation foundation
 
-* Date: 2026-07-18
-
 ## Context
 
 The app navigates with a hand-rolled `AppNavigator`: a `useState` holding a discriminated union of

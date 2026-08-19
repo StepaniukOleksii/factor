@@ -1,13 +1,13 @@
 ---
 name: e2e-testing
-description: Writes, runs, and debugs Maestro E2E flows for Factor. Use when backlog-test.md queues a flow to be written, when the user asks for a Maestro flow, or when an E2E run fails and needs diagnosing. Not for Vitest unit/component tests, and not for screenshot-based visual checks (see emulator-verifying).
+description: Writes, runs, and debugs Maestro E2E flows for Factor. Use when an implemented slice's spec calls for a flow, when the user asks for a Maestro flow, or when an E2E run fails and needs diagnosing. Not for Vitest unit/component tests, and not for screenshot-based visual checks (see emulator-verifying).
 metadata:
-  version: "2.0.0"
+  version: "2.1.0"
 ---
 
 # E2E Testing
 
-Write a queued Maestro flow, run it on the emulator until it passes, and diagnose failures. Slow — minutes,
+Write the slice's Maestro flow, run it on the emulator until it passes, and diagnose failures. Slow — minutes,
 and it needs an emulator. This is a deliberate step against code that already ships, not part of every change.
 
 ## 1. Read the Strategy
@@ -17,10 +17,11 @@ the `seed` fixture already contains — a flow reuses it rather than building da
 
 Those documents carry the strategy; this skill is only the procedure. Nothing in them is repeated here.
 
-## 2. Read the Queue Entry
+## 2. Read the Brief
 
-`.sdd/backlog/backlog-test.md` names the flow to write: the feature folder it belongs in, the fixture it opens
-from, and what the pass should cover. That is the whole brief — it was written to stand alone.
+Verification's `E2E Flow` section in `.sdd/specs/[slice-name]/spec.md` names the flow to write: the feature
+folder it belongs in, the fixture it opens from, and what the pass should cover. That is the whole brief. A
+spec with no such section is a slice that wants no flow, and there is nothing here to do.
 
 The brief was settled before anyone tried to drive the screen, so it can turn out wrong: the behaviour may have
 no on-screen handle at all, or a handle nobody expected — a Skia canvas that exposes nothing selectable can
@@ -28,8 +29,8 @@ still be tapped through its own `testID`.
 
 **Either way, stop and ask the user.** Do not quietly skip what was asked for, and do not quietly write
 something else instead. Report what you found — what is reachable and through which handle, or what is not and
-why — and let them decide. Then **amend the entry** to record the decision, so a later attempt starts from what
-you learned rather than repeating it.
+why — and let them decide. Then **amend that section** to record the decision, so a later attempt starts from
+what you learned rather than repeating it.
 
 ## 3. Find the Handles
 
@@ -55,7 +56,7 @@ accessibility label is worth fixing regardless. Change nothing else under `src/`
 
 ## 4. Write the Flow
 
-`.maestro/flows/<feature>/<name>.yaml`, in the feature folder the queue entry names. The folder is the
+`.maestro/flows/<feature>/<name>.yaml`, in the feature folder the brief names. The folder is the
 coverage map, so the filename only has to say what this one flow covers. A property flow belonging to no
 feature sits directly in `flows/`.
 
@@ -107,11 +108,11 @@ npm run e2e -- .maestro/flows/<feature>/<flow>.yaml
 That rebuilds, relaunches and tears down. A flow that only passes against an app already warmed up by the
 previous attempt is not finished.
 
-Where the entry in `.sdd/backlog/backlog-test.md` named existing flows as well, run the whole suite —
-bare `npm run e2e` — since a single-flow run proves nothing about the ones you edited.
+Where the brief named existing flows as well, run the whole suite — bare `npm run e2e` — since a single-flow
+run proves nothing about the ones you edited.
 
-Green from cold retires that entry: **delete it**, leaving the file's header and intro behind if it was
-the last one.
+Green from cold settles the stage: **tick the spec's `E2E` box**. Leave the spec itself in place —
+`feature-writing` retires it.
 
 If you stop before that point, tear the environment down yourself: `bash scripts/emulator-teardown.sh`.
 
@@ -126,7 +127,7 @@ client after a native dependency change, `hideKeyboard` flakiness, and the two d
 ## 7. Scope Limit
 
 This skill writes flows, plus the accessibility labels and testIDs they need to reach elements. It does not
-change product behaviour or write Vitest tests. The queue entry — amended in step 2, struck in step 5 — is the
-only file outside `.maestro/` it touches.
+change product behaviour or write Vitest tests. The spec — its `E2E Flow` section amended in step 2, its `E2E`
+box ticked in step 5 — is the only file outside `.maestro/` and `src/` it touches.
 
 If a flow fails because the app is wrong, **report the defect — do not fix it here.**

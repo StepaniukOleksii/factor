@@ -2,7 +2,7 @@
 name: spec-implementing
 description: Implements a specific feature specification. ONLY use this skill when the user explicitly asks to implement a spec (e.g., "Implement .sdd/specs/..."). Do NOT use this skill for general fixes, bugs, or minor adjustments.
 metadata:
-  version: "2.0.0"
+  version: "2.1.0"
 ---
 
 # Spec Implementing
@@ -14,6 +14,8 @@ When the user asks you to implement a specification, follow these steps:
 * Identify the path to the main `spec.md` file (e.g. `.sdd/specs/[slice-name]/spec.md`) mentioned in the user's
   prompt.
 * Identify if a specific design file (e.g., an HTML file) is present.
+* The slice runs on `feat/[slice-name]`, cut when the spec was written. Switch to it if you are not on it
+  already, and never implement a slice on master.
 
 ## 2. Read the Specification and Design
 
@@ -84,20 +86,27 @@ A comment has to pass every one of these:
   run it yourself.
 * **Emulator/visual verification is not this skill's job.** It's a separate concern, covered by the
   `emulator-verifying` skill — invoke that one if the user explicitly asks for it.
-* **The spec's E2E flow is not this skill's job either.** Writing and running it belongs to the `e2e-testing`
-  skill. Copy Verification's `E2E Flow` section whole into `.sdd/backlog/backlog-test.md` as a queue entry and report it
-  as outstanding. Where implementation changed what the flow will have to do, the entry says what is true now. A section
-  that says `None` queues nothing.
+* **The spec's E2E flow is not this skill's job either.** Writing and running it is the next stage, and
+  `e2e-testing` reads Verification's `E2E Flow` section from the spec itself. Where implementation changed
+  what the flow will have to do, **amend that section** so it describes what is true now, and report the flow
+  as outstanding.
 
-## 7. Scope Limit
+## 7. Tick the Implemented Box
 
-The slice is not finished when the code is. Two things that look like tidying up belong to steps this skill
+Tick the spec's `Implemented` box as the last act of the implementation, so the spec on disk says what is
+true of the working tree.
+
+Leave the `E2E` box alone. It is `e2e-testing`'s concern.
+
+## 8. Scope Limit
+
+The slice is not finished when the code is. Two things that look like tidying up belong to stages this skill
 does not run:
 
 * **Do not touch the feature file.** It describes what the app does, and it says so in the present tense.
-  `feature-writing` rewrites it after the implementation is done.
-* **Do not delete the spec.** A spec still on disk is what marks the slice unfinished, and deleting it here
-  would drop it from the queue with its flow unwritten and its feature file stale.
+  `feature-writing` rewrites it.
+* **Do not delete the spec.** A spec still on disk is what marks the slice unfinished, and the next stage
+  reads it.
 
 Report the slice as implemented, and name what is still outstanding.
 

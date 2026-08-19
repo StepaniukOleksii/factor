@@ -20,6 +20,8 @@
 
 * 2026-01-15
 * Feature: book-rating.md (new)
+* [ ] Implemented
+* [ ] E2E tested
 
 ## 1. Goal
 

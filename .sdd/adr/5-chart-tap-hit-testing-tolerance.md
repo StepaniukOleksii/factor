@@ -1,7 +1,5 @@
 # ADR-5: Chart tap hit-testing tolerance
 
-* Date: 2026-08-15
-
 ## Context
 
 A trend chart renderer reports which of its points a tap hit; what that means — opening a Record, narrowing the

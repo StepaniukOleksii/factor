@@ -1,7 +1,5 @@
 # ADR-7: Swimlane tap target
 
-* Date: 2026-08-18
-
 ## Context
 
 [ADR-5](5-chart-tap-hit-testing-tolerance.md) settled how much of a chart belongs to a point, and closed by

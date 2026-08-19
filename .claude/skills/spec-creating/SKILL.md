@@ -2,7 +2,7 @@
 name: spec-creating
 description: Creates a new feature specification based on the skill's worked example and the project guidelines. Triggered when the user asks to create or write a spec for a new feature.
 metadata:
-  version: "2.0.1"
+  version: "2.1.0"
 ---
 
 # Spec Creating
@@ -25,8 +25,8 @@ feature file may be out of date, or the slice may be deliberately changing that 
 and they produce different specs, so it is not a call to make on your own. A deliberate change has to be
 stated in the spec — the feature file is rewritten from it once the slice ships.
 
-`.sdd/specs/` is **not** context. It is empty when nothing is in flight, and anything sitting in it is a
-slice someone else has not finished.
+`.sdd/specs/` is **not** context. It is empty on master and holds exactly one spec on a slice branch, so
+anything sitting in it is a slice someone has not finished.
 
 ## 2. Information Gathering
 
@@ -53,6 +53,9 @@ feature is named, and how large a slice should be.
   rules before accepting it.
 * **A new file where the slice is the first of its capability.** Add `(new)` after the name, so nobody looks
   for a file that isn't there yet.
+
+Under that line go the two stage boxes, `Implemented` and `E2E tested`, unticked. They are the whole record of how far
+the slice has got, so a spec written without them leaves the stages that follow with nothing to tick.
 
 ## 4. Writing the Spec
 
@@ -99,10 +102,10 @@ when nothing fits; only a complex feature needs that addition written up in `tes
 **Decide the E2E flow, in a section of its own.** `testing-android-e2e.md` states which slices get one and how
 flows are filed; the preference is to extend the feature's existing flow rather than add another beside it.
 
-Verification's `E2E Flow` section carries the decision, and it is written to be lifted whole: the flow may be
-written long after this spec is deleted, and the section is copied into the test queue as the brief. So name
-the flow to extend or the one to write, the fixture it opens from, what the pass should cover, and any handle
-the app does not expose yet. Or `None`, with the reason — which queues nothing at all.
+Verification's `E2E Flow` section is the brief `e2e-testing` works from, and it reads it here — the flow is
+written while this spec is still on disk. So name the flow to extend or the one to write, the fixture it opens
+from, what the pass should cover, and any handle the app does not expose yet. Where the slice needs no flow,
+omit the section altogether and mark the header's E2E implemented box `[n/a]`.
 
 **Draw the screens the slice changes.** A slice that introduces a screen or reshapes an existing one needs a
 mockup; one that changes no visible layout does not. Produce one mobile-width HTML file per screen, showing it
@@ -117,10 +120,19 @@ someone to extract later. Nothing rescues it once the spec is deleted. Write it 
 link to it rather than argue the decision twice. `architecture.md` states the bar, which is low: a decision a
 later change would get wrong without knowing is enough.
 
-## 5. Saving the Spec
+**Where the slice changes a decision an ADR already settles, rewrite that ADR rather than adding one beside
+it.** An ADR is named for the question, not the answer, so it is still the right file. Move the decision it
+replaces into its `Alternatives` with what made it fail — nothing else records that it was tried — and leave
+every citation of it pointing where it already points.
+
+## 5. Cut the Branch and Save the Spec
+
+Cut `feat/[slice-name]` from master before saving anything, so the spec, its mockups and any ADR are authored
+on the slice's own branch. `development-process.md` carries the branching rules.
 
 Save to `.sdd/specs/[slice-name]/spec.md` — a flat tree, one folder per slice, named for the capability in
-hyphenated lowercase (`record-note`, `name-uniqueness`). There is no numbering and no grouping folder.
+hyphenated lowercase (`record-note`, `name-uniqueness`). There is no numbering and no grouping folder, and the
+branch carries the same name.
 
 Design mockups for the slice go in a `design/` folder beside it. Both the spec and its mockups are deleted
 when the slice retires, so nothing here is written to last.
@@ -132,4 +144,5 @@ once the spec is saved, so the idea isn't left behind to later contradict the sp
 
 ## 7. Scope Limit
 
-Do **NOT** write any application code when this skill is invoked. This skill only writes documents.
+Do **NOT** write any application code when this skill is invoked. This skill writes documents, and cuts the
+branch they are written on — nothing else.

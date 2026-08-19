@@ -1,7 +1,5 @@
 # ADR-4: Name uniqueness rule placement
 
-* Date: 2026-08-10
-
 ## Context
 
 Two rules arrive together: an Observation's name must be unique among Observations, and a Metric's name must

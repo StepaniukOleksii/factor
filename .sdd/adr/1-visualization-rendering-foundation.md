@@ -1,7 +1,5 @@
 # ADR-1: Visualization rendering foundation
 
-* Date: 2026-07-08
-
 ## Context
 
 Observation visualization (trend charts over time) is a long-lived, heavily-iterated feature area, not a
