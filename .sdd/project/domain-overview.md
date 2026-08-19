@@ -61,8 +61,8 @@ A Metric's type is fixed when the Metric is defined, and decides what a value fo
 
 * **Numeric** — a number. The Metric may declare a minimum, a maximum, both, or neither. Both bounds are
   inclusive, and a minimum may not exceed its maximum.
-* **Text** — any text, under no constraint on what it says. It is kept as written, less the whitespace
-  around it, so text of whitespace alone is nothing written and leaves the Metric unanswered.
+* **Text** — any text, under no constraint on what it says. It is kept as written, less the spaces, tabs
+  and line breaks around it. Text of only those says nothing, so the Record holds no value for the Metric.
 * **Yes/No** — one of two answers, the pair being fixed by the type.
 * **Choice** — one of a fixed set of values the Metric declares, offered in the order declared. Between 2 and
   4 of them, each at most 12 characters, no two the same under name identity; fewer than two would leave
