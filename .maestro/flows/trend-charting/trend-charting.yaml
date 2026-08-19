@@ -10,7 +10,7 @@ appId: com.anonymous.factor
       DEV_COMMAND: seed
       READY_TEXT: "mixed metrics"
 
-# --- Every Metric type with a renderer, and the one without ------------------
+# --- Every Metric type gets a card -------------------------------------------
 # `mixed metrics` carries five Numeric Metrics beside a Boolean, an Enum and a
 # Text one.
 - tapOn: "mixed metrics"
@@ -28,7 +28,10 @@ appId: com.anonymous.factor
     element: "category"
     direction: DOWN
 - assertVisible: "flag"
-- assertNotVisible: "note"
+- scrollUntilVisible:
+    element: "note"
+    direction: DOWN
+- assertVisible: "note"
 - tapOn: "Back"
 
 # --- An Observation with no Numeric Metric still gets the section ------------
