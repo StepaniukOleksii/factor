@@ -72,21 +72,3 @@ they're ready to become a real spec.
     `(count / tallestCount) * (laneHeight - 2 * MARK_INSET)`. The tests move with it — the proportion is
     checked by adding the inset back to both heights (`half.height + 6` against `(largest.height + 6) / 2`,
     and its Boolean twin), which holds for the drawn heights only because both are wrong in the same way.
-11. A Text Metric value of only whitespace is stored as a value, where the Record's own note in the same form
-    is normalized away. `Metric.validateValue`'s Text case is `typeof value === 'string'`, and nothing on the
-    write path trims a Metric value: `handleValueChange` and `enteredValues` in
-    [RecordFormScreen](../../src/presentation/screens/RecordFormScreen.tsx) drop only `undefined`, `null` and
-    `''`, and `CreateRecordUseCase` copies the map verbatim into `createRecord`. Verified against the real
-    entities — `validateValue('   ')` and `validateValue('\t\n')` are both `true`, and the value round-trips.
-    [`Record.normalizeNote`](../../src/domain/Record.ts) does the opposite for the note a few fields below:
-    trims, and turns an empty result into `null`. So one half of the form treats blank input as absence and
-    the other stores it. What lands is a value that says nothing, which
-    [ADR-3](../adr/3-record-metric-value-requirements.md) is explicit should be absence instead — "absence is
-    stored as absence, never as a substitute value" — and which `formatMetricValue` renders as an empty
-    column rather than the `-` marking a Metric with no value, so on screen it reads as a rendering fault.
-    Not obviously a code defect: `domain-overview.md` states Text as "any text, under no constraint", so the
-    first question is whether that sentence is meant as written; closing this amends it. The fix is otherwise
-    small — normalize a Text value on write as the note already is — but it needs a position on values
-    already stored, and on whether the domain refuses them or the write path folds them to absence. The Text
-    marker card works around it by declining to mark such a value; fixing this at the source makes that rule
-    redundant.

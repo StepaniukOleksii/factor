@@ -58,6 +58,34 @@ describe('Metric', () => {
     });
   });
 
+  describe('normalizeValue', () => {
+    const text = new Metric('m1', 'Note', 'Text');
+
+    it('should keep a Text value less the whitespace around it', () => {
+      expect(text.normalizeValue('  slept badly  ')).toBe('slept badly');
+    });
+
+    it('should keep the line breaks inside a Text value', () => {
+      expect(text.normalizeValue(' first line\nsecond line ')).toBe('first line\nsecond line');
+    });
+
+    it.each(['', '   ', '\t\n'])('should normalize a Text value of %j to the empty string', value => {
+      expect(text.normalizeValue(value)).toBe('');
+    });
+
+    it('should leave a non-string Text value alone, for validation to refuse', () => {
+      expect(text.normalizeValue(7)).toBe(7);
+    });
+
+    it.each([
+      ['Numeric', new Metric('m2', 'Duration', 'Numeric'), 8],
+      ['Boolean', new Metric('m3', 'Rested', 'Boolean'), false],
+      ['Enum', new Metric('m4', 'Mood', 'Enum', { allowedValues: ['Happy'] }), 'Happy'],
+    ] as const)('should leave a %s value as it is', (_type, metric, value) => {
+      expect(metric.normalizeValue(value)).toBe(value);
+    });
+  });
+
   describe('description', () => {
     it('should default to null', () => {
       expect(new Metric('m1', 'Duration', 'Numeric').description).toBeNull();

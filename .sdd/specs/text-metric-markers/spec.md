@@ -41,9 +41,10 @@ bucket folds several Records, so there is no one text for it to carry, and a car
 prose in any case. `isMarkerPoint` joins the two existing guards, and `SeriesPointValue` gains the `kind`-only
 member the `reduce` switch returns for `Text`.
 
-`charts()` gains an explicit `Text` case: a value belongs in the series when it is a string with a
-non-whitespace character in it. The `default: return true` arm is left to Numeric. Nothing else in the use
-case changes — bucketing, ordering and the base fields are type-agnostic already.
+`charts()` gains an explicit `Text` case: a value belongs in the series when it is a string. A value of
+whitespace alone needs no rule here — it is not stored as a value at all. The `default: return true` arm is
+left to Numeric. Nothing else in the use case changes — bucketing, ordering and the base fields are
+type-agnostic already.
 
 ### 3.2 Presentation — the renderer
 
@@ -171,15 +172,15 @@ Reseed test data first.
    window selector and one short card, where a Text-only Observation previously had none of the three. The
    card reads `Not enough data yet`.
 6. On it, add a Record whose value is a word: one mark appears, and the card does not change height. Add
-   another whose value is only spaces: no second mark, while RECENT RECORDS shows both Records.
+   another whose value is only spaces: no second mark, that Record having stored no value, while RECENT
+   RECORDS shows both Records.
 
 ### Automated Tests
 
 * **Unit:** `GetMetricSeriesUseCase` returns marker points for a Text Metric instead of throwing, carrying the
   bucket's `recordCount`, representative `recordId` and first/last Record times, and bucketing as the other
-  types do; it drops a whitespace-only value and a non-string one, and keeps a value with whitespace around
-  it. `isMarkerPoint` narrows a marker point and rejects the other two kinds. `timeToX` puts the range's start
-  at the plot's left edge and its end at the right.
+  types do; it drops a non-string value. `isMarkerPoint` narrows a marker point and rejects the other two
+  kinds. `timeToX` puts the range's start at the plot's left edge and its end at the right.
 * **Component:** `TextMarkerChart` draws one mark per point, the same size whatever each point's
   `recordCount`; writes the count only above a mark standing for more than one, capped at `99+`; draws the
   placeholder for an empty series; never calls `onPointPress` when tapped; and places a mark at the same x a

@@ -131,6 +131,22 @@ describe('Observation', () => {
       expect(obs.createRecord('r1', new Date(), new Map()).note).toBeNull();
     });
 
+    it('should store a Text value less the whitespace around it', () => {
+      const obs = new Observation('o1', 'Sleep', [new Metric('m1', 'Note', 'Text')]);
+
+      const record = obs.createRecord('r1', new Date(), new Map([['m1', '  slept badly  ']]));
+
+      expect(record.values.get('m1')).toBe('slept badly');
+    });
+
+    it.each(['', '   ', '\t\n'])('should store a Text value of %j as no value at all', value => {
+      const obs = new Observation('o1', 'Sleep', [new Metric('m1', 'Note', 'Text')]);
+
+      const record = obs.createRecord('r1', new Date(), new Map([['m1', value]]));
+
+      expect(record.values.has('m1')).toBe(false);
+    });
+
     it('should throw an error if a metric is not defined in the observation', () => {
       const obs = new Observation('o1', 'Sleep');
       const values = new Map<string, any>([

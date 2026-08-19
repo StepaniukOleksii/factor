@@ -1144,6 +1144,76 @@ describe('RecordFormScreen', () => {
         });
     });
 
+    // A Text field is the only one whose value can be whitespace and nothing else.
+    describe('text metrics', () => {
+        const noteMetric = new Metric('metric-10', 'note', 'Text');
+        const texts = new Observation('obs-1', 'text only', [noteMetric]);
+        const timestamp = new Date('2024-01-15T08:15:00');
+
+        /** Both routes reach the same form - every rule here holds on each. */
+        const ROUTES: [string, string | undefined][] = [
+            ['create', undefined],
+            ['edit', 'record-1'],
+        ];
+
+        const field = (root: any) => root.root.findByProps({testID: 'record-metric-metric-10'});
+
+        async function type(root: any, text: string) {
+            await act(async () => {
+                field(root).props.onChangeText(text);
+            });
+        }
+
+        async function save(root: any, recordId?: string) {
+            const button = findTouchableWithText(root.root, recordId ? 'Save Record' : 'Add Record');
+            await act(async () => {
+                await button!.props.onPress();
+            });
+        }
+
+        beforeEach(() => {
+            mockGetObservationByIdExecute.mockResolvedValue(texts);
+            // No stored values, so each route starts from the same empty form.
+            mockGetRecordByIdExecute.mockResolvedValue(new DomainRecord(
+                'record-1',
+                'obs-1',
+                timestamp,
+                new Map<string, any>(),
+            ));
+        });
+
+        it.each(ROUTES)('saves what was written, less the whitespace around it, on the %s route', async (_route, recordId) => {
+            const {root} = await renderScreen({recordId});
+
+            await type(root, '  slept badly  ');
+            await save(root, recordId);
+
+            const execute = recordId ? mockUpdateRecordExecute : mockCreateRecordExecute;
+            expect(execute).toHaveBeenCalledWith(expect.objectContaining({
+                values: [{metricId: 'metric-10', value: 'slept badly'}],
+            }));
+        });
+
+        it.each(ROUTES)('saves a field holding whitespace alone as no value at all, on the %s route', async (_route, recordId) => {
+            const {root} = await renderScreen({recordId});
+
+            await type(root, '   ');
+            await save(root, recordId);
+
+            const execute = recordId ? mockUpdateRecordExecute : mockCreateRecordExecute;
+            expect(execute).toHaveBeenCalledWith(expect.objectContaining({values: []}));
+            expect(findAllByText(root.root, 'Invalid value').length).toBe(0);
+        });
+
+        it('leaves without asking when the only thing typed is whitespace', async () => {
+            const {root, listeners} = await renderScreen();
+
+            await type(root, '   ');
+
+            expect(await leaveScreen(listeners)).toBe(false);
+        });
+    });
+
     // A Choice Metric is picked from a list rather than a row of segments: four
     // values divided across one row leave too little width to read. What is
     // tested here is the rows it offers and the values they report back.

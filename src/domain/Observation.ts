@@ -46,6 +46,19 @@ export class Observation extends Entity<string> {
     this._metrics.delete(metricId);
   }
 
+  /** Nothing written is stored as absence, never as an empty value (ADR-3). */
+  public normalizeValues(values: Map<string, any>): Map<string, any> {
+    const normalized = new Map<string, any>();
+    for (const [metricId, value] of values.entries()) {
+      const stored = this._metrics.get(metricId)?.normalizeValue(value) ?? value;
+      if (stored === '') {
+        continue;
+      }
+      normalized.set(metricId, stored);
+    }
+    return normalized;
+  }
+
   public validateValues(values: Map<string, any>): void {
     for (const [metricId, value] of values.entries()) {
       const metric = this._metrics.get(metricId);
@@ -64,7 +77,8 @@ export class Observation extends Entity<string> {
     values: Map<string, any>,
     note: string | null = null
   ): Record {
-    this.validateValues(values);
-    return new Record(id, this.id, timestamp, new Map(values), note);
+    const normalized = this.normalizeValues(values);
+    this.validateValues(normalized);
+    return new Record(id, this.id, timestamp, normalized, note);
   }
 }

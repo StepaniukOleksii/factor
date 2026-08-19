@@ -79,15 +79,23 @@ function parseNumericValue(text: string): number | string {
  * A Numeric Metric's field holds the text that was typed and is parsed only
  * here: no number can represent `0.` or `1.50`, so a field rendering one back
  * loses the keystroke that made it.
+ *
+ * The write path normalizes what it stores in any case; it is the dirty check
+ * that needs it done here too, so that a form whose only content is whitespace
+ * has nothing to offer to discard.
  */
 function enteredValues(metrics: ReadonlyArray<Metric>, values: Record<string, any>): Map<string, any> {
     const entered = new Map<string, any>();
     for (const metric of metrics) {
         const value = values[metric.id];
-        if (value === undefined || value === null || value === '') {
+        if (value === undefined || value === null) {
             continue;
         }
-        entered.set(metric.id, metric.type === 'Numeric' ? parseNumericValue(value) : value);
+        const stored = metric.type === 'Numeric' ? parseNumericValue(value) : metric.normalizeValue(value);
+        if (stored === '') {
+            continue;
+        }
+        entered.set(metric.id, stored);
     }
     return entered;
 }

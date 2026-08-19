@@ -46,8 +46,9 @@ export class Record extends Entity<string> {
     if (this.observationId !== observation.id) {
       throw new Error("Observation ID mismatch.");
     }
-    observation.validateValues(values);
-    this._values = new Map(values);
+    const normalized = observation.normalizeValues(values);
+    observation.validateValues(normalized);
+    this._values = normalized;
   }
 
   public removeValue(metricId: string): void {

@@ -19,7 +19,8 @@ each have been an answer.
 and `1.50` survive being read back. A decimal comma is not a decimal point: `0,5` is refused rather than quietly saved
 as `0`.
 
-*Text* takes anything.
+*Text* takes anything, and keeps it as written less the whitespace around it. A field holding whitespace alone is an
+empty field: the Metric goes unanswered rather than holding a value that says nothing.
 
 *Yes/No* is two segments, `Yes` then `No`, neither selected to begin with — visibly different from `No` being chosen.
 One tap sets the value from any starting state; tapping the selected segment again clears it.
@@ -56,8 +57,8 @@ say about it.
 covered: the header back arrow, the cross in edit mode, the Android back button, and the system back gesture. **Keep
 editing** returns to the form with every entered value, every validation message, and the timestamp exactly as they
 were; **Discard** leaves by whichever route was taken and persists nothing. Dismissing the dialog with the back gesture
-counts as keeping the edit. A form that matches what is stored — untouched, or changed and changed back — leaves
-straight away, as saving does.
+counts as keeping the edit. A form that matches what is stored — untouched, changed and changed back, or holding only
+whitespace a Text field would not store — leaves straight away, as saving does.
 
 ## Usage
 

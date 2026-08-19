@@ -186,7 +186,7 @@ export class GetMetricSeriesUseCase {
    * constraint there are no lanes, so nothing charts. A Boolean value that is
    * not a boolean has none either: counts are keyed by canonical string form, so
    * the string `'true'` would otherwise be counted as the answer `true`. And a
-   * Text value of whitespace alone is nothing written.
+   * Text value that is not a string is not a value its Metric accepts.
    */
   private charts(value: unknown, metric: Metric): boolean {
     if (value === undefined || value === null) {
@@ -198,7 +198,7 @@ export class GetMetricSeriesUseCase {
       case 'Boolean':
         return typeof value === 'boolean';
       case 'Text':
-        return typeof value === 'string' && value.trim().length > 0;
+        return typeof value === 'string';
       default:
         return true;
     }

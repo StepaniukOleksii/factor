@@ -150,6 +150,47 @@ describe('UpdateRecordUseCase', () => {
     });
   });
 
+  describe('Text value', () => {
+    const observation = new Observation('obs-1', 'Sleep', [new Metric('metric-1', 'Note', 'Text')]);
+    const timestamp = new Date('2026-01-01T09:00:00');
+
+    function runWith(stored: string | undefined, value: string) {
+      const existingRecord = new Record(
+        'record-1',
+        'obs-1',
+        timestamp,
+        stored === undefined ? new Map() : new Map([['metric-1', stored]]),
+      );
+      const mockObservationRepo: ObservationRepository = {
+        save: vi.fn(),
+        findAll: vi.fn().mockResolvedValue([observation]),
+        delete: vi.fn(),
+        update: vi.fn(),
+      };
+      const mockRecordRepo = createMockRecordRepo({
+        getById: vi.fn().mockResolvedValue(existingRecord),
+      });
+      return new UpdateRecordUseCase(mockRecordRepo, mockObservationRepo).execute({
+        recordId: 'record-1',
+        observationId: 'obs-1',
+        timestamp,
+        values: [{metricId: 'metric-1', value}],
+      });
+    }
+
+    it('stores it trimmed', async () => {
+      const result = await runWith(undefined, '  slept badly  ');
+
+      expect(result.getValue('metric-1')).toBe('slept badly');
+    });
+
+    it.each(['', '   ', '\t\n'])('clears a stored value replaced by %j', async value => {
+      const result = await runWith('slept badly', value);
+
+      expect(result.values.size).toBe(0);
+    });
+  });
+
   it('throws an error if observation is not found', async () => {
     const mockObservationRepo: ObservationRepository = {
       save: vi.fn(),

@@ -38,6 +38,10 @@ export class Metric extends Entity<string> {
     this.description = description;
   }
 
+  public normalizeValue(value: any): any {
+    return this.type === 'Text' && typeof value === 'string' ? value.trim() : value;
+  }
+
   public validateValue(value: any): boolean {
     if (value === undefined || value === null) {
       return false;

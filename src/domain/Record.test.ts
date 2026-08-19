@@ -71,6 +71,24 @@ describe('Record', () => {
       expect(record.values.size).toBe(0);
     });
 
+    it('should store a Text value less the whitespace around it', () => {
+      const obs = new Observation('o1', 'Sleep', [new Metric('m1', 'Note', 'Text')]);
+      const record = new Record('r1', 'o1', new Date(), new Map());
+
+      record.updateValues(new Map<string, any>([['m1', '  slept badly  ']]), obs);
+
+      expect(record.getValue('m1')).toBe('slept badly');
+    });
+
+    it.each(['', '   ', '\t\n'])('should clear a value replaced by %j', value => {
+      const obs = new Observation('o1', 'Sleep', [new Metric('m1', 'Note', 'Text')]);
+      const record = new Record('r1', 'o1', new Date(), new Map([['m1', 'slept badly']]));
+
+      record.updateValues(new Map<string, any>([['m1', value]]), obs);
+
+      expect(record.values.has('m1')).toBe(false);
+    });
+
     it('should throw an error if observation id does not match', () => {
       const metric1 = new Metric('m1', 'Duration', 'Numeric');
       const obs = new Observation('o2', 'Sleep', [metric1]); // Notice o2 instead of o1

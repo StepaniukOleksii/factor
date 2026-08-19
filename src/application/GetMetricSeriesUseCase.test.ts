@@ -1,14 +1,14 @@
 import {describe, expect, it} from 'vitest';
 import {
-    AggregationStrategy,
-    type CategoryCount,
-    type CategorySeriesPoint,
-    GetMetricSeriesUseCase,
-    isCategoryPoint,
-    isMarkerPoint,
-    isNumericPoint,
-    type MetricSeriesPoint,
-    TimeRange,
+  AggregationStrategy,
+  type CategoryCount,
+  type CategorySeriesPoint,
+  GetMetricSeriesUseCase,
+  isCategoryPoint,
+  isMarkerPoint,
+  isNumericPoint,
+  type MetricSeriesPoint,
+  TimeRange,
 } from './GetMetricSeriesUseCase';
 import {Metric} from '../domain/Metric';
 import {Record} from '../domain/Record';
@@ -471,16 +471,10 @@ describe('GetMetricSeriesUseCase Text reduction', () => {
     expect(series.map(point => [point.x, point.recordCount])).toEqual([[0, 1], [1000, 2]]);
   });
 
-  it('drops a whitespace-only value and a non-string one', () => {
-    const series = useCase.execute(textRecords('  \n ', 42), textMetric(), TIME_RANGE, ONE_BUCKET);
+  it('drops a non-string value', () => {
+    const series = useCase.execute(textRecords(42), textMetric(), TIME_RANGE, ONE_BUCKET);
 
     expect(series).toEqual([]);
-  });
-
-  it('keeps a value with whitespace around it', () => {
-    const series = useCase.execute(textRecords('  noted  '), textMetric(), TIME_RANGE, ONE_BUCKET);
-
-    expect(series).toHaveLength(1);
   });
 
   it('reports the same Records a Numeric Metric of the same Records would', () => {

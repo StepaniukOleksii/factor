@@ -100,6 +100,49 @@ describe('CreateRecordUseCase', () => {
     });
   });
 
+  describe('Text value', () => {
+    const observation = new Observation('obs-1', 'Sleep', [new Metric('metric-1', 'Note', 'Text')]);
+
+    function createUseCase() {
+      const mockObservationRepo: ObservationRepository = {
+        save: vi.fn(),
+        findAll: vi.fn().mockResolvedValue([observation]),
+        delete: vi.fn(),
+        update: vi.fn(),
+      };
+      const mockRecordRepo: RecordRepository = {
+        save: vi.fn().mockResolvedValue(undefined),
+        getLastRecordTimestamps: vi.fn(),
+        getRecentRecords: vi.fn(),
+        getByObservationId: vi.fn(),
+        countByObservationId: vi.fn(),
+        deleteByObservationId: vi.fn(),
+        deleteById: vi.fn(),
+        getById: vi.fn(),
+        update: vi.fn(),
+      };
+      return new CreateRecordUseCase(mockRecordRepo, mockObservationRepo);
+    }
+
+    it('stores it trimmed', async () => {
+      const result = await createUseCase().execute({
+        observationId: 'obs-1',
+        values: [{metricId: 'metric-1', value: '  slept badly  '}],
+      });
+
+      expect(result.getValue('metric-1')).toBe('slept badly');
+    });
+
+    it.each(['', '   ', '\t\n'])('stores %j as no value at all', async value => {
+      const result = await createUseCase().execute({
+        observationId: 'obs-1',
+        values: [{metricId: 'metric-1', value}],
+      });
+
+      expect(result.values.size).toBe(0);
+    });
+  });
+
   it('throws an error if observation is not found', async () => {
     const mockObservationRepo: ObservationRepository = {
       save: vi.fn(),
