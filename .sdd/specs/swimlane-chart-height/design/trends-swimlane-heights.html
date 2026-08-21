@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Swimlane card height — sized from its lanes</title>
+    <style>
+        /* Tokens copied from src/presentation/theme/ so the mockup and the build
+           cannot disagree: colors.ts, radius.ts, typography.ts. Lane greens are
+           laneColors.ts's own ramps, which stay out of COLORS. */
+        :root {
+            --background: #131313;
+            --surface: #131313;
+            --on-surface: #e5e2e1;
+            --on-surface-variant: #c2c9b9;
+            --surface-container-low: #1c1b1b;
+            --outline-variant: #42493d;
+            --primary: #f9fff0;
+            --on-primary: #0b3900;
+            --primary-container: #b6f09c;
+
+            --radius-lg: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #000;
+            font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            padding: 24px 0;
+        }
+
+        .phone {
+            width: 390px;
+            height: 844px;
+            background: var(--background);
+            color: var(--on-surface);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ScreenHeader.tsx */
+        .header {
+            height: 64px;
+            flex: 0 0 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px;
+            border-bottom: 1px solid var(--outline-variant);
+            background: var(--surface);
+        }
+
+        .header .icon {
+            width: 48px;
+            display: flex;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 22px;
+        }
+
+        .header .icon.right {
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: var(--on-surface);
+        }
+
+        .header .title {
+            flex: 1;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--primary);
+        }
+
+        .scroll {
+            flex: 1;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        /* TYPOGRAPHY.sectionCaption */
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--on-surface-variant);
+            margin-bottom: 16px;
+        }
+
+        /* TimeRangeSelector.tsx */
+        .range-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .segment {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 0;
+            background: var(--surface-container-low);
+            border: 1px solid var(--outline-variant);
+            border-radius: var(--radius-lg);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--on-surface-variant);
+        }
+
+        .segment.selected {
+            background: var(--primary-container);
+            border-color: var(--primary-container);
+            color: var(--on-primary);
+        }
+
+        .segment.custom {
+            flex: 2;
+        }
+
+        /* ObservationDetailsScreen.styles — trendsList gap 12, trendCard, trendCardTitle. */
+        .trends-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .trend-card {
+            background: var(--surface-container-low);
+            border: 1px solid var(--outline-variant);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+        }
+
+        .trend-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        /* One height per card rather than one per section: a registration answers
+           with the height its Metric asks for, so these are what the four cards
+           below come out at. The plotted constant and the marker constant are
+           unchanged; the two swimlanes are what this slice moves. */
+        .trend-chart.plot {
+            height: 108px;
+        }
+
+        .trend-chart.lanes-2 {
+            height: 84px;
+        }
+
+        .trend-chart.lanes-4 {
+            height: 148px;
+        }
+
+        .trend-chart.marker {
+            height: 40px;
+        }
+    </style>
+</head>
+<body>
+<!-- The TRENDS section of `mixed metrics` at 1M, scrolled to the last of its five
+     Numeric cards and the three that follow it: the Boolean swimlane `flag`, the
+     Enum swimlane `category` — four values after this slice's seed change — and
+     the Text marker card `note`. The selector is kept in frame to say which
+     window is drawn.
+
+     Chart geometry is chartAxis.tsx's: a 308px-wide canvas, plot from x=32
+     (LABEL_GUTTER) to x=304 (less PLOT_RIGHT_INSET), y=6 (PLOT_TOP_PADDING) down
+     to the card's height less TIME_AXIS_HEIGHT, labels at 9px. Every card
+     reserves the same gutter and the same label strip whatever its height, which
+     is what keeps one moment at one x down the whole column.
+
+     A swimlane's height is now its lane count's: 6 + lanes x 32 + 14. `flag` at
+     two lanes is 84 and `category` at four is 148, where both stood at 108
+     before — so the lanes on both are 32px, and a mark has the same 26px between
+     its insets on either card. Marks are drawn full height throughout: at 1M
+     each bucket holds one Record, so every value's count equals the card's
+     tallest.
+
+     `flag`, `category` and `note` share their Records, so all three mark the same
+     ten moments — every other day across the newer two-thirds of the window. -->
+<div class="phone">
+    <div class="header">
+        <div class="icon">←</div>
+        <div class="title">mixed metrics</div>
+        <div class="icon right">⋮</div>
+    </div>
+
+    <div class="scroll">
+        <div class="section-title">TRENDS</div>
+        <div class="range-selector">
+            <div class="segment">1D</div>
+            <div class="segment">1W</div>
+            <div class="segment selected">1M</div>
+            <div class="segment">1Y</div>
+            <div class="segment custom">Custom</div>
+        </div>
+
+        <div class="trends-list">
+            <!-- Unchanged by this slice, and the yardstick the swimlanes below are
+                 read against: a Numeric card at the height every plotted card
+                 used to share. -->
+            <div class="trend-card">
+                <div class="trend-card-title">yearly</div>
+                <div class="trend-chart plot">
+                    <svg width="100%" height="108" viewBox="0 0 308 108">
+                        <defs>
+                            <linearGradient id="yearlyFill" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0" stop-color="#b6f09c" stop-opacity="0.25"/>
+                                <stop offset="1" stop-color="#b6f09c" stop-opacity="0"/>
+                            </linearGradient>
+                        </defs>
+                        <g stroke="#42493d" stroke-opacity="0.6" stroke-width="1">
+                            <line x1="32" y1="6" x2="304" y2="6"/>
+                            <line x1="32" y1="28" x2="304" y2="28"/>
+                            <line x1="32" y1="50" x2="304" y2="50"/>
+                            <line x1="32" y1="72" x2="304" y2="72"/>
+                            <line x1="32" y1="94" x2="304" y2="94"/>
+                        </g>
+                        <path d="M51,76.4 C110,76.4 120,35.3 176,35.3 C230,35.3 250,52.9 304,52.9 L304,94 L51,94 Z"
+                              fill="url(#yearlyFill)"/>
+                        <path d="M51,76.4 C110,76.4 120,35.3 176,35.3 C230,35.3 250,52.9 304,52.9"
+                              fill="none" stroke="#b6f09c" stroke-width="2"/>
+                        <g fill="#1c1b1b">
+                            <circle cx="51" cy="76.4" r="4.5"/>
+                            <circle cx="176" cy="35.3" r="4.5"/>
+                            <circle cx="304" cy="52.9" r="4.5"/>
+                        </g>
+                        <g fill="#b6f09c">
+                            <circle cx="51" cy="76.4" r="3"/>
+                            <circle cx="176" cy="35.3" r="3"/>
+                            <circle cx="304" cy="52.9" r="3"/>
+                        </g>
+                        <g fill="#c2c9b9" font-size="9" text-anchor="end">
+                            <text x="27" y="9">60</text>
+                            <text x="27" y="31">45</text>
+                            <text x="27" y="53">30</text>
+                            <text x="27" y="75">15</text>
+                            <text x="27" y="97">0</text>
+                        </g>
+                        <g fill="#c2c9b9" font-size="9">
+                            <text x="32" y="106">Jul 22</text>
+                            <text x="87" y="106">Jul 29</text>
+                            <text x="155" y="106">Aug 6</text>
+                            <text x="223" y="106">Aug 13</text>
+                            <text x="275" y="106">Aug 21</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- CHANGED — two lanes, so 6 + 2x32 + 14 = 84 rather than 108. Its
+                 lanes drop from 44px to 32, and the card is 24px shorter than
+                 the Numeric one above it rather than level with it. -->
+            <div class="trend-card">
+                <div class="trend-card-title">flag</div>
+                <div class="trend-chart lanes-2">
+                    <svg width="100%" height="84" viewBox="0 0 308 84">
+                        <g stroke="#42493d" stroke-opacity="0.6" stroke-width="1">
+                            <line x1="32" y1="6" x2="304" y2="6"/>
+                            <line x1="32" y1="38" x2="304" y2="38"/>
+                            <line x1="32" y1="70" x2="304" y2="70"/>
+                        </g>
+                        <g fill="#5a8a45">
+                            <rect x="138.9" y="9" width="7.1" height="26" rx="3.5"/>
+                            <rect x="175.2" y="9" width="7.1" height="26" rx="3.5"/>
+                            <rect x="229.6" y="9" width="7.1" height="26" rx="3.5"/>
+                            <rect x="265.8" y="9" width="7.1" height="26" rx="3.5"/>
+                            <rect x="302.1" y="9" width="1.9" height="26" rx="1"/>
+                        </g>
+                        <g fill="#b6f09c">
+                            <rect x="157.0" y="41" width="7.1" height="26" rx="3.5"/>
+                            <rect x="193.3" y="41" width="7.1" height="26" rx="3.5"/>
+                            <rect x="211.4" y="41" width="7.1" height="26" rx="3.5"/>
+                            <rect x="247.7" y="41" width="7.1" height="26" rx="3.5"/>
+                            <rect x="284.0" y="41" width="7.1" height="26" rx="3.5"/>
+                        </g>
+                        <g fill="#c2c9b9" font-size="9">
+                            <text x="0" y="25">Yes</text>
+                            <text x="0" y="57">No</text>
+                            <text x="32" y="82">Jul 22</text>
+                            <text x="87" y="82">Jul 29</text>
+                            <text x="155" y="82">Aug 6</text>
+                            <text x="223" y="82">Aug 13</text>
+                            <text x="275" y="82">Aug 21</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- CHANGED — four lanes, so 6 + 4x32 + 14 = 148 rather than 108, and
+                 the tallest card in the section. Its lanes rise from 22px to 32,
+                 which is the room this slice exists to give them. Its fourth
+                 value comes from the seed change; the ramp is laneColors.ts's
+                 four-stop one. -->
+            <div class="trend-card">
+                <div class="trend-card-title">category</div>
+                <div class="trend-chart lanes-4">
+                    <svg width="100%" height="148" viewBox="0 0 308 148">
+                        <g stroke="#42493d" stroke-opacity="0.6" stroke-width="1">
+                            <line x1="32" y1="6" x2="304" y2="6"/>
+                            <line x1="32" y1="38" x2="304" y2="38"/>
+                            <line x1="32" y1="70" x2="304" y2="70"/>
+                            <line x1="32" y1="102" x2="304" y2="102"/>
+                            <line x1="32" y1="134" x2="304" y2="134"/>
+                        </g>
+                        <g fill="#5a8a45">
+                            <rect x="138.9" y="9" width="7.1" height="26" rx="3.5"/>
+                            <rect x="229.6" y="9" width="7.1" height="26" rx="3.5"/>
+                            <rect x="302.1" y="9" width="1.9" height="26" rx="1"/>
+                        </g>
+                        <g fill="#75a85b">
+                            <rect x="175.2" y="41" width="7.1" height="26" rx="3.5"/>
+                            <rect x="211.4" y="41" width="7.1" height="26" rx="3.5"/>
+                            <rect x="284.0" y="41" width="7.1" height="26" rx="3.5"/>
+                        </g>
+                        <g fill="#95ce79">
+                            <rect x="157.0" y="73" width="7.1" height="26" rx="3.5"/>
+                            <rect x="265.8" y="73" width="7.1" height="26" rx="3.5"/>
+                        </g>
+                        <g fill="#b6f09c">
+                            <rect x="193.3" y="105" width="7.1" height="26" rx="3.5"/>
+                            <rect x="247.7" y="105" width="7.1" height="26" rx="3.5"/>
+                        </g>
+                        <g fill="#c2c9b9" font-size="9">
+                            <text x="0" y="25">a</text>
+                            <text x="0" y="57">b</text>
+                            <text x="0" y="89">c</text>
+                            <text x="0" y="121">d</text>
+                            <text x="32" y="146">Jul 22</text>
+                            <text x="87" y="146">Jul 29</text>
+                            <text x="155" y="146">Aug 6</text>
+                            <text x="223" y="146">Aug 13</text>
+                            <text x="275" y="146">Aug 21</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Unchanged by this slice: the marker card keeps the shorter height
+                 its own registration declares, needing room for neither lanes nor
+                 a value axis. -->
+            <div class="trend-card">
+                <div class="trend-card-title">note</div>
+                <div class="trend-chart marker">
+                    <svg width="100%" height="40" viewBox="0 0 308 40">
+                        <line x1="32" y1="16" x2="304" y2="16"
+                              stroke="#42493d" stroke-opacity="0.6" stroke-width="1"/>
+                        <g fill="#1c1b1b">
+                            <circle cx="138.9" cy="16" r="4"/>
+                            <circle cx="157.0" cy="16" r="4"/>
+                            <circle cx="175.2" cy="16" r="4"/>
+                            <circle cx="193.3" cy="16" r="4"/>
+                            <circle cx="211.4" cy="16" r="4"/>
+                            <circle cx="229.6" cy="16" r="4"/>
+                            <circle cx="247.7" cy="16" r="4"/>
+                            <circle cx="265.8" cy="16" r="4"/>
+                            <circle cx="284.0" cy="16" r="4"/>
+                            <circle cx="302.1" cy="16" r="4"/>
+                        </g>
+                        <g fill="#b6f09c">
+                            <circle cx="138.9" cy="16" r="2.5"/>
+                            <circle cx="157.0" cy="16" r="2.5"/>
+                            <circle cx="175.2" cy="16" r="2.5"/>
+                            <circle cx="193.3" cy="16" r="2.5"/>
+                            <circle cx="211.4" cy="16" r="2.5"/>
+                            <circle cx="229.6" cy="16" r="2.5"/>
+                            <circle cx="247.7" cy="16" r="2.5"/>
+                            <circle cx="265.8" cy="16" r="2.5"/>
+                            <circle cx="284.0" cy="16" r="2.5"/>
+                            <circle cx="302.1" cy="16" r="2.5"/>
+                        </g>
+                        <g fill="#c2c9b9" font-size="9">
+                            <text x="32" y="38">Jul 22</text>
+                            <text x="87" y="38">Jul 29</text>
+                            <text x="155" y="38">Aug 6</text>
+                            <text x="223" y="38">Aug 13</text>
+                            <text x="275" y="38">Aug 21</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -22,7 +22,6 @@ ready to become a real spec.
     - Not yet ready to spec: cross-Observation overlay/comparison (compare a metric from one Observation against
       another's). This is the product's core "discover relationships" thesis, deliberately deferred until the
       single-Observation slices above are built and proven.
-    - Swimlane chart height. Swimlane chart height should be dynamic depending on how many lanes it contains.
 2. On failure, the record isn't removed, the modal stays open, and an error is surfaced via alert(...) (same pattern
    already used in CreateRecordScreen), with a deletingRecord loading state disabling the buttons meanwhile.
 3. Metric units. An attribute set by user that contains unit information. Limit to three chars. Should be displayed in
