@@ -111,11 +111,15 @@ the slice ships — the final state only, not a set of variants or a before-and-
 the app already has, and take colors, type and radii from `src/presentation/theme/` so the mockup and the build cannot
 disagree.
 
-**Write the ADR if needed, and cite it.** Where the Technical Design weighs an alternative and rejects it, that
-reasoning outlives the spec — so it goes into an ADR as part of writing this spec, not left as a note for someone to
-extract later. Nothing rescues it once the spec is deleted. Write it from [adr-template.md](adr-template.md), save it to
-`.sdd/adr/[next-id]-[title].md`, and have the Technical Design link to it rather than argue the decision twice.
-`architecture.md` states the bar, which is low: a decision a later change would get wrong without knowing is enough.
+**Ask whether the slice needs an ADR, and expect the answer to be no.** Where the Technical Design weighs an alternative
+and rejects it, run that decision through `architecture.md`'s test before writing anything — it is written to be failed,
+and a spec that rejected an alternative has not thereby earned an ADR. Most slices produce none, and a manufactured one
+is worse than none: it is permanent, it has to be read by every session that follows, and it says a decision was
+load-bearing when it was not.
+
+Where a decision does clear the bar, it goes into an ADR as part of writing this spec, not left as a note for someone to
+extract later — nothing rescues it once the spec is deleted. Write it from [adr-template.md](adr-template.md), save it
+to `.sdd/adr/[next-id]-[title].md`, and have the Technical Design link to it rather than argue the decision twice.
 
 **Where the slice changes a decision an ADR already settles, rewrite that ADR rather than adding one beside it.** An ADR
 is named for the question, not the answer, so it is still the right file. Move the decision it replaces into its

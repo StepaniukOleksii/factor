@@ -149,9 +149,11 @@ The most valuable thing in a spec is often reasoning that is neither behaviour n
 rather than the obvious one, why a listener registers where it does. A feature file is behavioural prose and has no
 place for it, so it is routed as the spec is written, while the reasoning is still being done:
 
-* **Alternatives weighed and rejected → an ADR**, written alongside the spec and linked from its Technical Design, so
-  the spec argues nothing it is the only copy of. That is precisely the shape of the ADR template's `Alternatives`
-  section. `architecture.md` states the bar.
+* **An alternative weighed and rejected → an ADR, where the decision clears `architecture.md`'s bar** — written
+  alongside the spec and linked from its Technical Design, so the spec argues nothing it is the only copy of. That is
+  precisely the shape of the ADR template's `Alternatives` section. Rejecting an alternative is what makes an ADR
+  possible, not what makes one necessary: `architecture.md` carries the test, and most slices come out the other side of
+  it with none.
 * **A constraint outside the code forcing the code's shape → a code comment.** `coding-guidelines.md` states the
   principle, and both `spec-implementing` and `e2e-testing` carry the tests a comment has to pass.
 * **Everything else dies with the spec, deliberately.** A choice that could have gone another way gets no memorial — the

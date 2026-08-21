@@ -74,6 +74,17 @@ Two kinds of decision qualify:
   over the obvious one. [ADR-4](../adr/4-name-uniqueness-rule-placement.md) is this kind: it settles where a
   name-uniqueness rule belongs, and its reasoning would otherwise have died with the spec that carried it.
 
+An alternative having been rejected is not enough on its own — every decision has a road not taken. Any **yes** below
+means no ADR:
+
+* **Does a type, a test, or the shape of the code already stop the wrong choice being made?** Then the code is the
+  record, and a comment on it is the most that is warranted.
+* **Will a feature file state this once the slice ships?** Behaviour is the feature file's, and an ADR restating it is a
+  second copy to drift.
+* **Was the rejected alternative actually in contention**, or produced to fill the template's section?
+* **Can you name the later change that gets this wrong, and what breaks when it does?** "Someone might" is not a
+  consequence.
+
 **An ADR cites only what outlives it.** It is permanent, so a reference to a spec or its mockups becomes a dead pointer
 the moment that slice retires. Name the durable artifact instead — a feature file, another ADR, a `.sdd/project/`
 document. Where the slice is worth naming at all, name what it delivered rather than the folder it was specified in.
