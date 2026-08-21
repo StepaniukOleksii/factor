@@ -10,7 +10,6 @@ ready to become a real spec.
       position; a second tap navigates to the Record detail view. Replaces 3-3's immediate-navigate-on-tap behavior and
       needs state shared across every chart on screen rather than per card; needs its own pass on exact tap semantics
       (what counts as "the second tap", how/when it resets) once picked up.
-    - Text marker cards are the only ones inert on tap. Give a mark the tap behaviour every other card has.
     - A swimlane bucket's Record count in figures. Mark height is relative: a full lane means "the most this chart
       reaches", which is one Record on `no numeric` at 1M and several at 1Y, drawn the same both times. Two Metrics side
       by side each get their own scale, and nothing on the card says what either scale is. Height still ranks a chart's
