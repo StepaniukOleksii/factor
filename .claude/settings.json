@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/check-md-width.js",
+            "statusMessage": "Checking markdown width",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
