@@ -34,9 +34,11 @@ point included — has no range to spread over: it draws mid-height with all fiv
 One point is a chart: the dot is drawn on the usual axes, the curve and the fill both needing a second point to mean
 anything. A window holding zero points is where the card reads `Not enough data yet` beside a chart glyph.
 
-**Yes/No and Choice cards.** These draw as a swimlane: one lane per value, read top down in the order that Metric's
-values are presented in — `Yes` above `No`, a Choice Metric's first-declared value at the top — labelled down the left
-edge and coloured on a single-hue ramp, darkest at the top lane. The labels down the edge are what name the lanes.
+**Yes/No and Choice cards.** These draw as a swimlane: one lane per value the Metric declares, read top down in the
+order that Metric's values are presented in — `Yes` above `No`, a Choice Metric's first-declared value at the top —
+labelled down the left edge and coloured on a single-hue ramp, darkest at the top lane. The labels down the edge are
+what name the lanes. A Metric declaring four values draws its four lanes over every window, including one in which only
+two of them were recorded.
 
 Each bucket draws one mark per value its Records took, in that value's lane, as wide as the bucket and as tall as the
 number of Records that took it. Heights are measured against one scale shared by the whole card — the largest count any
@@ -49,8 +51,12 @@ was written in that stretch of time rather than what it said, a bucket folding s
 show for them. Every mark is the same size whatever its bucket holds, so nothing on the card reads as a quantity — where
 a mark stands for more than one Record, the count above it says how many in figures, as it does on a Numeric point.
 
-The card is shorter than the rest of the column, needing room for neither a value axis nor lanes, and it holds that
-height whether it draws marks or the empty-window placeholder, so what sits below it stays put as the window changes.
+**Card heights.** Numeric cards all stand the same height, whatever scale they draw against. A swimlane is sized from
+its lanes instead: every lane on every swimlane card is the same height, whatever Metric it draws, so a mark of a given
+height stands for the same share of a lane on every card, and a card carrying another lane is taller by exactly that
+lane. That lane height is the least a mark can be drawn in and still read as tall or short. A Text card, needing room
+for neither a value axis nor lanes, is the shortest in the section. Every card holds its height whether it draws marks
+or the empty-window placeholder, so nothing below a card moves as the window changes.
 
 **Time labels.** Every card labels its bottom edge, at a coarseness taken from how long the window is rather than from
 which control produced it: hours within a day, weekday initials within a week, short dates up to about two months, and
