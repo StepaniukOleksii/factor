@@ -96,9 +96,7 @@ one whose feature file has not yet been rewritten. `feature-writing` deletes the
 ### The branch
 
 Each slice runs on `feat/[slice-name]`, matching its folder under `.sdd/specs/`. Every stage commits under its own tag:
-`[SPEC]`, `[IMPL]`, `[E2E]`, `[FEAT]`. Where a later stage sends an earlier one back — an E2E run turning up a defect,
-say — amend that stage's commit where it is still `HEAD`, and otherwise let the extra commit stand rather than
-reordering history to hide it.
+`[SPEC]`, `[IMPL]`, `[E2E]`, `[FEAT]`.
 
 Landing folds each run of commits sharing a tag into one, rebases onto master and fast-forwards, then deletes the
 branch. Master carries no merge commits.
