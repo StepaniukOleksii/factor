@@ -8,8 +8,8 @@ what goes.
 
 ## Behaviour
 
-Deletion starts at **Delete** in the ⋮ menu of the Observation's header ([Observation
-Viewing](observation-viewing.md)) — a bin icon and red text, marking it as destructive before it is tapped.
+Deletion starts at **Delete** in the ⋮ menu of the Observation's header ([Observation Viewing](observation-viewing.md))
+— a bin icon and red text, marking it as destructive before it is tapped.
 
 Choosing it closes the menu and asks `Delete Observation?`, spelling out that the Observation and all its records go and
 that the action cannot be undone. **Cancel** closes the question and changes nothing, leaving the user where they were.

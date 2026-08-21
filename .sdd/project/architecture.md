@@ -4,8 +4,7 @@
 
 This document describes the high-level architecture and architectural principles of Factor.
 
-Detailed technical decisions live in ADRs — see [Architectural Decisions](#architectural-decisions) for what
-earns one.
+Detailed technical decisions live in ADRs — see [Architectural Decisions](#architectural-decisions) for what earns one.
 
 ---
 
@@ -64,18 +63,17 @@ This document intentionally does not define domain entities.
 
 ## Architectural Decisions
 
-An ADR records a technical decision together with the alternatives it beat, so that a later change cannot
-quietly undo the reasoning without having seen it.
+An ADR records a technical decision together with the alternatives it beat, so that a later change cannot quietly undo
+the reasoning without having seen it.
 
 Two kinds of decision qualify:
 
-* **Significant and hard to reverse** — storage technology, state management, dependency injection, analysis
-  engine design, synchronization strategy.
-* **Narrow, but a later change would get it wrong without knowing.** Which layer enforces a rule, why one API
-  was chosen over the obvious one. [ADR-4](../adr/4-name-uniqueness-rule-placement.md) is this kind: it settles
-  where a name-uniqueness rule belongs, and its reasoning would otherwise have died with the spec that carried it.
+* **Significant and hard to reverse** — storage technology, state management, dependency injection, analysis engine
+  design, synchronization strategy.
+* **Narrow, but a later change would get it wrong without knowing.** Which layer enforces a rule, why one API was chosen
+  over the obvious one. [ADR-4](../adr/4-name-uniqueness-rule-placement.md) is this kind: it settles where a
+  name-uniqueness rule belongs, and its reasoning would otherwise have died with the spec that carried it.
 
-**An ADR cites only what outlives it.** It is permanent, so a reference to a spec or its mockups becomes a dead
-pointer the moment that slice retires. Name the durable artifact instead — a feature file, another ADR, a
-`.sdd/project/` document. Where the slice is worth naming at all, name what it delivered rather than the folder it was
-specified in.
+**An ADR cites only what outlives it.** It is permanent, so a reference to a spec or its mockups becomes a dead pointer
+the moment that slice retires. Name the durable artifact instead — a feature file, another ADR, a `.sdd/project/`
+document. Where the slice is worth naming at all, name what it delivered rather than the folder it was specified in.

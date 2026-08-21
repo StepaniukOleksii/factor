@@ -3,8 +3,8 @@
 ## Goal
 
 Opening an Observation is how a user goes from "I track this" to "here is how it is going". The screen gathers
-everything that belongs to one Observation — what it is for, how long it has been kept and how much is in it, how it
-has trended, what was last recorded — and is the place every action on that Observation or its Records starts from.
+everything that belongs to one Observation — what it is for, how long it has been kept and how much is in it, how it has
+trended, what was last recorded — and is the place every action on that Observation or its Records starts from.
 
 ## Behaviour
 
@@ -26,8 +26,8 @@ Selection](trend-time-range-selection.md) for the window they share, [Record Lis
 below them.
 
 At the bottom, fixed, is **Add Record**, starting a Record for this Observation ([Record Creation](record-creation.md)).
-The header's ⋮ menu holds two actions: Edit ([Observation Editing](observation-editing.md)) and Delete
-([Observation Deletion](observation-deletion.md)).
+The header's ⋮ menu holds two actions: Edit ([Observation Editing](observation-editing.md)) and Delete ([Observation
+Deletion](observation-deletion.md)).
 
 Everything on the screen is re-read each time it is returned to, so a Record added, edited or deleted above it is
 reflected on arrival rather than on the next visit.

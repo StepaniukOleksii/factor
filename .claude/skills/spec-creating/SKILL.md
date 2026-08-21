@@ -19,14 +19,14 @@ Skip `coding-guidelines.md`; that's implementation concern, not spec creation.
 
 ## 1. Read What the App Already Does
 
-`.sdd/features/` is the account of current behaviour, one file per user action. Read the files this slice
-touches. Where what you are about to write contradicts one, **stop and ask the user** which is meant: the
-feature file may be out of date, or the slice may be deliberately changing that behaviour. Both are ordinary,
-and they produce different specs, so it is not a call to make on your own. A deliberate change has to be
-stated in the spec — the feature file is rewritten from it once the slice ships.
+`.sdd/features/` is the account of current behaviour, one file per user action. Read the files this slice touches. Where
+what you are about to write contradicts one, **stop and ask the user** which is meant: the feature file may be out of
+date, or the slice may be deliberately changing that behaviour. Both are ordinary, and they produce different specs, so
+it is not a call to make on your own. A deliberate change has to be stated in the spec — the feature file is rewritten
+from it once the slice ships.
 
-`.sdd/specs/` is **not** context. It is empty on master and holds exactly one spec on a slice branch, so
-anything sitting in it is a slice someone has not finished.
+`.sdd/specs/` is **not** context. It is empty on master and holds exactly one spec on a slice branch, so anything
+sitting in it is a slice someone has not finished.
 
 ## 2. Information Gathering
 
@@ -39,9 +39,8 @@ Before writing the spec, ensure you have a clear understanding of:
 If the user's initial prompt is too brief or ambiguous, **stop and ask clarifying questions** before you begin
 generating the document.
 
-Check the `.sdd/backlog/` directory for entries related to this feature — they can be a useful source of
-requirements, but confirm with the user before folding them in, since backlog entries are informal and may be
-outdated.
+Check the `.sdd/backlog/` directory for entries related to this feature — they can be a useful source of requirements,
+but confirm with the user before folding them in, since backlog entries are informal and may be outdated.
 
 ## 3. Name the Target Feature File
 
@@ -49,100 +48,98 @@ Decide which `.sdd/features/` file the shipped slice will belong to, and record 
 in the [example-spec.md](example-spec.md). `development-process.md` carries the rules this decision follows — how a
 feature is named, and how large a slice should be.
 
-* **Usually one file.** A slice that would rewrite several might be too big; check it against the scoping
-  rules before accepting it.
-* **A new file where the slice is the first of its capability.** Add `(new)` after the name, so nobody looks
-  for a file that isn't there yet.
+* **Usually one file.** A slice that would rewrite several might be too big; check it against the scoping rules before
+  accepting it.
+* **A new file where the slice is the first of its capability.** Add `(new)` after the name, so nobody looks for a file
+  that isn't there yet.
 
 Under that line go the two stage boxes, `Implemented` and `E2E tested`, unticked. They are the whole record of how far
 the slice has got, so a spec written without them leaves the stages that follow with nothing to tick.
 
 ## 4. Writing the Spec
 
-Read [example-spec.md](example-spec.md) and match its structure, depth, and voice. It defines the
-document's format — do not invent another. It is a worked example built for this skill — a fictional feature
-of a fictional app, so nothing in it can be mistaken for a Factor requirement. Take its shape, never its
-subject.
+Read [example-spec.md](example-spec.md) and match its structure, depth, and voice. It defines the document's format — do
+not invent another. It is a worked example built for this skill — a fictional feature of a fictional app, so nothing in
+it can be mistaken for a Factor requirement. Take its shape, never its subject.
 
 **Each section has one job.** Never let one do another's:
 
 * **Goal** — the problem, then one sentence naming the feature. Not a summary of the requirements.
-* **Requirements** — one statement each of what must be true, phrased so it can be checked. Not why it is
-  wanted, not how it will be built. Merge bullets that are really a single statement.
+* **Requirements** — one statement each of what must be true, phrased so it can be checked. Not why it is wanted, not
+  how it will be built. Merge bullets that are really a single statement.
 * **Technical Design** — the decisions, and the reasoning behind any that isn't obvious.
-* **Verification** — the seed data a check needs, the manual steps, the automated tests expected, and the E2E
-  flow in a section of its own.
+* **Verification** — the seed data a check needs, the manual steps, the automated tests expected, and the E2E flow in a
+  section of its own.
 
-**Say it once.** The Goal does not summarize the Requirements; the Technical Design does not repeat them back,
-it turns them into decisions. Where something is already stated or argued elsewhere, link to it rather than
-restating it — a feature file for existing behaviour (`../../features/record-listing.md`), a `.sdd/project/`
-document for a standing rule, an ADR for a settled decision. Copies drift apart; a link cannot.
+**Say it once.** The Goal does not summarize the Requirements; the Technical Design does not repeat them back, it turns
+them into decisions. Where something is already stated or argued elsewhere, link to it rather than restating it — a
+feature file for existing behaviour (`../../features/record-listing.md`), a `.sdd/project/` document for a standing
+rule, an ADR for a settled decision. Copies drift apart; a link cannot.
 
-**Don't restate the domain.** What an Observation, a Metric or a Record *is* — its parts, its rules, its
-limits — is `domain-overview.md`'s. A spec says what this slice does with them.
+**Don't restate the domain.** What an Observation, a Metric or a Record *is* — its parts, its rules, its limits — is
+`domain-overview.md`'s. A spec says what this slice does with them.
 
-**Describe, don't implement.** Write the Technical Design in prose and structured bullet lists. Name entities,
-fields, types, methods, and components with inline code formatting (e.g. `observationId: UUID`,
-`CreateObservationUseCase`), but do **not** include code blocks containing actual implementation — function
-bodies, JSX, full type/interface declarations, or anything resembling a diff. Choosing exact syntax and control
-flow is the implementer's job, not the spec's: embedding it in the spec creates a second, unmaintained copy of
-the implementation that silently drifts from the real code as the feature evolves.
+**Describe, don't implement.** Write the Technical Design in prose and structured bullet lists. Name entities, fields,
+types, methods, and components with inline code formatting (e.g. `observationId: UUID`, `CreateObservationUseCase`), but
+do **not** include code blocks containing actual implementation — function bodies, JSX, full type/interface
+declarations, or anything resembling a diff. Choosing exact syntax and control flow is the implementer's job, not the
+spec's: embedding it in the spec creates a second, unmaintained copy of the implementation that silently drifts from the
+real code as the feature evolves.
 
-**Prefer prose to nested bullets.** A paragraph carries reasoning that a bullet tree flattens away. Use bullets
-for genuine lists — states, props, test cases — not to shard one explanation into fragments.
+**Prefer prose to nested bullets.** A paragraph carries reasoning that a bullet tree flattens away. Use bullets for
+genuine lists — states, props, test cases — not to shard one explanation into fragments.
 
-**Brevity is not vagueness.** Cut restatement, never content. Keep every decision the implementer would
-otherwise have to guess or re-derive: why something lives where it does, what happens at the edge case, which
-existing pattern to follow.
+**Brevity is not vagueness.** Cut restatement, never content. Keep every decision the implementer would otherwise have
+to guess or re-derive: why something lives where it does, what happens at the edge case, which existing pattern to
+follow.
 
-**Reuse the seeded fixtures.** Before writing a manual step that enters data by hand, check `testing-data.md`
-for a seeded Observation or Metric already covering the scenario, and name it in the step. Add seed data only
-when nothing fits; only a complex feature needs that addition written up in `testing-data.md`.
+**Reuse the seeded fixtures.** Before writing a manual step that enters data by hand, check `testing-data.md` for a
+seeded Observation or Metric already covering the scenario, and name it in the step. Add seed data only when nothing
+fits; only a complex feature needs that addition written up in `testing-data.md`.
 
-**Decide the E2E flow, in a section of its own.** `testing-android-e2e.md` states which slices get one and how
-flows are filed; the preference is to extend the feature's existing flow rather than add another beside it.
+**Decide the E2E flow, in a section of its own.** `testing-android-e2e.md` states which slices get one and how flows are
+filed; the preference is to extend the feature's existing flow rather than add another beside it.
 
-Verification's `E2E Flow` section is the brief `e2e-testing` works from, and it reads it here — the flow is
-written while this spec is still on disk. So name the flow to extend or the one to write, the fixture it opens
-from, what the pass should cover, and any handle the app does not expose yet. Where the slice needs no flow,
-omit the section altogether and mark the header's E2E implemented box `[n/a]`.
+Verification's `E2E Flow` section is the brief `e2e-testing` works from, and it reads it here — the flow is written
+while this spec is still on disk. So name the flow to extend or the one to write, the fixture it opens from, what the
+pass should cover, and any handle the app does not expose yet. Where the slice needs no flow, omit the section
+altogether and mark the header's E2E implemented box `[n/a]`.
 
-**Draw the screens the slice changes.** A slice that introduces a screen or reshapes an existing one needs a
-mockup; one that changes no visible layout does not. Produce one mobile-width HTML file per screen, showing it
-as it will look once the slice ships — the final state only, not a set of variants or a before-and-after.
-Follow `design.md` and the screens the app already has, and take colors, type and radii from
-`src/presentation/theme/` so the mockup and the build cannot disagree.
+**Draw the screens the slice changes.** A slice that introduces a screen or reshapes an existing one needs a mockup; one
+that changes no visible layout does not. Produce one mobile-width HTML file per screen, showing it as it will look once
+the slice ships — the final state only, not a set of variants or a before-and-after. Follow `design.md` and the screens
+the app already has, and take colors, type and radii from `src/presentation/theme/` so the mockup and the build cannot
+disagree.
 
 **Write the ADR if needed, and cite it.** Where the Technical Design weighs an alternative and rejects it, that
-reasoning outlives the spec — so it goes into an ADR as part of writing this spec, not left as a note for
-someone to extract later. Nothing rescues it once the spec is deleted. Write it from
-[adr-template.md](adr-template.md), save it to `.sdd/adr/[next-id]-[title].md`, and have the Technical Design
-link to it rather than argue the decision twice. `architecture.md` states the bar, which is low: a decision a
-later change would get wrong without knowing is enough.
+reasoning outlives the spec — so it goes into an ADR as part of writing this spec, not left as a note for someone to
+extract later. Nothing rescues it once the spec is deleted. Write it from [adr-template.md](adr-template.md), save it to
+`.sdd/adr/[next-id]-[title].md`, and have the Technical Design link to it rather than argue the decision twice.
+`architecture.md` states the bar, which is low: a decision a later change would get wrong without knowing is enough.
 
-**Where the slice changes a decision an ADR already settles, rewrite that ADR rather than adding one beside
-it.** An ADR is named for the question, not the answer, so it is still the right file. Move the decision it
-replaces into its `Alternatives` with what made it fail — nothing else records that it was tried — and leave
-every citation of it pointing where it already points.
+**Where the slice changes a decision an ADR already settles, rewrite that ADR rather than adding one beside it.** An ADR
+is named for the question, not the answer, so it is still the right file. Move the decision it replaces into its
+`Alternatives` with what made it fail — nothing else records that it was tried — and leave every citation of it pointing
+where it already points.
 
 ## 5. Cut the Branch and Save the Spec
 
-Cut `feat/[slice-name]` from master before saving anything, so the spec, its mockups and any ADR are authored
-on the slice's own branch. `development-process.md` carries the branching rules.
+Cut `feat/[slice-name]` from master before saving anything, so the spec, its mockups and any ADR are authored on the
+slice's own branch. `development-process.md` carries the branching rules.
 
-Save to `.sdd/specs/[slice-name]/spec.md` — a flat tree, one folder per slice, named for the capability in
-hyphenated lowercase (`record-note`, `name-uniqueness`). There is no numbering and no grouping folder, and the
-branch carries the same name.
+Save to `.sdd/specs/[slice-name]/spec.md` — a flat tree, one folder per slice, named for the capability in hyphenated
+lowercase (`record-note`, `name-uniqueness`). There is no numbering and no grouping folder, and the branch carries the
+same name.
 
-Design mockups for the slice go in a `design/` folder beside it. Both the spec and its mockups are deleted
-when the slice retires, so nothing here is written to last.
+Design mockups for the slice go in a `design/` folder beside it. Both the spec and its mockups are deleted when the
+slice retires, so nothing here is written to last.
 
 ## 6. Clear the Promoted Backlog Entry
 
-If the feature originates from (or overlaps with) an entry in `.sdd/backlog/`, remove that entry from the backlog
-once the spec is saved, so the idea isn't left behind to later contradict the spec it became.
+If the feature originates from (or overlaps with) an entry in `.sdd/backlog/`, remove that entry from the backlog once
+the spec is saved, so the idea isn't left behind to later contradict the spec it became.
 
 ## 7. Scope Limit
 
-Do **NOT** write any application code when this skill is invoked. This skill writes documents, and cuts the
-branch they are written on — nothing else.
+Do **NOT** write any application code when this skill is invoked. This skill writes documents, and cuts the branch they
+are written on — nothing else.

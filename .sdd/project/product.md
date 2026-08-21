@@ -52,7 +52,8 @@ Most applications start with predefined metrics and predefined insights.
 
 Factor takes the opposite approach.
 
-Rather than telling users what should matter, the platform helps users discover what actually matters within their own data.
+Rather than telling users what should matter, the platform helps users discover what actually matters within their own
+data.
 
 The goal is not to confirm assumptions.
 
@@ -87,7 +88,8 @@ Another may be interested in productivity.
 
 Another may be interested in transportation, finances, learning, or personal habits.
 
-Factor should provide a flexible framework for recording observations and exploring relationships without imposing a predefined worldview.
+Factor should provide a flexible framework for recording observations and exploring relationships without imposing a
+predefined worldview.
 
 The platform should adapt to the user's questions rather than forcing users into predefined categories.
 

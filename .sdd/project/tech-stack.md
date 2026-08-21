@@ -123,12 +123,12 @@ Maestro is used for end-to-end (E2E) testing — driving the running app on an A
 Rationale:
 
 * Declarative YAML flows: readable, low-maintenance, tolerant of minor UI timing without hand-written waits
-* Selects by visible text and accessibility labels, so a flow asserts what a user actually sees rather than
-  an invisible tag; `testID` stays a fallback for elements that expose no readable text, such as a Skia canvas
+* Selects by visible text and accessibility labels, so a flow asserts what a user actually sees rather than an invisible
+  tag; `testID` stays a fallback for elements that expose no readable text, such as a Skia canvas
 * Single self-contained CLI (installed outside npm)
 
-Flows do need a small app-side harness: fixtures are set up through `__DEV__`-only deep-link commands,
-since a flow cannot open the dev menu. See [testing-android-e2e.md](../../testing-android-e2e.md).
+Flows do need a small app-side harness: fixtures are set up through `__DEV__`-only deep-link commands, since a flow
+cannot open the dev menu. See [testing-android-e2e.md](../../testing-android-e2e.md).
 
 ---
 
@@ -136,8 +136,7 @@ since a flow cannot open the dev menu. See [testing-android-e2e.md](../../testin
 
 ### Skia
 
-`@shopify/react-native-skia` is used as the rendering foundation for Observation visualization (trend
-charts).
+`@shopify/react-native-skia` is used as the rendering foundation for Observation visualization (trend charts).
 
 Rationale:
 
@@ -146,23 +145,21 @@ Rationale:
 * Actively maintained, de facto standard for custom drawing in React Native
 * Compatible with the existing Expo / React Native New Architecture setup
 
-Skia v2's native `<Canvas>` requires `react-native-reanimated` (and its `react-native-worklets`
-runtime) even for static charts, so both are required companion dependencies of this choice. Install
-the Expo-pinned versions; `babel-preset-expo` wires the reanimated Babel plugin automatically.
+Skia v2's native `<Canvas>` requires `react-native-reanimated` (and its `react-native-worklets` runtime) even for static
+charts, so both are required companion dependencies of this choice. Install the Expo-pinned versions;
+`babel-preset-expo` wires the reanimated Babel plugin automatically.
 
-See [ADR-1](../adr/1-visualization-rendering-foundation.md) for the full rationale and alternatives
-considered.
+See [ADR-1](../adr/1-visualization-rendering-foundation.md) for the full rationale and alternatives considered.
 
 #### Skia text rendering
 
-Trend chart axis labels are drawn with Skia's own text primitives. A `Canvas` cannot composite a
-platform `Text` element, so anything drawn inside one — labels included — has to go through Skia.
+Trend chart axis labels are drawn with Skia's own text primitives. A `Canvas` cannot composite a platform `Text`
+element, so anything drawn inside one — labels included — has to go through Skia.
 
-That requires a typeface Skia owns, which a bundled font file provides: `assets/fonts/Roboto-Regular.ttf`
-(see [its README](../../assets/fonts/README.md) for provenance). A bundled file rather than a
-system-matched family, so labels render identically on every device. Skia loads it asynchronously, so
-anything drawing text must tolerate a `null` font for the first render or two and omit its text until
-the typeface resolves, rather than blocking the whole chart.
+That requires a typeface Skia owns, which a bundled font file provides: `assets/fonts/Roboto-Regular.ttf` (see [its
+README](../../assets/fonts/README.md) for provenance). A bundled file rather than a system-matched family, so labels
+render identically on every device. Skia loads it asynchronously, so anything drawing text must tolerate a `null` font
+for the first render or two and omit its text until the typeface resolves, rather than blocking the whole chart.
 
 ---
 
@@ -170,28 +167,26 @@ the typeface resolves, rather than blocking the whole chart.
 
 ### React Navigation
 
-`@react-navigation/native` with `@react-navigation/native-stack` provides navigation, as a single native
-stack.
+`@react-navigation/native` with `@react-navigation/native-stack` provides navigation, as a single native stack.
 
 Rationale:
 
 * De facto standard for React Native, supported first-class by Expo
-* Stack semantics scope screen state structurally: a pushed screen leaves the one below mounted, popping
-  returns to that same instance, and popping a screen off destroys it
+* Stack semantics scope screen state structurally: a pushed screen leaves the one below mounted, popping returns to that
+  same instance, and popping a screen off destroys it
 * Handles the Android hardware back button and system back gesture
 * Deep linking, tabs and drawers remain available without rearchitecting
 
-Requires `react-native-screens` and `react-native-safe-area-context`, both of which ship native code, so
-adding them requires rebuilding the dev client. Install the Expo-pinned versions.
+Requires `react-native-screens` and `react-native-safe-area-context`, both of which ship native code, so adding them
+requires rebuilding the dev client. Install the Expo-pinned versions.
 
 The framework's native header is **not** used: `ScreenHeader` remains the app's header on every screen.
 
 Because screens stay mounted while covered, two conventions apply:
 
-* **A screen refreshes on focus**, via `useFocusEffect`, whenever it shows data a screen above it can
-  change.
-* **View state scoped to one screen's visit belongs in that screen's own state.** Zustand remains the
-  approved choice for state that is genuinely application-wide.
+* **A screen refreshes on focus**, via `useFocusEffect`, whenever it shows data a screen above it can change.
+* **View state scoped to one screen's visit belongs in that screen's own state.** Zustand remains the approved choice
+  for state that is genuinely application-wide.
 
 See [ADR-2](../adr/2-navigation-foundation.md) for the full rationale and alternatives considered.
 
@@ -201,8 +196,8 @@ See [ADR-2](../adr/2-navigation-foundation.md) for the full rationale and altern
 
 ### DateTimePicker
 
-`@react-native-community/datetimepicker` provides the platform's native date picker, used to enter a
-custom time range for an Observation's trend charts.
+`@react-native-community/datetimepicker` provides the platform's native date picker, used to enter a custom time range
+for an Observation's trend charts.
 
 Rationale:
 
@@ -210,8 +205,8 @@ Rationale:
 * Expo-supported: installed with `npx expo install`, and its config plugin registers automatically
 * Long-standing React Native Community package with wide adoption
 
-Install the Expo-pinned version. It ships native code, so adding it requires rebuilding the dev client;
-it has no web implementation, so the picker is unavailable under `expo start --web`.
+Install the Expo-pinned version. It ships native code, so adding it requires rebuilding the dev client; it has no web
+implementation, so the picker is unavailable under `expo start --web`.
 
 ---
 
