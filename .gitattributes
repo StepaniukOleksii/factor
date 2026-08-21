@@ -1,0 +1,23 @@
+# Text is stored as LF in the repository and checked out as LF on every
+# platform, so the working tree matches the blobs and never depends on a
+# contributor's core.autocrlf setting.
+* text=auto eol=lf
+
+# Binary assets must never be converted.
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.ttf    binary
+*.otf    binary
+*.woff   binary
+*.woff2  binary
+*.sqlite binary
+
+# Shell scripts break if they ever pick up CRLF.
+*.sh text eol=lf
+
+# Windows batch files are the one thing that needs CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
