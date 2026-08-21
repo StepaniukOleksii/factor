@@ -18,12 +18,11 @@ and another on one kept for a year and recorded against four hundred times. The 
 the Observation, so it holds still while [Trend Time Range Selection](trend-time-range-selection.md) re-scopes what the
 charts cover, and it is worded to what it counts: `No records`, `1 record`, `12 records`.
 
-Below it are two sections: **Trends**, which an Observation gets once it has something to chart, and **Recent Records**,
-which is always there. Trends comes first — a shape is read faster than a list, and the question that brings a user here
-is usually how things are going rather than what the last entry was. What each holds belongs to the capability it
-serves: [Trend Charting](trend-charting.md) for the cards and [Trend Time Range
-Selection](trend-time-range-selection.md) for the window they share, [Record Listing](record-listing.md) for the Records
-below them.
+Below it are two sections, both always there: **Trends** and **Recent Records**. Trends comes first — a shape is read
+faster than a list, and the question that brings a user here is usually how things are going rather than what the last
+entry was. What each holds belongs to the capability it serves: [Trend Charting](trend-charting.md) for the cards and
+[Trend Time Range Selection](trend-time-range-selection.md) for the window they share, [Record
+Listing](record-listing.md) for the Records below them.
 
 At the bottom, fixed, is **Add Record**, starting a Record for this Observation ([Record Creation](record-creation.md)).
 The header's ⋮ menu holds two actions: Edit ([Observation Editing](observation-editing.md)) and Delete ([Observation

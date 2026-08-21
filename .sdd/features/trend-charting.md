@@ -7,21 +7,19 @@ stored Records into one small chart per Metric, so a month of entries reads as a
 
 ## Behaviour
 
-**Which Metrics chart.** Numeric, Yes/No and Choice Metrics chart, and the section appears for an Observation holding at
-least one of them.
-
-Each charting Metric gets a card titled with its name, in the order the Observation declares its Metrics, so cards
-interleave by declaration rather than grouping by type. Every card in the section is drawn over one shared window,
-chosen once at the top of the section ([Trend Time Range Selection](trend-time-range-selection.md)), and the Records
-behind a card are reached through the points drawn on it ([Trend Exploration](trend-exploration.md)).
+**What gets a card.** Every Metric gets one, whatever its type, so the section is on every Observation. A card is titled
+with its Metric's name, and cards come in the order the Observation declares its Metrics, so they interleave by
+declaration rather than grouping by type. Every card in the section is drawn over one shared window, chosen once at the
+top of the section ([Trend Time Range Selection](trend-time-range-selection.md)), and what a tap on a card reaches
+belongs to [Trend Exploration](trend-exploration.md).
 
 **Aggregation.** Charts plot buckets rather than Records. The window is cut into fixed buckets — an hour each for a
 one-day window, a day for a week or a month, a month for a year, and roughly thirty whole-hour buckets for a window
 chosen by hand — and each bucket holding Records becomes one point, drawn at its true position in time across the
 window, so a stretch with nothing recorded reads as the gap it is.
 
-A series is built from the Records holding a value the Metric can chart: a number for a Numeric Metric, one of the
-declared values for a Choice, an actual answer for a Yes/No.
+A series is built from the Records holding a value the Metric can chart: a number for a Numeric Metric, text for a Text
+Metric, one of the declared values for a Choice, an actual answer for a Yes/No.
 
 **Numeric cards.** A Numeric bucket reduces to the mean of its Records. The series is drawn as a smooth curve over a
 gradient fill, with a small dot marking each point. A point standing for more than one Record carries that count above
@@ -46,20 +44,30 @@ value reaches in any bucket fills a lane — so a quiet bucket draws a shorter c
 within a bucket the marks keep that bucket's own proportions. A value that occurred at all stays visible, however rare,
 since a mark holds a minimum height.
 
+**Text cards.** A Text bucket draws one mark on a faint rule across the middle of the card: a dot saying that something
+was written in that stretch of time rather than what it said, a bucket folding several entries having no one text to
+show for them. Every mark is the same size whatever its bucket holds, so nothing on the card reads as a quantity — where
+a mark stands for more than one Record, the count above it says how many in figures, as it does on a Numeric point.
+
+The card is shorter than the rest of the column, needing room for neither a value axis nor lanes, and it holds that
+height whether it draws marks or the empty-window placeholder, so what sits below it stays put as the window changes.
+
 **Time labels.** Every card labels its bottom edge, at a coarseness taken from how long the window is rather than from
 which control produced it: hours within a day, weekday initials within a week, short dates up to about two months, and
 month with a two-digit year beyond that. The two finer scales caption each slice at its centre — eight hours across a
 day, one letter per day up to a week — because an hour scale's last hour and a week's last day are its first again, and
 a label at the edge would repeat the opening one. The two date scales instead put five labels end to end, the first at
 the window's start and the last at its end, both being dates worth naming exactly. Every card reserves the same width
-for its left-hand labels, so a given moment sits at the same place across every card in the column.
+down its left edge, whether or not it has labels to put there, so a given moment sits at the same place across every
+card in the column.
 
 **Refreshing.** The section re-reads its Records whenever the window it is drawn over changes, and whenever the screen
 it sits on refreshes. A refresh redraws the window that was showing rather than resetting it.
 
 ## Usage
 
-Open an Observation; the **TRENDS** section carries one card per Metric that charts.
+Open an Observation; the **TRENDS** section carries one card per Metric.
 
-Pick a window with the selector above the cards. Read a Numeric card as a curve against the values down its left edge,
-and a Yes/No or Choice card as marks in the lane of the value they stand for.
+Pick a window with the selector above the cards. Read a Numeric card as a curve against the values down its left edge, a
+Yes/No or Choice card as marks in the lane of the value they stand for, and a Text card as dots on a rule, one wherever
+something was written.

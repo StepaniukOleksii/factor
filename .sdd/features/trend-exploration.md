@@ -4,15 +4,15 @@
 
 A trend chart is a summary, and the useful question about a summary is "what is behind that?". Tapping a chart answers
 it: what stands for a single Record opens that Record, and what folds several together narrows the whole section onto
-them, so they separate into marks of their own. Every card in the Trends section answers the gesture, so reaching the
-Records behind a chart is learned once and works on all of them.
+them, so they separate into marks of their own. Numeric, Yes/No and Choice cards all answer the gesture, so reaching
+the Records behind a chart is learned once and works across them.
 
 ## Behaviour
 
 **What a tap lands on.** A tap is answered by the mark nearest it horizontally, and only when it falls within a
-comfortable distance of that mark across. One distance serves every card and every window, so a mark's target is a
-fingertip-sized patch of chart wherever it is drawn and however many neighbours it has. What counts as a mark, and what
-else is asked of the tap, is each card's own:
+comfortable distance of that mark across. One distance serves both kinds of card and every window, so a mark's target
+is a fingertip-sized patch of chart wherever it is drawn and however many neighbours it has. What counts as a mark,
+and what else is asked of the tap, is each card's own:
 
 *A Numeric card* is answered by its points, and a point must also be near enough up or down — the same distance again,
 which makes its target a fingertip-sized box centred on the dot.
