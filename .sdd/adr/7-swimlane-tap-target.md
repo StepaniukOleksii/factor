@@ -24,8 +24,8 @@ only what the renderer reports, and from where.
    target, and both fork what exploration means by renderer.
 2. **A lane is its own target, opening the Record behind a single-Record mark.** Ruled out twice over. It needs
    per-value Record identity threaded through the series, where today a bucket's identity is the bucket's. And it puts
-   two meanings — the mark, and the empty space above it — inside a lane 22px tall on a three-lane card, under the
-   platform's minimum touch target; a tap would then mean different things depending on how tall a mark happened to be
+   two meanings — the mark, and the empty space above it — inside a lane 32px tall, under the platform's minimum touch
+   target; a tap would then mean different things depending on how tall a mark happened to be
    drawn, which follows from the card's busiest bucket rather than from anything the user chose.
 3. **The bucket column.** Chosen.
 

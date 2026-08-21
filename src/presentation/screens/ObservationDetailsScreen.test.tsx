@@ -8,6 +8,7 @@ import {Record as DomainRecord} from '../../domain/Record';
 import {Circle, type SkFont, Text as SkiaText, useFont} from '@shopify/react-native-skia';
 import {type TimeRangePreset, TREND_INSUFFICIENT_MESSAGE,} from '../charts/chartDefaults';
 import {rendererRegistry} from '../charts/rendererRegistry';
+import type {Metric, MetricValueType} from '../../domain/Metric';
 import type {TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {formatShortDate, formatTimeRange} from '@shared/formatTimeRange';
 import {COLORS, withAlpha} from '@presentation/theme';
@@ -327,8 +328,12 @@ async function pressSwimlaneColumn(root: any, chartIndex = 0) {
     });
 }
 
-const NUMERIC_CARD_HEIGHT = rendererRegistry.get('Numeric')!.cardHeight;
-const TEXT_CARD_HEIGHT = rendererRegistry.get('Text')!.cardHeight;
+function declaredHeight(metric: {type: string}): number {
+    return rendererRegistry.get(metric.type as MetricValueType)!.cardHeight(metric as unknown as Metric);
+}
+
+const NUMERIC_CARD_HEIGHT = declaredHeight({type: 'Numeric'});
+const TEXT_CARD_HEIGHT = declaredHeight({type: 'Text'});
 
 function heightsOf(root: any, testID: string): number[] {
     return root.root
@@ -988,6 +993,32 @@ describe('ObservationDetailsScreen Trends', () => {
         const root = await renderScreen();
 
         expect(heightsOf(root, 'trend-empty')).toEqual([NUMERIC_CARD_HEIGHT, TEXT_CARD_HEIGHT]);
+    });
+
+    it('draws two swimlane Metrics of different lane counts at different heights', async () => {
+        const twoLane = {id: 'b1', name: 'Done', type: 'Boolean'};
+        const fourLane = enumMetric('e1', 'Category', ['a', 'b', 'c', 'd']);
+        mockGetObservationByIdExecute.mockResolvedValue(observationOf(twoLane, fourLane));
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['b1', true], ['e1', 'a']]),
+            chartRecord('b', 1, [['b1', false], ['e1', 'd']]),
+        ]);
+
+        const root = await renderScreen();
+
+        expect(chartBoxHeights(root)).toEqual([declaredHeight(twoLane), declaredHeight(fourLane)]);
+        expect(declaredHeight(fourLane)).toBeGreaterThan(declaredHeight(twoLane));
+        expect(rendererHeights(root)).toEqual(chartBoxHeights(root));
+    });
+
+    it('gives a swimlane Metric no Record in the window the card its lanes ask for', async () => {
+        const fourLane = enumMetric('e1', 'Category', ['a', 'b', 'c', 'd']);
+        mockGetObservationByIdExecute.mockResolvedValue(observationOf(fourLane));
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+
+        const root = await renderScreen();
+
+        expect(heightsOf(root, 'trend-empty')).toEqual([declaredHeight(fourLane)]);
     });
 
     it('renders a card for every Metric a renderer can draw, in declaration order', async () => {

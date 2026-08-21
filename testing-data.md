@@ -86,8 +86,8 @@ shows the four in:
 |                 | Numeric `hourly` (0-100)                             | every 3h over the last 21h, then daily for 12 days — of which the day 3 back also carries a 09:30 and a 15:00 | The only metric dense enough to fill the hour-bucketed `1D` window; its extra day-3 pair is the only hour anywhere holding two Records |
 |                 | Numeric `yearly` (min 0)                             | one point every 14 days, 350 days                  | Fills the 30-day-bucketed `1Y` window instead of clumping at its right edge                                                   |
 |                 | Numeric `insufficient` (max 100)                     | exactly 1 point, 5 days ago                        | Both sides of the placeholder-vs-dot boundary: "Not enough data yet" at `1D`, a single dot at every wider preset             |
-|                 | Boolean `flag`, Enum `category` (a/b/c), Text `note` | shared records, every other day, 20 days           | Two swimlane cards interleaved after the Numeric ones — a two-lane one and a three-lane one — and `note`'s marker card, visibly shorter, below them; one record carrying several value types at once |
-| `no numeric`    | Enum `mood` (low/ok/high), Boolean `done`            | shared records, every other day, 8 days            | No Numeric metric at all, so the whole TRENDS section is two swimlanes — an Enum one and a Boolean one                        |
+|                 | Boolean `flag`, Enum `category` (a/b/c/d), Text `note` | shared records, every other day, 20 days           | Two swimlane cards interleaved after the Numeric ones — a two-lane one and a four-lane one, so the shortest and the tallest card in the section, a swimlane being as tall as its lanes — and `note`'s marker card, shorter than either, below them; one record carrying several value types at once |
+| `no numeric`    | Enum `mood` (low/ok/high), Boolean `done`            | shared records, every other day, 8 days            | No Numeric metric at all, so the whole TRENDS section is two swimlanes — a three-lane Enum one over a two-lane Boolean one, a lane shorter |
 | `stale records` | Numeric `value` (min 0)                              | 4 Records across 3 days, all 40-60 days ago — the middle day carrying two of them half an hour apart | "Not enough data yet" at `1D`/`1W`/`1M`, and a single dot labelled "4" at `1Y` (where all four share one bucket), alongside a *stale* last-record time; also the one zoom ladder a chart tap can descend twice |
 | `no records`    | Numeric `value` (min 0)                              | none                                               | "No records yet" everywhere — the true empty state                                                                            |
 
@@ -96,9 +96,11 @@ shows the four in:
 A Numeric trend card draws a line from **two** aggregated points upwards, a single dot (no line, no gradient fill) at
 exactly **one**, and "Not enough data yet" only at **zero**. An Enum or Boolean card draws a column of marks per point
 instead — one per value recorded in that bucket, as tall as the records behind it against the card's own busiest mark —
-and the same placeholder at zero. A Text card draws one mark per point on a rule across its middle, every mark the same
-size, and the placeholder at zero. Aggregated point counts per metric on `mixed metrics`, so you know what each time
-range preset should look like before you tap it (these are asserted by `devSeedData.test.ts`, so they stay true):
+and the same placeholder at zero. Its height comes from the values its metric declares rather than from the ones its
+records took, so `category` stands four lanes tall at every preset, including one where only two values were recorded. A
+Text card draws one mark per point on a rule across its middle, every mark the same size, and the placeholder at zero.
+Aggregated point counts per metric on `mixed metrics`, so you know what each time range preset should look like before
+you tap it (these are asserted by `devSeedData.test.ts`, so they stay true):
 
 | Metric              | `1D`  | `1W` | `1M` | `1Y`   |
 |---------------------|-------|------|------|--------|
@@ -144,22 +146,25 @@ Open **`mixed metrics`** details screen (time range selector defaults to `1M`):
 - `yearly` — trend chart renders from just 3 points at `1M`, and fills out after switching to `1Y`.
 - `insufficient` — trend chart shows a single dot, vertically centred on the axes, with no line and no gradient fill
   (its one record falls inside the 30-day window).
-- `flag` — a swimlane card *after* the five Numeric ones and *before* `category`, in declaration order: two lanes
-  labelled `Yes` above `No` — the words and the order the Record form's own segments carry — and ten marks in the newer
-  two-thirds of the window, each filling one lane or the other. A `Yes` mark is the darker green. Its plot starts on the
-  same left edge as every other card in the section — the five Numeric ones above it and `category` below — since every
-  chart reserves one gutter of the same width.
-- `category` — a swimlane card after `flag`: three lanes labelled `a`, `b`, `c` top to bottom — the order the Record
-  form lists them in — ten marks in the newer two-thirds of the window each filling its lane, and lane separators but no
-  value labels down the left. An `a` mark is the darkest green and a `c` mark the lightest. Tapping a column on either
-  card reaches the bucket behind it, as a tap on a Numeric point does: at `1M` every column stands for one record, so a
-  tap opens that record for editing, carrying every metric it answered rather than the card's own alone. A tap in the
-  empty older third of either plot, clear of every column, leaves the card as it is.
-- `note` — a marker card after `category`, visibly shorter than every card above it: ten marks on a rule across its
-  middle, all the same size, sitting at the same positions across the card as `category`'s ten columns do. Its plot
-  starts on that same left edge, its gutter carries no labels, and its time labels read as theirs do. Tapping a mark,
-  and the empty stretch beside it, does nothing — the window selector stays where it is. RECENT RECORDS shows entries
-  with a boolean, an enum value, and a note together on the same record.
+- `flag` — a swimlane card *after* the five Numeric ones and *before* `category`, in declaration order, and the shortest
+  card in the section at two lanes — shorter than the Numeric ones above it: two lanes labelled `Yes` above `No` — the
+  words and the order the Record form's own segments carry — and ten marks in the newer two-thirds of the window, each
+  filling one lane or the other. A `Yes` mark is the darker green. Its plot starts on the same left edge as every other
+  card in the section — the five Numeric ones above it and `category` below — since every chart reserves one gutter of
+  the same width.
+- `category` — a swimlane card after `flag`, and the tallest on the screen at four lanes: labelled `a`, `b`, `c`, `d`
+  top to bottom — the order the Record form lists them in — ten marks in the newer two-thirds of the window each filling
+  its lane, and lane separators but no value labels down the left. A lane here is the same height as one on `flag`, the
+  card carrying two more of them rather than dividing the same box further. An `a` mark is the darkest green and a `d`
+  mark the lightest. Tapping a column on either card reaches the bucket behind it, as a tap on a Numeric point does: at
+  `1M` every column stands for one record, so a tap opens that record for editing, carrying every metric it answered
+  rather than the card's own alone. A tap in the empty older third of either plot, clear of every column, leaves the
+  card as it is.
+- `note` — a marker card after `category`, and still the shortest card in the section now that the two swimlanes above
+  it differ in height: ten marks on a rule across its middle, all the same size, sitting at the same positions across
+  the card as `category`'s ten columns do. Its plot starts on that same left edge, its gutter carries no labels, and its
+  time labels read as theirs do. Tapping a mark, and the empty stretch beside it, does nothing — the window selector
+  stays where it is. RECENT RECORDS shows entries with a boolean, an enum value, and a note together on the same record.
 - record notes — under RECENT RECORDS at least one collapsed row shows a note glyph beside its time and at least one
   shows none, with no gap in its place and no difference in row height. Expanding the noted row that also holds a value
   for the `note` metric shows that metric's `NOTE` chip in the horizontal strip and the record's own note as a wrapping
@@ -170,8 +175,8 @@ Still on **`mixed metrics`**, tap through the time range selector and check agai
 
 - `1D` — only `hourly` draws a line; `dense` and `sparse` drop to a single dot each, and `insufficient` (its one record
   is 5 days old, outside this window) shows `Not enough data yet`, as `flag`, `category` and `note` do too when the
-  reseed ran before 09:00 — `note`'s placeholder standing in a card of the same short height its marks are drawn in, so
-  nothing below it moves.
+  reseed ran before 09:00 — each placeholder standing in a card of exactly the height that card's marks are drawn in, so
+  `flag` stays the short one, `category` the tall one, and nothing below them moves.
 - `1W` / `1M` — `dense`, `sparse` and `hourly` all chart, at progressively more points.
 - `1Y` — `yearly` fills out across the window; `dense` and `sparse` shrink to 3 points bunched at the right-hand edge,
   since all their records fall in the last two months. `flag` and `category` each collapse to two columns at that edge —
@@ -192,7 +197,7 @@ Still on **`mixed metrics`**, tap **Add Record** (and again via **Edit Record** 
 - every shape a Numeric bound comes in is on this one form, stated by each empty input: `0-100` on `dense` and `hourly`,
   `Min 0` on `yearly`, `Max 100` on `insufficient`, and no placeholder at all on the unbounded `sparse`, which leaves no
   gap where one would be.
-- `category` reads `None` in a field carrying a chevron, which opens a list of `None`, `a`, `b` and `c` with `None`
+- `category` reads `None` in a field carrying a chevron, which opens a list of `None`, `a`, `b`, `c` and `d` with `None`
   ticked — while `flag` beside it still shows Yes/No segments, the words its chart labels its lanes with, and `note` is
   still a text field.
 - Each button opens a dialog headed by its metric's name — `hourly`'s keeps its line breaks, `yearly`'s longest body
@@ -206,7 +211,8 @@ Open **`no numeric`** details screen:
   `mood`: three lanes labelled `low`, `ok`, `high` top to bottom — the order the Record form lists them in — five marks
   each filling its lane, and lane separators but no value labels down the left. A `low` mark is the darkest green and a
   `high` mark the lightest. `done`: two lanes labelled `Yes` above `No`, five marks each filling one lane or the other,
-  `Yes` the darker green. Both plots start on the same left edge, and no label on either card is cut short.
+  `Yes` the darker green. `mood` stands one lane taller than `done`, having one more value to answer for, and a lane on
+  either card is the same height. Both plots start on the same left edge, and no label on either card is cut short.
 - RECENT RECORDS and its first records are still on the first screen, below both cards.
 - at `1Y` each card's five marks collapse into two columns near the right edge, each carrying a mark per value recorded
   in it. On `mood` no value repeats within either bucket, so every mark still fills its lane and the columns differ in

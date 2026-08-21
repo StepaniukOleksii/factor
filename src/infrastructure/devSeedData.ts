@@ -42,7 +42,9 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-const rand = mulberry32(SEED);
+// Reset at the start of every build below, so the dataset a call answers with
+// does not depend on how many calls came before it.
+let rand = mulberry32(SEED);
 
 function randRange(min: number, max: number): number {
   return min + rand() * (max - min);
@@ -104,6 +106,7 @@ export interface SeedEntry {
 }
 
 export function buildSeedData(): SeedEntry[] {
+  rand = mulberry32(SEED);
   const entries: SeedEntry[] = [];
 
   // "mixed metrics" - one observation carrying every chart/metric scenario that isn't
@@ -137,7 +140,10 @@ export function buildSeedData(): SeedEntry[] {
     // The only described non-Numeric Metric, covering the SegmentedField path.
     const flagMetric = new Metric(Crypto.randomUUID(), 'flag', 'Boolean', null,
       'Boolean, so it charts as two lanes — and the segmented control this button sits in.');
-    const categoryMetric = new Metric(Crypto.randomUUID(), 'category', 'Enum', {allowedValues: ['a', 'b', 'c']});
+    // Four values, the most a Choice may declare, so the dataset covers every lane
+    // count a swimlane can be drawn at: two on `flag`, three on `no numeric`'s
+    // `mood`, four here.
+    const categoryMetric = new Metric(Crypto.randomUUID(), 'category', 'Enum', {allowedValues: ['a', 'b', 'c', 'd']});
     const noteMetric = new Metric(Crypto.randomUUID(), 'note', 'Text');
     const observation = new Observation(Crypto.randomUUID(), 'mixed metrics', [
       denseMetric,
@@ -200,7 +206,7 @@ export function buildSeedData(): SeedEntry[] {
     // `category` each draw a swimlane after the numeric cards and `note` a marker card
     // below them, all three over the same buckets, and one record can carry several
     // value types at once.
-    const categories = ['a', 'b', 'c'];
+    const categories = ['a', 'b', 'c', 'd'];
     for (let i = 18; i >= 0; i -= 2) {
       setValueAt(recordValues, daysAgo(i), flagMetric.id, rand() > 0.5);
       setValueAt(recordValues, daysAgo(i), categoryMetric.id, categories[Math.floor(rand() * categories.length)]);

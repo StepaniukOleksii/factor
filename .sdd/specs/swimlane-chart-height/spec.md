@@ -2,7 +2,7 @@
 
 * 2026-08-21
 * Feature: trend-charting.md
-* [ ] Implemented
+* [x] Implemented
 * [n/a] E2E tested
 
 ## 1. Goal

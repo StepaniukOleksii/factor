@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {getChartLanes} from './chartLanes';
+import {getChartLanes, swimlaneCardHeight} from './chartLanes';
 import {Metric, type MetricConstraint, type MetricValueType} from '../../domain/Metric';
 
 function metric(type: MetricValueType, constraint: MetricConstraint = null): Metric {
@@ -38,5 +38,25 @@ describe('getChartLanes', () => {
 
   it.each(['Numeric', 'Text'] as const)('gives a %s Metric no lanes at all', type => {
     expect(getChartLanes(metric(type))).toEqual([]);
+  });
+});
+
+describe('swimlaneCardHeight', () => {
+  // The 6px of top padding and the 14px time-label strip every chart reserves,
+  // around lanes of 32px each.
+  it.each([
+    [['a', 'b'], 84],
+    [['a', 'b', 'c'], 116],
+    [['a', 'b', 'c', 'd'], 148],
+  ])('gives an Enum Metric declaring %s a card of %ipx', (allowedValues, height) => {
+    expect(swimlaneCardHeight(metric('Enum', {allowedValues}))).toBe(height);
+  });
+
+  it('gives a Boolean Metric the two-lane height, its pair being fixed by its type', () => {
+    expect(swimlaneCardHeight(metric('Boolean'))).toBe(84);
+  });
+
+  it('gives a Metric it can find no lanes for that same two-lane height', () => {
+    expect(swimlaneCardHeight(metric('Enum'))).toBe(84);
   });
 });

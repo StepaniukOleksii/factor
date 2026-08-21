@@ -458,7 +458,8 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                             <View style={styles.trendsList}>
                                 {chartedMetrics.map(metric => {
                                     // Filtered on `has` just above, so every one of these has a registration.
-                                    const {renderer: Renderer, cardHeight} = rendererRegistry.get(metric.type)!;
+                                    const {renderer: Renderer, cardHeight: getCardHeight} = rendererRegistry.get(metric.type)!;
+                                    const cardHeight = getCardHeight(metric);
                                     const points = chartWindow
                                         ? getMetricSeriesUseCase.execute(
                                             chartRecords,

@@ -17,7 +17,7 @@ import {
   type TimeRangePreset,
 } from '../presentation/charts/chartDefaults';
 import {METRIC_DESCRIPTION_MAX_LENGTH, RECORD_NOTE_MAX_LENGTH} from '../domain/validationLimits';
-import type {NumericConstraint} from '../domain/Metric';
+import type {EnumConstraint, NumericConstraint} from '../domain/Metric';
 
 vi.mock('expo-crypto', () => {
   let counter = 0;
@@ -95,6 +95,13 @@ describe('seeded chart coverage', () => {
 
     expect(points.length).toBeGreaterThanOrEqual(2);
     expect(points.some(point => point.recordCount > 1)).toBe(true);
+  });
+
+  it('declares four values on category, the only four-lane swimlane in the dataset', () => {
+    const {observation} = entry('mixed metrics');
+    const category = observation.metrics.find(metric => metric.name === 'category');
+
+    expect((category!.constraint as EnumConstraint).allowedValues).toEqual(['a', 'b', 'c', 'd']);
   });
 
   // A swimlane's mixed regime - a bucket several values deep, each a fraction of

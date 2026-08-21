@@ -47,6 +47,10 @@ const MARK_CORNER_RADIUS = 4;
  * mark per value a bucket's Records took, as wide as the bucket and as tall as
  * the number of Records that took it.
  *
+ * Every lane is `SWIMLANE_LANE_HEIGHT` tall and the card is sized from the lanes
+ * its Metric asks for (`swimlaneCardHeight`), so the plot divides to exactly
+ * that.
+ *
  * Heights are measured against one scale shared by the whole chart rather than
  * against each bucket's own total, so a bucket standing for a single Record
  * draws a shorter column than a busy one beside it. Within a bucket that leaves

@@ -3,6 +3,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
 import {Line, RoundedRect, type SkFont, Text as SkiaText, useFont} from '@shopify/react-native-skia';
 import {CategorySwimlaneChart} from './CategorySwimlaneChart';
+import {SWIMLANE_LANE_HEIGHT, swimlaneCardHeight} from './chartLanes';
 import {getLaneColors} from './laneColors';
 import {TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
 import {AggregationStrategy, MetricSeriesPoint, TimeRange,} from '../../application/GetMetricSeriesUseCase';
@@ -18,16 +19,16 @@ function enumMetric(allowedValues: string[] | null = MOODS): Metric {
 }
 
 const CHART_WIDTH = 300;
-const CHART_HEIGHT = 108;
 
-// The plotting rectangle this chart carves out of its box: the 32px gutter every
-// chart reserves for its left-hand labels, then the same top padding, right
-// inset and time-label strip.
-const PLOT = {left: 32, top: 6, right: 296, bottom: 94};
+/**
+ * The plotting rectangle this chart carves out of the box its registration asks
+ * for: the 32px gutter every chart reserves for its left-hand labels, then the
+ * same top padding, right inset and time-label strip. Three lanes of 32px, so
+ * the card `MOODS` is drawn in stands 6 + 96 + 14 tall.
+ */
+const PLOT = {left: 32, top: 6, right: 296, bottom: 102};
 const PLOT_WIDTH = PLOT.right - PLOT.left;
-const LANE_HEIGHT = (PLOT.bottom - PLOT.top) / MOODS.length;
-/** Where every time label's baseline sits: 12px below the plot's bottom edge. */
-const TIME_LABEL_BASELINE = PLOT.bottom + 12;
+const LANE_HEIGHT = 32;
 /** The gutter less the 5px gap a lane label keeps from the plot. */
 const LANE_LABEL_WIDTH = PLOT.left - 5;
 
@@ -64,6 +65,11 @@ function bucket(bucketIndex: number, ...counts: [string, number][]): MetricSerie
   };
 }
 
+/**
+ * Draws `points` in the box the Metric's own registration declares, as the
+ * screen does - so a card of a different lane count is a card of a different
+ * height here too.
+ */
 function render(
   points: MetricSeriesPoint[],
   metric: Metric = enumMetric(),
@@ -79,7 +85,7 @@ function render(
         timeRange={TIME_RANGE}
         aggregation={aggregation}
         width={CHART_WIDTH}
-        height={CHART_HEIGHT}
+        height={swimlaneCardHeight(metric)}
         onPointPress={onPointPress}
       />,
     );
@@ -117,12 +123,15 @@ function labels(root: any) {
   return root.root.findAllByType(SkiaText).map((text: any) => text.props);
 }
 
+// A lane label starts at the card's own left edge and a time label no further
+// left than the plot's - which tells the two apart whatever height the card is
+// drawn at.
 function laneLabels(root: any) {
-  return labels(root).filter((label: any) => label.y !== TIME_LABEL_BASELINE);
+  return labels(root).filter((label: any) => label.x === 0);
 }
 
 function timeLabels(root: any) {
-  return labels(root).filter((label: any) => label.y === TIME_LABEL_BASELINE);
+  return labels(root).filter((label: any) => label.x !== 0);
 }
 
 function findAllByText(root: any, text: string) {
@@ -246,6 +255,26 @@ describe('CategorySwimlaneChart drawing an Enum Metric', () => {
       expect(line.p1.x).toBe(PLOT.left);
       expect(line.p2.x).toBe(PLOT.right);
       expect(line.p2.y).toBe(line.p1.y);
+    });
+  });
+
+  // Two, three and four lanes - every count a card can be asked for, each drawn
+  // in the box its own registration declares.
+  it.each([2, 3, 4])('divides a %i-lane card into lanes of one fixed height', laneCount => {
+    const values = ['a', 'b', 'c', 'd'].slice(0, laneCount);
+    const root = render(
+      [bucket(0, ...values.map((value): [string, number] => [value, 1]))],
+      enumMetric(values),
+    );
+
+    const boundaries = separators(root).map((line: any) => line.p1.y);
+    expect(boundaries).toHaveLength(laneCount + 1);
+    boundaries.slice(1).forEach((edge: number, lane: number) => {
+      expect(edge - boundaries[lane]).toBeCloseTo(SWIMLANE_LANE_HEIGHT);
+    });
+    marks(root).forEach((mark: any, lane: number) => {
+      expect(mark.y).toBeGreaterThanOrEqual(boundaries[lane]);
+      expect(mark.y + mark.height).toBeLessThanOrEqual(boundaries[lane + 1]);
     });
   });
 
@@ -392,15 +421,17 @@ describe('CategorySwimlaneChart drawing an Enum Metric', () => {
 });
 
 describe('CategorySwimlaneChart drawing a Boolean Metric', () => {
-  const BOOLEAN_LANE_HEIGHT = (PLOT.bottom - PLOT.top) / 2;
-
   function booleanMetric(): Metric {
     return new Metric('b1', 'done', 'Boolean');
   }
 
-  /** The bottom edge of the lane at `lane`, over two lanes rather than three. */
+  /**
+   * The bottom edge of the lane at `lane`. Its card carries two lanes where the
+   * Enum's carries three, and stands 32px shorter for it rather than dividing
+   * the same box in two - so the lanes are the Enum card's own height.
+   */
   function booleanLaneFloor(lane: number): number {
-    return PLOT.top + (lane + 1) * BOOLEAN_LANE_HEIGHT;
+    return PLOT.top + (lane + 1) * LANE_HEIGHT;
   }
 
   beforeEach(() => {
@@ -423,8 +454,9 @@ describe('CategorySwimlaneChart drawing a Boolean Metric', () => {
   });
 
   // One gutter for every chart, whatever it labels - so two cards of the same
-  // window put a moment at the same x and can be read down a column.
-  it('draws from the same left edge, and over the same plot, an Enum swimlane does', () => {
+  // window put a moment at the same x and can be read down a column, however
+  // they differ in height.
+  it('draws from the same left edge, and to the same x scale, an Enum swimlane does', () => {
     loadFont();
 
     const root = render([bucket(0, ['true', 1])], booleanMetric());
@@ -444,7 +476,7 @@ describe('CategorySwimlaneChart drawing a Boolean Metric', () => {
     );
 
     const [yes, no, busiest] = marks(root);
-    expect(busiest.height).toBeCloseTo(BOOLEAN_LANE_HEIGHT - 6);
+    expect(busiest.height).toBeCloseTo(LANE_HEIGHT - 6);
     expect(yes.height).toBeCloseTo(2 * no.height);
   });
 
@@ -454,7 +486,7 @@ describe('CategorySwimlaneChart drawing a Boolean Metric', () => {
     expect(marks(root)).toHaveLength(1);
     // Nine of a stray value would otherwise be the tallest count in the series,
     // leaving the one real mark a ninth of its lane.
-    expect(marks(root)[0].height).toBeCloseTo(BOOLEAN_LANE_HEIGHT - 6);
+    expect(marks(root)[0].height).toBeCloseTo(LANE_HEIGHT - 6);
   });
 
   it('answers a press by its column too, the two charts being one renderer', () => {
