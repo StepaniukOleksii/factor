@@ -1,16 +1,17 @@
 appId: com.anonymous.factor
 ---
 # What pressing a chart point does, which depends on how many Records it stands
-# for: one opens that Record, several narrow the window onto them. Both renderers
-# answer that way, so the pass runs once on a Numeric chart and once on a
-# swimlane.
+# for: one opens that Record, several narrow the window onto them. All three
+# renderers answer that way, so the pass runs both acts on a Numeric chart and
+# again on a swimlane, then the opening one on a card of marks.
 #
 # A chart acts only where a point is, so every tap below is aimed with a
 # percentage derived from the window's bucket grid, per testing-android-e2e.md.
 # The 50% vertical serves all of them: a chart drawing a single point draws it at
 # the plot's vertical middle, the middle point of the zoomed three sits within
-# a few pixels of it, its value lying between the other two, and a swimlane
-# column answers anywhere down its height (ADR-7).
+# a few pixels of it, its value lying between the other two, a swimlane column
+# answers anywhere down its height (ADR-7), and a marker sits on the rule drawn
+# across the middle of its own plot.
 
 - runFlow:
     file: ../../subflows/launch.yaml
@@ -159,3 +160,32 @@ appId: com.anonymous.factor
     id: "time-range-custom"
     selected: true
 - assertNotVisible: "Custom"
+
+# --- And the opening act once more, on a card of marks -----------------------
+# `mixed metrics` is the only fixture carrying a Text Metric.
+- tapOn: "Back"
+- tapOn: "mixed metrics"
+- runFlow: ../../subflows/wait-for-trends.yaml
+
+# Centred rather than merely scrolled to: the Add Record footer floats over the
+# bottom of the screen and takes any press landing under it, while a card resting
+# there is fully visible by its own bounds - which is all Maestro weighs.
+- scrollUntilVisible:
+    element:
+      id: "text-marker-chart-pressable"
+    direction: DOWN
+    centerElement: true
+
+# `note`'s Records sit at 09:00 on alternate days, so the default 1M window gives
+# each a day bucket of its own, and a mark is drawn on its bucket's start rather
+# than at a swimlane column's middle: the newest 29/30 across the plot, 96% of the
+# canvas. Run before 09:00 that Record is still in the future and the nearest mark
+# is a bucket to the left - inside the tolerance, and a Record just the same.
+- tapOn:
+    id: "text-marker-chart-pressable"
+    point: "96%,50%"
+- assertVisible: "Save Record"
+- tapOn: "Cancel editing"
+# Not the TRENDS heading the sections above close on: this one scrolled, and where
+# the section is left once the form goes is not the same twice.
+- assertVisible: "Add Record"

@@ -3,7 +3,7 @@
 * 2026-08-21
 * Feature: trend-exploration.md
 * [x] Implemented
-* [ ] E2E tested
+* [x] E2E tested
 
 ## 1. Goal
 
@@ -150,8 +150,12 @@ a tap on a chart does, and this is that same act on a third renderer.
   screen's own handler either way; what is new, and what no Vitest press can see, is whether a 40px-tall canvas takes a
   press at all.
 * **Handles:** `text-marker-chart-pressable` is new, and `mixed metrics` draws exactly one, so no `index` is needed. The
-  card is the last of eight in the section, so the flow scrolls it into view first and requires it fully visible — an
-  element-relative `point` is measured from the element's bounds, so a card half off-screen puts the aim somewhere else.
+  card is the last of eight in the section, so the flow scrolls it into view first — an element-relative `point` is
+  measured from the element's bounds, so a card half off-screen puts the aim somewhere else. Fully visible is not
+  enough, which the first run showed: the Add Record footer floats over the bottom of the screen and takes any press
+  landing under it, while a card resting there is fully visible by its own bounds, all Maestro weighs. It is therefore
+  centred. Where the section is left once the form is dismissed is not the same twice, so the return is asserted on that
+  same footer rather than on the `TRENDS` heading the flow's other two sections close on.
 * **Aim:** derived from the fixture's bucket grid and commented with that derivation, per
   [testing-android-e2e.md](../../../testing-android-e2e.md). A marker is drawn on its bucket's start, where a Numeric
   point is drawn and not where a swimlane column's middle is, so `note`'s 09:00-on-alternate-days Records put the newest
