@@ -6,6 +6,7 @@ import {TextMarkerChart} from './TextMarkerChart';
 import {CategorySwimlaneChart} from './CategorySwimlaneChart';
 import {TREND_INSUFFICIENT_MESSAGE} from './chartDefaults';
 import {POINT_COUNT_LABEL_COLOR} from './chartAxis';
+import {TAP_TOLERANCE} from './chartHitTest';
 import {AggregationStrategy, MetricSeriesPoint, TimeRange} from '../../application/GetMetricSeriesUseCase';
 import {Metric} from '../../domain/Metric';
 
@@ -60,7 +61,7 @@ function marker(bucketIndex: number, recordCount = 1): MetricSeriesPoint {
   };
 }
 
-function render(points: MetricSeriesPoint[], onPointPress = vi.fn()) {
+function render(points: MetricSeriesPoint[], onPointPress = vi.fn(), height = CHART_HEIGHT) {
   let root: any;
   act(() => {
     root = renderer.create(
@@ -70,12 +71,23 @@ function render(points: MetricSeriesPoint[], onPointPress = vi.fn()) {
         timeRange={TIME_RANGE}
         aggregation={AGGREGATION}
         width={CHART_WIDTH}
-        height={CHART_HEIGHT}
+        height={height}
         onPointPress={onPointPress}
       />,
     );
   });
   return root!;
+}
+
+/**
+ * Taps the canvas at a position across it. `locationY` defaults to the rule the
+ * marks are drawn on, which the hit test measures its vertical bound from.
+ */
+function press(root: any, locationX: number, locationY = MARK_Y) {
+  const pressable = root.root.findByProps({testID: 'text-marker-chart-pressable'});
+  act(() => {
+    pressable.props.onPress({nativeEvent: {locationX, locationY}});
+  });
 }
 
 function circles(root: any) {
@@ -178,14 +190,69 @@ describe('TextMarkerChart', () => {
     expect(circles(root)).toHaveLength(0);
   });
 
-  it('never reports a point, wherever the canvas is touched', () => {
+  it('reports the bucket behind the mark that was tapped', () => {
+    const onPointPress = vi.fn();
+    const points = [marker(0), marker(5)];
+
+    press(render(points, onPointPress), markX(5));
+
+    expect(onPointPress).toHaveBeenCalledWith(points[1]);
+  });
+
+  it('reports the nearer of two marks a tap falls between', () => {
+    const onPointPress = vi.fn();
+    const points = [marker(0), marker(1)];
+
+    press(render(points, onPointPress), markX(1) - TAP_TOLERANCE / 3);
+
+    expect(onPointPress).toHaveBeenCalledWith(points[1]);
+  });
+
+  it('reports nothing from an empty stretch beyond tolerance of every mark', () => {
+    const onPointPress = vi.fn();
+
+    // Five buckets apart, so the midpoint is further from both than any tap that
+    // reaches either.
+    press(render([marker(0), marker(5)], onPointPress), (markX(0) + markX(5)) / 2);
+
+    expect(onPointPress).not.toHaveBeenCalled();
+  });
+
+  it('reports nothing beyond either end of the drawn series', () => {
     const onPointPress = vi.fn();
     const root = render([marker(0), marker(5)], onPointPress);
 
-    const pressed = root.root.findAll((node: any) => typeof node.props?.onPress === 'function');
+    press(root, markX(0) - TAP_TOLERANCE - 1);
+    press(root, markX(5) + TAP_TOLERANCE + 1);
 
-    expect(pressed).toHaveLength(0);
     expect(onPointPress).not.toHaveBeenCalled();
+  });
+
+  it('reports a mark from the card’s top and bottom edges alike', () => {
+    const onPointPress = vi.fn();
+    const points = [marker(5)];
+    const root = render(points, onPointPress);
+
+    press(root, markX(5), 0);
+    press(root, markX(5), CHART_HEIGHT);
+
+    expect(onPointPress.mock.calls).toEqual([[points[0]], [points[0]]]);
+  });
+
+  // The registered card is short enough that its own edges sit inside the
+  // vertical bound, so only a taller one can show that the bound is tested.
+  it('reports nothing from a tap off the rule on a card tall enough to have one', () => {
+    const onPointPress = vi.fn();
+
+    press(render([marker(5)], onPointPress, 200), markX(5), 0);
+
+    expect(onPointPress).not.toHaveBeenCalled();
+  });
+
+  it('exposes nothing to press for a window holding no text', () => {
+    const root = render([]);
+
+    expect(root.root.findAllByProps({testID: 'text-marker-chart-pressable'})).toHaveLength(0);
   });
 
   // The two cards are drawn at different heights, which is what could have pulled

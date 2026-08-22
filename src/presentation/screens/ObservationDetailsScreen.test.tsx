@@ -328,6 +328,19 @@ async function pressSwimlaneColumn(root: any, chartIndex = 0) {
     });
 }
 
+/**
+ * Taps the earliest mark of a Text card. An unmeasured chart collapses every
+ * mark onto the plotting rectangle's left edge, 32px in, where the earliest of
+ * them answers for the rest; 16 is the rule they sit on in the 40px box this
+ * card is registered at, and the vertical axis is hit-tested here.
+ */
+async function pressTextMarker(root: any, chartIndex = 0) {
+    const pressable = root.root.findAllByProps({testID: 'text-marker-chart-pressable'})[chartIndex];
+    await act(async () => {
+        pressable.props.onPress({nativeEvent: {locationX: 32, locationY: 16}});
+    });
+}
+
 function declaredHeight(metric: {type: string}): number {
     return rendererRegistry.get(metric.type as MetricValueType)!.cardHeight(metric as unknown as Metric);
 }
@@ -1115,6 +1128,26 @@ describe('ObservationDetailsScreen Trends', () => {
         expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(1);
     });
 
+    it('opens the Record behind a Text mark standing for exactly one', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(observationOf({id: 't1', name: 'note', type: 'Text'}));
+        // Two days apart at the default 1M window, so each keeps its own bucket
+        // and its mark stands for a single Record.
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('earliest', 3, [['t1', 'the hotel bed']]),
+            chartRecord('latest', 1, [['t1', 'slept through']]),
+        ]);
+        const navigate = vi.fn();
+
+        const root = await renderScreen(navigate);
+        await pressTextMarker(root);
+
+        expect(navigate).toHaveBeenCalledWith('EditRecord', {
+            observationId: 'obs-1',
+            recordId: 'earliest',
+        });
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(1);
+    });
+
     it('still opens the Record behind a Numeric point on an Observation carrying an Enum card too', async () => {
         mockGetObservationByIdExecute.mockResolvedValue(
             observationOf(
@@ -1557,6 +1590,19 @@ describe('ObservationDetailsScreen Chart Zoom', () => {
         recordAt('next-bucket', on(6, 25), [['m1', 5], ['e1', 'ok']]),
     ];
 
+    // And again answered for a Text Metric, so the section draws a marker card
+    // beside the curve and the two Records sharing a 30-day bucket share a mark
+    // of it - which nothing on the card can tell apart.
+    const observationWithNote = observationOf(
+        {id: 'm1', name: 'Duration', type: 'Numeric'},
+        {id: 't1', name: 'note', type: 'Text'},
+    );
+    const noteRecords = [
+        recordAt('span-start', on(5, 26), [['m1', 5], ['t1', 'the hotel bed']]),
+        recordAt('span-end', on(5, 31), [['m1', 5], ['t1', 'slept through']]),
+        recordAt('next-bucket', on(6, 25), [['m1', 5], ['t1', 'back home']]),
+    ];
+
     beforeEach(() => {
         vi.useFakeTimers({shouldAdvanceTime: true});
         vi.setSystemTime(NOW);
@@ -1796,6 +1842,57 @@ describe('ObservationDetailsScreen Chart Zoom', () => {
         );
         expect(customSegment(root).props.accessibilityState.selected).toBe(true);
         expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(2);
+    });
+
+    it('narrows every card in the section on a Text mark standing for several', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(observationWithNote);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue(noteRecords);
+        const navigate = vi.fn();
+
+        const root = await renderScreen(navigate);
+        await selectPreset(root, '1Y');
+        const beforeZoom = mockGetRecordsByTimeRangeExecute.mock.calls.length;
+
+        await pressTextMarker(root);
+
+        expect(navigate).not.toHaveBeenCalled();
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(beforeZoom + 1);
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenLastCalledWith(
+            'obs-1',
+            daysCovering(noteRecords[0], noteRecords[1]),
+        );
+        expect(customSegment(root).props.accessibilityState.selected).toBe(true);
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(2);
+    });
+
+    it('ignores a Text press arriving while the section is still fetching', async () => {
+        mockGetObservationByIdExecute.mockResolvedValue(observationWithNote);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue(noteRecords);
+        const navigate = vi.fn();
+
+        const root = await renderScreen(navigate);
+        await selectPreset(root, '1Y');
+
+        let releaseFetch: (records: DomainRecord[]) => void = () => {};
+        mockGetRecordsByTimeRangeExecute.mockReturnValueOnce(
+            new Promise(resolve => {
+                releaseFetch = resolve;
+            }),
+        );
+
+        await pressTextMarker(root);
+        const inFlight = mockGetRecordsByTimeRangeExecute.mock.calls.length;
+
+        await pressTextMarker(root);
+
+        expect(mockGetRecordsByTimeRangeExecute).toHaveBeenCalledTimes(inFlight);
+        expect(navigate).not.toHaveBeenCalled();
+
+        await act(async () => {
+            releaseFetch([]);
+        });
+
+        expect(customSegment(root).props.accessibilityState.selected).toBe(true);
     });
 
     it('ignores a swimlane press arriving while the section is still fetching', async () => {

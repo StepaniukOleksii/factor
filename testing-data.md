@@ -163,8 +163,11 @@ Open **`mixed metrics`** details screen (time range selector defaults to `1M`):
 - `note` — a marker card after `category`, and still the shortest card in the section now that the two swimlanes above
   it differ in height: ten marks on a rule across its middle, all the same size, sitting at the same positions across
   the card as `category`'s ten columns do. Its plot starts on that same left edge, its gutter carries no labels, and its
-  time labels read as theirs do. Tapping a mark, and the empty stretch beside it, does nothing — the window selector
-  stays where it is. RECENT RECORDS shows entries with a boolean, an enum value, and a note together on the same record.
+  time labels read as theirs do. Tapping a mark reaches the bucket behind it as a tap on a column or a point does: at
+  `1M` every mark stands for one record, so a tap opens that record for editing, carrying its `flag` answer and
+  `category` value beside its own text. A tap on the empty rule between two marks leaves the card as it is, and a tap at
+  the card's top or bottom edge over a mark still opens it — the card is shorter than the target is tall. RECENT RECORDS
+  shows entries with a boolean, an enum value, and a note together on the same record.
 - record notes — under RECENT RECORDS at least one collapsed row shows a note glyph beside its time and at least one
   shows none, with no gap in its place and no difference in row height. Expanding the noted row that also holds a value
   for the `note` metric shows that metric's `NOTE` chip in the horizontal strip and the record's own note as a wrapping
@@ -185,9 +188,10 @@ Still on **`mixed metrics`**, tap through the time range selector and check agai
   column carries visibly less ink than the seven-record one. `note` collapses to the same two marks, carrying `7` and
   `3` above them — the totals `category`'s columns divide between their lanes, written the way a Numeric card writes an
   aggregated point's count — and its card stays the height it was. Every Numeric chart is exactly as before — curve,
-  gradient fill, axes, dots, count labels. Tapping either of `category`'s columns narrows the whole section onto the
-  days behind it — the five Numeric cards above follow it into that window rather than staying at `1Y` — and back once
-  returns every card to `1Y`.
+  gradient fill, axes, dots, count labels. Tapping either of `category`'s columns, or the `note` mark labelled `7`
+  beneath it, narrows the whole section onto the days behind it — the five Numeric cards above follow it into that
+  window rather than staying at `1Y`, and `note` redraws those seven as marks of their own — and back once returns every
+  card to `1Y`.
 - RECENT RECORDS is identical at every selection.
 
 Still on **`mixed metrics`**, tap **Add Record** (and again via **Edit Record** — identical on both routes):

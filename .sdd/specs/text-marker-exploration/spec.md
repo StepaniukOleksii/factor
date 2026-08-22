@@ -2,7 +2,7 @@
 
 * 2026-08-21
 * Feature: trend-exploration.md
-* [ ] Implemented
+* [x] Implemented
 * [ ] E2E tested
 
 ## 1. Goal

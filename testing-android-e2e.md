@@ -105,9 +105,10 @@ Conventions this project follows:
   inputs on their `accessibilityLabel` (`"Hours value"`) or `placeholder` (`"e.g., Duration"`), screens on their header
   text. This keeps flows stable across layout changes, and keeps a passing assertion evidence that a user would see the
   same thing. When adding a screen, give tappable elements an `accessibilityLabel` so a flow has a stable handle.
-* **`testID` only where nothing readable exists**, or where a flow must read state text cannot express. Both current
-  uses qualify: `numeric-trend-chart-pressable` is a Skia canvas, `time-range-preset-1Y` is matched on its `selected`
-  state.
+* **`testID` only where nothing readable exists**, or where a flow must read state text cannot express. Every current
+  use qualifies: the three chart canvases — `numeric-trend-chart-pressable`, `category-swimlane-chart-pressable` and
+  `text-marker-chart-pressable` — draw with Skia and expose no element of their own, and `time-range-preset-1Y` is
+  matched on its `selected` state.
 * **A tap on a chart canvas is aimed inside it** — the one place coordinates are allowed, a canvas holding no element to
   select. A chart acts only where a point is, within 24px of one on both axes, and the centre of a canvas is not where a
   point is. `tapOn` takes an element-relative `point` beside its selector, so `{id: "numeric-trend-chart-pressable",

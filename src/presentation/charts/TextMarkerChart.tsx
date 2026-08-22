@@ -1,4 +1,5 @@
 import React from 'react';
+import {type GestureResponderEvent, Pressable} from 'react-native';
 import {Canvas, Circle, Line, Text as SkiaText, vec} from '@shopify/react-native-skia';
 import {isMarkerPoint} from '../../application/GetMetricSeriesUseCase';
 import {formatPointCount} from './chartDefaults';
@@ -12,6 +13,7 @@ import {
   toPlotRect,
   useAxisFont,
 } from './chartAxis';
+import {nearestPointIndex, TAP_TOLERANCE} from './chartHitTest';
 import {InsufficientData} from './InsufficientData';
 import type {ChartRendererProps} from './rendererRegistry';
 import {COLORS} from '@presentation/theme';
@@ -34,13 +36,16 @@ const COUNT_LABEL_OFFSET = 7;
  * whatever its bucket holds: the card says when text was entered, never what,
  * which is the most a bucket folding several Records could honestly say.
  *
- * It ships inert - neither `metric` nor `onPointPress` is used and no `Pressable`
- * wraps the canvas, so a tap passes through to the scroll view beneath. ADR-7
- * asks a renderer which tap target it takes: this one takes none. A marker does
- * carry a bucket's identity, so one could be defined - but a mark holds nothing
- * a tap could reveal that opening the Record would not show better.
+ * A tap is answered by the mark nearest it horizontally, accepted within
+ * `TAP_TOLERANCE` on both axes - ADR-5's box taken whole, a marker being a dot
+ * drawn on its bucket's start where a Numeric point is, rather than a bar
+ * spanning the bucket like a swimlane's (ADR-7). What a tap *means* - opening a
+ * Record, or narrowing the section onto the Records behind a mark - is the
+ * screen's decision, as it is for the other two cards. Since a mark carries no
+ * text to tell one Record from another, narrowing is the only way this card
+ * separates the Records it folds.
  */
-export const TextMarkerChart = ({points, timeRange, width, height}: ChartRendererProps) => {
+export const TextMarkerChart = ({points, timeRange, width, height, onPointPress}: ChartRendererProps) => {
   // Ahead of the insufficient-data return so the hook order never varies.
   const font = useAxisFont();
 
@@ -57,35 +62,52 @@ export const TextMarkerChart = ({points, timeRange, width, height}: ChartRendere
   // axis here nor lanes to name.
   const plot = toPlotRect(width, height);
   const markY = (plot.top + plot.bottom) / 2;
+  // Where every mark is drawn, taken once so the drawing and the hit test cannot
+  // read the series through two derivations of the same scale.
+  const marks = markers.map(point => ({point, x: timeToX(point.x, timeRange, plot)}));
+
+  const handlePress = ({nativeEvent: {locationX, locationY}}: GestureResponderEvent) => {
+    const nearest = marks[nearestPointIndex(marks, locationX)];
+    if (
+      Math.abs(nearest.x - locationX) <= TAP_TOLERANCE &&
+      // Excludes nothing at the height the registry draws this card at: the rule
+      // sits 16px down 40px, leaving the bottom edge exactly TAP_TOLERANCE away.
+      // Tested rather than dropped because a taller card would clip its own edges.
+      Math.abs(markY - locationY) <= TAP_TOLERANCE
+    ) {
+      onPointPress(nearest.point);
+    }
+  };
 
   return (
-    <Canvas style={{width, height}}>
-      <Line
-        p1={vec(plot.left, markY)}
-        p2={vec(plot.right, markY)}
-        color={GRIDLINE_COLOR}
-        strokeWidth={GRIDLINE_WIDTH}
-      />
-      {markers.map(({recordId, recordCount, x}) => {
-        const markX = timeToX(x, timeRange, plot);
-        const countLabel = recordCount > 1 ? formatPointCount(recordCount) : null;
-        return (
-          <React.Fragment key={recordId}>
-            <Circle cx={markX} cy={markY} r={POINT_HALO_RADIUS} color={MARK_HALO_COLOR} />
-            <Circle cx={markX} cy={markY} r={POINT_RADIUS} color={MARK_COLOR} />
-            {font && countLabel && (
-              <SkiaText
-                font={font}
-                text={countLabel}
-                x={markX - measureWidth(font, countLabel) / 2}
-                y={markY - COUNT_LABEL_OFFSET}
-                color={POINT_COUNT_LABEL_COLOR}
-              />
-            )}
-          </React.Fragment>
-        );
-      })}
-      <TimeAxisLabels font={font} timeRange={timeRange} plot={plot} />
-    </Canvas>
+    <Pressable testID="text-marker-chart-pressable" style={{width, height}} onPress={handlePress}>
+      <Canvas style={{width, height}}>
+        <Line
+          p1={vec(plot.left, markY)}
+          p2={vec(plot.right, markY)}
+          color={GRIDLINE_COLOR}
+          strokeWidth={GRIDLINE_WIDTH}
+        />
+        {marks.map(({point: {recordId, recordCount}, x: markX}) => {
+          const countLabel = recordCount > 1 ? formatPointCount(recordCount) : null;
+          return (
+            <React.Fragment key={recordId}>
+              <Circle cx={markX} cy={markY} r={POINT_HALO_RADIUS} color={MARK_HALO_COLOR} />
+              <Circle cx={markX} cy={markY} r={POINT_RADIUS} color={MARK_COLOR} />
+              {font && countLabel && (
+                <SkiaText
+                  font={font}
+                  text={countLabel}
+                  x={markX - measureWidth(font, countLabel) / 2}
+                  y={markY - COUNT_LABEL_OFFSET}
+                  color={POINT_COUNT_LABEL_COLOR}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+        <TimeAxisLabels font={font} timeRange={timeRange} plot={plot} />
+      </Canvas>
+    </Pressable>
   );
 };
