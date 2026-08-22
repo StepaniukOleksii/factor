@@ -153,7 +153,7 @@ place for it, so it is routed as the spec is written, while the reasoning is sti
   alongside the spec and linked from its Technical Design, so the spec argues nothing it is the only copy of. That is
   precisely the shape of the ADR template's `Alternatives` section.
 * **A constraint outside the code forcing the code's shape → a code comment.** `coding-guidelines.md` states the
-  principle, and both `spec-implementing` and `e2e-testing` carry the tests a comment has to pass.
+  commenting rules.
 * **Everything else dies with the spec, deliberately.** A choice that could have gone another way gets no memorial — the
   same standard the comment rules already apply.
 
@@ -188,8 +188,10 @@ side effect of another, and each states its own scope limit.
 | `e2e-testing`       | a spec's Verification names a flow, or a flow fails | Maestro flows, and the accessibility handles they need to reach elements |
 | `feature-writing`   | the spec's boxes are settled                        | the durable descriptions, and the spec deletion that retires the slice   |
 
-Two helpers carry no decisions of their own, and are listed nowhere above: `slice-landing` performs step 6, and
-`emulator-verifying` boots the app and screenshots it where a question is settled faster by looking.
+Three helpers own no stage of their own, and are listed nowhere above: `comment-pruning` audits code against the comment
+rule in `coding-guidelines.md`, invoked when someone asks for it rather than at any fixed point in a slice;
+`slice-landing` performs step 6; and `emulator-verifying` boots the app and screenshots it where a question is settled
+faster by looking.
 
 ---
 

@@ -2,7 +2,7 @@
 name: spec-implementing
 description: Implements a specific feature specification. ONLY use this skill when the user explicitly asks to implement a spec (e.g., "Implement .sdd/specs/..."). Do NOT use this skill for general fixes, bugs, or minor adjustments.
 metadata:
-  version: "2.1.0"
+  version: "2.2.0"
 ---
 
 # Spec Implementing
@@ -41,31 +41,11 @@ When the user asks you to implement a specification, follow these steps:
 
 * Implement the feature exactly as described in the specification and design.
 * Ensure the implementation fully respects the general guidelines from `.sdd/project/`.
+* Comments follow `coding-guidelines.md`.
 * Take care not to deviate from the provided specification.
 * **Resolve Contradictions:** If you find that the feature specification contradicts itself, or if it contradicts the
   general project guidelines, **DO NOT make assumptions**. You **MUST** stop and ask the user clarification questions
   before proceeding with the implementation.
-
-### Comments
-
-`coding-guidelines.md` states the principle. Default to none: a slice that reads without commentary is a good slice, and
-every comment is one more thing that has to stay true as the code around it moves. When one is earned, write the
-shortest sentence that carries the reason.
-
-A comment has to pass every one of these:
-
-* **Something outside the code forced it to be this way.** A choice that could have gone any other way gets no comment —
-  justifying it implies a significance it does not have.
-* **Never restate the line beneath it.** If the sentence can be reconstructed from the code it sits on, delete it.
-* **Never label a block that already names itself.** A blank line separates without claiming to inform.
-* **Never narrate an assertion.** The test name states the behaviour and the assertion states the check; a sentence
-  between them is a third telling. Comment the fixture instead — why this data, and which property of it the assertions
-  turn on.
-* **Never document somebody else's API.** A reader who needs it reads their docs, not ours.
-* **State the present rule, never the change.** A comment phrased as a delta is unreadable to anyone who never saw the
-  previous version. Git holds the history; the comment holds the rule.
-* **Put the fact where it binds.** Document an interface's fields rather than the interface, and put a file-level note
-  at the top of the file — JSDoc otherwise claims to describe whichever declaration follows it.
 
 ## 5. Database Schema Changes
 

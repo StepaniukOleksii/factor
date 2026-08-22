@@ -2,7 +2,7 @@
 name: e2e-testing
 description: Writes, runs, and debugs Maestro E2E flows for Factor. Use when an implemented slice's spec calls for a flow, when the user asks for a Maestro flow, or when an E2E run fails and needs diagnosing. Not for Vitest unit/component tests, and not for screenshot-based visual checks (see emulator-verifying).
 metadata:
-  version: "2.1.0"
+  version: "2.2.0"
 ---
 
 # E2E Testing
@@ -49,7 +49,7 @@ The Maestro CLI is **not** on a non-interactive shell's `PATH` — its installer
 export PATH="$HOME/.maestro/bin:$PATH"
 ```
 
-Follow the selector priority in the strategy document. Where an element has no stable handle, **add an
+Follow the selector priority in `testing-android-e2e.md`. Where an element has no stable handle, **add an
 `accessibilityLabel` or `testID` to it** — that's expected, and a tappable element missing an accessibility label is
 worth fixing regardless. Change nothing else under `src/`.
 
@@ -58,43 +58,26 @@ worth fixing regardless. Change nothing else under `src/`.
 `.maestro/flows/<feature>/<name>.yaml`, in the feature folder the brief names. The folder is the coverage map, so the
 filename only has to say what this one flow covers. A property flow belonging to no feature sits directly in `flows/`.
 
-Open with `subflows/launch.yaml` and follow the conventions in the strategy document.
+Open with `subflows/launch.yaml` and follow the conventions in `testing-android-e2e.md`.
 
 One representative pass. Resist covering the variations, edge cases and error states the Vitest suite already owns —
 that limit is what keeps the suite runnable.
 
 ### Comments
 
-The strategy document states the principle. Default to none: a flow that is bare steps is a good flow, and every comment
-is one more thing that has to stay true as the screens change. When one is earned, write the shortest sentence that
-carries the reason.
-
-These are the narrow tests that earn one, each learned from a comment that had to be deleted again:
-
-* **Something must have *forced* the code to be this way.** A fixture that is the only one that works, a wait that
-  exists because of a race, an assertion whose purpose is invisible. A choice that could have gone any other way gets no
-  comment — justifying it implies a significance it does not have.
+* **`coding-guidelines.md`'s comment rule governs flows too.** What follows is only what a flow adds to it.
 * **Never restate the steps beneath it.** If the sentence can be reconstructed by reading the next four lines, delete
   it. Bare section labels — `# Cancel path`, `# Confirm path` — are not restatement; they are navigation, and they are
   allowed.
-* **Cite only what outlives the flow.** Where a step exists because of a decision argued elsewhere, point at an ADR or
-  the feature file — anything ephemeral leaves the comment pointing at nothing. A property flow covers no feature at
-  all, so its header states the invariant instead.
-* **Never argue against the alternatives.** One clause for why this fixture; nothing about the others.
-* **Never justify the flow's existence.** Why this earns a flow rather than Vitest coverage was settled before you got
-  here. A flow states what it covers, never why it is entitled to exist.
-* **Name the route when the screen has more than one.** Which entry point a flow takes is a real choice and is not
-  inferable from the steps.
-* **Protect a line that reads as removable.** An assertion that looks redundant but is not — one about an Observation
-  the flow never touched, say — needs the sentence that stops the next reader deleting it.
-
-If justifying one line takes more than a couple of sentences, the reason belongs in the strategy document instead.
-Before finishing, reread every comment and cut the ones whose sentence you could have written from the code alone.
+* **Name the route where a screen has more than one.** Which entry point the flow takes is a real choice and cannot be
+  read off the steps.
+* **Never justify the flow's existence.** Whether this earns a flow rather than Vitest coverage was settled in the spec.
+* **A property flow covers no feature**, so its header states the invariant it protects rather than linking to one.
 
 ## 5. Run It
 
-Iterate with the loop in the strategy document's "Iterating on a flow" — the emulator stays up between attempts, so no
-attempt pays for a rebuild.
+Iterate with the loop in `testing-android-e2e.md`'s "Iterating on a flow" — the emulator stays up between attempts, so
+no attempt pays for a rebuild.
 
 Once it's green, confirm from cold:
 
@@ -118,7 +101,7 @@ If you stop before that point, tear the environment down yourself: `bash scripts
 Maestro writes the failing step's screenshot and the view hierarchy to `.maestro/tests/<timestamp>/`. Read the hierarchy
 before touching the flow — most failures are a selector that stopped matching, not a bug.
 
-Rule out the known causes in the strategy document's Gotchas before concluding anything: a stale dev client after a
+Rule out the known causes in `testing-android-e2e.md`'s Gotchas before concluding anything: a stale dev client after a
 native dependency change, `hideKeyboard` flakiness, and the two dev-link timing rules.
 
 ## 7. Scope Limit
