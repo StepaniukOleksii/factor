@@ -2,7 +2,7 @@
 
 * 2026-08-23
 * Feature: observation-editing.md
-* [ ] Implemented
+* [x] Implemented
 * [ ] E2E tested
 
 ## 1. Goal
@@ -117,10 +117,11 @@ the tap it will refuse:
 * **VALUES**, on a Choice Metric, lists the declared values in declaration order.
 * Text and Yes/No add nothing, locked or not, as in creation.
 
-Locked text sits in the field's own box — `surfaceContainerLowest`, the `outlineVariant` border and `RADIUS.md` that
-`SelectField` already borrows from `LabeledTextField` — so the card keeps its rhythm, and reads in
-`COLORS.onSurfaceVariant` rather than `onSurface` with no chevron beside it, so it reads as stated rather than as
-entered.
+Locked text carries no box. The bordered `surfaceContainerLowest` box is what every field a user types into wears, so a
+fact wearing it too is the one thing the card must not say — and a box around something inert is the decoration
+[design.md](../../project/design.md) rules out. The value sits against its own caption rather than inset to a field's
+text, in `COLORS.onSurfaceVariant` rather than `onSurface`, so the card divides at a glance into what can be typed into
+and what cannot.
 
 **`CreateObservationScreen`** renders `MetricEditorCard` per draft with `locked` false. No behaviour of its own changes.
 
@@ -204,7 +205,10 @@ steps on the same screen rather than a separate case.
   renders `metric-type-locked-0` and no `metric-type-0` picker; tap **Add Metric**, name the new card `caffeine`, save,
   and assert `caffeine` appears on the details screen below the Metrics that preceded it and again as a field on the
   Record form.
-* **Handles:** the locked type text needs `metric-type-locked-${index}`, which is what lets a flow assert the locked
-  form is rendered and the picker is not — every type label is already on screen somewhere on this fixture, so absence
-  cannot be asserted on the text. **Add Metric** matches on its label, and the added card's name field on
-  `metric-name-${index}` as creation's flow already does.
+* **Handles:** all present. The locked type text carries `metric-type-locked-${index}`, which is what lets a flow assert
+  the locked form is rendered and the picker is not — every type label is already on screen somewhere on this fixture,
+  so absence cannot be asserted on the text. A locked range and value list carry `metric-range-locked-${index}` and
+  `metric-values-locked-${index}` beside it. **Add Metric** matches on its label, the added card's name field on
+  `metric-name-${index}` as creation's flow already does, and its delete affordance on the accessibility label `Remove
+  metric ${index + 1}`. The form is long on this fixture, so reaching **Add Metric** needs the `scrollUntilVisible` the
+  creation flow already uses.

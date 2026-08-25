@@ -52,7 +52,10 @@ rung; it holds the rest of the ladder rather than a sixth `mixed metrics` metric
 
 `mixed metrics`, `no numeric` and `stale records` each carry an optional Observation **description** summarizing what
 the observation covers and why (`no records` deliberately leaves its empty) so both the "description shown under the
-title" and the "no description, no empty gap" states on the details screen are covered without manual data entry.
+title" and the "no description, no empty gap" states on the details screen are covered without manual data entry. `mixed
+metrics`' runs to exactly the 150-character limit, so the longest one the details screen and the edit form can hold is
+on screen every time the fixtures are reseeded. Nothing judges seeded data on its way in — the seed calls the repository
+directly — so `devSeedData.test.ts` asserts every name and description against its limit.
 
 Four of `mixed metrics`' metrics carry an optional Metric **description**, each a different length and shape: one line
 on `dense`, several lines on `hourly`, close to the 500-character limit on `yearly`, and one line on the Boolean `flag`.

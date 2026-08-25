@@ -16,7 +16,14 @@ import {
   TIME_RANGE_PRESETS,
   type TimeRangePreset,
 } from '../presentation/charts/chartDefaults';
-import {METRIC_DESCRIPTION_MAX_LENGTH, RECORD_NOTE_MAX_LENGTH} from '../domain/validationLimits';
+import {
+  METRIC_DESCRIPTION_MAX_LENGTH,
+  METRIC_ENUM_VALUE_MAX_LENGTH,
+  METRIC_NAME_MAX_LENGTH,
+  OBSERVATION_DESCRIPTION_MAX_LENGTH,
+  OBSERVATION_NAME_MAX_LENGTH,
+  RECORD_NOTE_MAX_LENGTH,
+} from '../domain/validationLimits';
 import type {EnumConstraint, NumericConstraint} from '../domain/Metric';
 
 vi.mock('expo-crypto', () => {
@@ -327,6 +334,46 @@ describe('seeded observation-level scenarios', () => {
   });
 });
 
+// `reseedDevData()` builds entities and calls the repository directly, so no use
+// case ever judges this data and the columns carry no length constraint. A
+// fixture past a limit reaches the edit forms as a field that opens over its
+// counter and cannot be saved until it is cut by hand.
+describe('seeded lengths', () => {
+  it('keeps every Observation name within its limit', () => {
+    for (const {observation} of buildSeedData()) {
+      expect(observation.name.length, observation.name)
+        .toBeLessThanOrEqual(OBSERVATION_NAME_MAX_LENGTH);
+    }
+  });
+
+  it('keeps every Observation description within its limit', () => {
+    for (const {observation} of buildSeedData()) {
+      expect(observation.description?.length ?? 0, observation.name)
+        .toBeLessThanOrEqual(OBSERVATION_DESCRIPTION_MAX_LENGTH);
+    }
+  });
+
+  it('keeps every Metric name within its limit', () => {
+    for (const {observation} of buildSeedData()) {
+      for (const metric of observation.metrics) {
+        expect(metric.name.length, `"${metric.name}" on "${observation.name}"`)
+          .toBeLessThanOrEqual(METRIC_NAME_MAX_LENGTH);
+      }
+    }
+  });
+
+  it('keeps every Choice value within its limit', () => {
+    for (const {observation} of buildSeedData()) {
+      for (const metric of observation.metrics) {
+        for (const value of (metric.constraint as EnumConstraint | null)?.allowedValues ?? []) {
+          expect(value.length, `"${value}" on "${metric.name}"`)
+            .toBeLessThanOrEqual(METRIC_ENUM_VALUE_MAX_LENGTH);
+        }
+      }
+    }
+  });
+});
+
 // The details screen reads each Observation's creation date, and the list orders
 // by it - so the fixtures state their own rather than taking the moment they were
 // built, which four Observations built in one pass would share.
@@ -389,9 +436,6 @@ describe('seeded Metric descriptions', () => {
     expect(hourly.description).toContain('\n');
   });
 
-  // `reseedDevData()` builds entities and calls the repository directly, so
-  // CreateObservationUseCase never sees this data and nothing else enforces the
-  // limit on it.
   it('keeps every seeded description within the length limit', () => {
     for (const {observation} of buildSeedData()) {
       for (const metric of observation.metrics) {
@@ -422,9 +466,8 @@ describe('seeded Metric bounds', () => {
     expect(metric!.constraint).toEqual(constraint);
   });
 
-  // `reseedDevData()` builds entities and calls the repository directly, so
-  // CreateObservationUseCase never sees this data - an incoherent range, which
-  // makes `validateValue` reject every value, would reach the device unnoticed.
+  // An incoherent range, which makes `validateValue` reject every value, would
+  // reach the device unnoticed.
   it('keeps every seeded range coherent', () => {
     for (const {observation} of buildSeedData()) {
       for (const metric of observation.metrics) {
@@ -489,7 +532,6 @@ describe('seeded Record notes', () => {
     expect(longest).toContain('\n');
   });
 
-  // Nothing else enforces the limit: the seed never runs a use case.
   it('keeps every seeded note within the length limit', () => {
     for (const note of seededNotes()) {
       expect(note.length, note).toBeLessThanOrEqual(RECORD_NOTE_MAX_LENGTH);

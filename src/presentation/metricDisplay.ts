@@ -90,6 +90,12 @@ export function formatMetricRange(constraint: NumericConstraint | null): string 
     return undefined;
 }
 
+/** A bound nothing was typed into is unset rather than zero. */
+export function formatTypedRange(min: string, max: string): string | undefined {
+    const bound = (text: string) => text.trim() === '' ? undefined : Number(text);
+    return formatMetricRange({min: bound(min), max: bound(max)});
+}
+
 /**
  * Why a value was refused, naming the bound it broke - or `undefined` for an
  * unbounded Metric, whose values break none.

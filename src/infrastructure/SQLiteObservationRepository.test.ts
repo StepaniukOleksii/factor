@@ -349,7 +349,7 @@ describe('SQLiteObservationRepository', () => {
       const result = await repository.findAll();
 
       expect(mockGetAllAsync).toHaveBeenLastCalledWith(
-        'SELECT id, observationId, name, type, constraintJson, description FROM metrics'
+        'SELECT id, observationId, name, type, constraintJson, description FROM metrics ORDER BY rowid'
       );
       expect(result[0].metrics[0].description).toBe('Degrees Celsius, outdoors.');
       expect(result[0].metrics[1].description).toBe('One of:\nclear\nrain\nsnow');

@@ -7,25 +7,17 @@ import {
   OBSERVATION_DESCRIPTION_MAX_LENGTH,
   OBSERVATION_NAME_MAX_LENGTH,
 } from '../domain/validationLimits';
-import type {CreateObservationInput} from './CreateObservationUseCase';
+import type {CreateObservationInput, MetricInput} from './CreateObservationUseCase';
+import type {UpdateObservationInput} from './UpdateObservationUseCase';
 
-/**
- * What is wrong with one submitted Metric, a message per field of the editor
- * that produced it, so a screen can mark the field rather than report the
- * Observation as a whole.
- */
 export interface MetricErrors {
-  /** The Metric's name. */
   name?: string;
-  /** The Metric's own description. */
   description?: string;
-  /** The lower bound alone. */
   min?: string;
-  /** The upper bound alone. */
   max?: string;
   /** The two bounds against each other, which belongs to neither field. */
   range?: string;
-  /** The value set as a whole - too few, too many, too long, or not distinct. */
+  /** The value set as a whole rather than any value in it. */
   values?: string;
   /**
    * The Metric's type and the constraint it carries disagree. Each editor is
@@ -35,18 +27,11 @@ export interface MetricErrors {
   constraint?: string;
 }
 
-/**
- * What is wrong with the two fields every write path to an Observation carries,
- * addressed the same way. Shared so creation and a rename judge them alike.
- */
 export interface ObservationIdentityErrors {
-  /** The Observation's name. */
   name?: string;
-  /** The Observation's description. */
   description?: string;
 }
 
-/** What is wrong with a submitted Observation, its Metrics included. */
 export interface CreateObservationErrors extends ObservationIdentityErrors {
   /** The Metric list itself rather than any Metric in it. */
   metrics?: string;
@@ -54,7 +39,6 @@ export interface CreateObservationErrors extends ObservationIdentityErrors {
   perMetric: MetricErrors[];
 }
 
-/** Whether `text` holds anything the user typed, rather than nothing or spacing. */
 export function isDeclared(text?: string): boolean {
   return (text ?? '').trim() !== '';
 }
@@ -92,8 +76,7 @@ function enumValuesError(values: string[]): string | undefined {
 
 /**
  * An incoherent range makes `validateValue` reject every value, so it is caught
- * where the user's input enters the system. Compared only once both bounds are
- * numbers, so unreadable text is reported as itself rather than as a range.
+ * where the user's input enters the system.
  */
 function boundErrors(min?: string, max?: string): MetricErrors {
   const errors: MetricErrors = {};
@@ -110,8 +93,7 @@ function boundErrors(min?: string, max?: string): MetricErrors {
   return errors;
 }
 
-/** The one constraint a Metric holds, its type deciding which rule set judges it. */
-function constraintErrors(metric: CreateObservationInput['metrics'][number]): MetricErrors {
+function constraintErrors(metric: MetricInput): MetricErrors {
   const values = declaredEnumValues(metric.values);
   const bounded = isDeclared(metric.min) || isDeclared(metric.max);
 
@@ -128,8 +110,8 @@ function constraintErrors(metric: CreateObservationInput['metrics'][number]): Me
   return bounded ? boundErrors(metric.min, metric.max) : {};
 }
 
-function metricErrors(metric: CreateObservationInput['metrics'][number]): MetricErrors {
-  const errors: MetricErrors = constraintErrors(metric);
+function metricIdentityErrors(metric: MetricInput): MetricErrors {
+  const errors: MetricErrors = {};
 
   const name = metric.name?.trim() ?? '';
   if (name === '') {
@@ -147,10 +129,30 @@ function metricErrors(metric: CreateObservationInput['metrics'][number]): Metric
   return errors;
 }
 
+function metricErrors(metric: MetricInput): MetricErrors {
+  return {...constraintErrors(metric), ...metricIdentityErrors(metric)};
+}
+
 /**
- * What is wrong with an Observation's own name and description, judged the same
- * way whichever write path submitted them.
- *
+ * The aggregate is what enforces distinct names (ADR-4); the marking here is
+ * what decides which field the refusal lands on.
+ */
+function metricListErrors<T extends MetricInput>(
+  metrics: readonly T[],
+  judge: (metric: T) => MetricErrors
+): Pick<CreateObservationErrors, 'metrics' | 'perMetric'> {
+  const perMetric = metrics.map(judge);
+
+  for (const position of collidingNamePositions(metrics.map(metric => metric.name ?? ''))) {
+    perMetric[position].name ??= 'Metric names must be unique';
+  }
+
+  return metrics.length === 0
+    ? {metrics: 'At least one metric is required', perMetric}
+    : {perMetric};
+}
+
+/**
  * @param takenNames the names this submission must not collide with; leaving out
  * the subject's own, where there is one, is the caller's job (ADR-4).
  */
@@ -177,42 +179,37 @@ export function validateObservationIdentity(
   return errors;
 }
 
-/**
- * Everything wrong with `input` at once, so a form can mark every field that
- * needs attention instead of surfacing one reason per attempt.
- *
- * Returns the rules alone; refusing the save is `firstErrorMessage`'s job and
- * marking the fields is the screen's.
- *
- * @param takenNames as `validateObservationIdentity` takes them.
- */
+/** @param takenNames as `validateObservationIdentity` takes them. */
 export function validateCreateObservation(
   input: CreateObservationInput,
   takenNames: readonly string[]
 ): CreateObservationErrors {
-  const metrics = input.metrics ?? [];
-  const errors: CreateObservationErrors = {
+  return {
     ...validateObservationIdentity(input.name, input.description, takenNames),
-    perMetric: metrics.map(metricErrors),
+    ...metricListErrors(input.metrics ?? [], metricErrors),
   };
-
-  // The aggregate is what enforces the rule (ADR-4); this is what decides which
-  // field the refusal marks.
-  for (const position of collidingNamePositions(metrics.map(metric => metric.name ?? ''))) {
-    errors.perMetric[position].name ??= 'Metric names must be unique';
-  }
-
-  if (metrics.length === 0) {
-    errors.metrics = 'At least one metric is required';
-  }
-
-  return errors;
 }
 
 /**
- * The single reason a save is refused with, for a caller that can only report
- * one - the Observation before its Metrics, and within a Metric its identity
- * before the constraint it carries, so the reason given is the earliest thing
+ * A Metric already stored is judged on its name and its description alone: its
+ * type and constraint are not up for editing, so nothing submits them and there
+ * is nothing to judge. One being added is judged exactly as creation judges it.
+ *
+ * @param takenNames as `validateObservationIdentity` takes them.
+ */
+export function validateUpdateObservation(
+  input: UpdateObservationInput,
+  takenNames: readonly string[]
+): CreateObservationErrors {
+  return {
+    ...validateObservationIdentity(input.name, input.description, takenNames),
+    ...metricListErrors(input.metrics ?? [], metric =>
+      metric.id === undefined ? metricErrors(metric) : metricIdentityErrors(metric)),
+  };
+}
+
+/**
+ * The single reason a save is refused with, ordered so it is the earliest thing
  * the user has to put right.
  */
 export function firstErrorMessage(errors: Partial<CreateObservationErrors>): string | undefined {
@@ -230,7 +227,6 @@ export function firstErrorMessage(errors: Partial<CreateObservationErrors>): str
   return undefined;
 }
 
-/** Whether anything at all is wrong, for a caller deciding whether to submit. */
 export function hasErrors(errors: Partial<CreateObservationErrors>): boolean {
   return firstErrorMessage(errors) !== undefined;
 }

@@ -94,7 +94,7 @@ describe('SQLiteObservationRepository.update', () => {
     expect((await stored('obs-1')).createdAt).toEqual(CREATED_AT);
   });
 
-  it('leaves the Observation\'s metric rows alone', async () => {
+  it('leaves a Metric it was handed unchanged as it was', async () => {
     subject.name = 'Rest';
 
     await repository.update(subject);
@@ -124,5 +124,88 @@ describe('SQLiteObservationRepository.update', () => {
     const other = await stored('obs-2');
     expect(other.name).toBe('Mood');
     expect(other.description).toBeNull();
+  });
+
+  describe('metrics', () => {
+    function withMetrics(metrics: Metric[]): Observation {
+      return new Observation('obs-1', subject.name, metrics, subject.description, CREATED_AT);
+    }
+
+    it('round-trips a renamed and redescribed Metric under its own id', async () => {
+      const renamed = new Metric('metric-1', 'Duration', 'Numeric', {min: 0}, 'Hours in bed');
+
+      await repository.update(withMetrics([renamed, subject.metrics[1]]));
+
+      const reloaded = (await stored('obs-1')).metrics[0];
+      expect([reloaded.id, reloaded.name, reloaded.description])
+        .toEqual(['metric-1', 'Duration', 'Hours in bed']);
+      expect(reloaded.constraint).toEqual({min: 0});
+    });
+
+    it('keeps the values a renamed Metric\'s Records hold', async () => {
+      await repository.update(withMetrics([
+        new Metric('metric-1', 'Duration', 'Numeric'),
+        subject.metrics[1],
+      ]));
+
+      expect(handle.db.prepare('SELECT recordId, metricId, valueJson FROM record_values').all())
+        .toEqual([{recordId: 'rec-1', metricId: 'metric-1', valueJson: '7'}]);
+    });
+
+    it('inserts a Metric the table does not hold, after the ones it does', async () => {
+      const added = new Metric('metric-4', 'Dreams', 'Text', null, null);
+
+      await repository.update(withMetrics([...subject.metrics, added]));
+
+      expect((await stored('obs-1')).metrics.map(metric => metric.id))
+        .toEqual(['metric-1', 'metric-2', 'metric-4']);
+    });
+
+    it('writes a rename and an insertion together', async () => {
+      await repository.update(withMetrics([
+        new Metric('metric-1', 'Duration', 'Numeric'),
+        subject.metrics[1],
+        new Metric('metric-4', 'Dreams', 'Text'),
+      ]));
+
+      expect((await stored('obs-1')).metrics.map(metric => metric.name))
+        .toEqual(['Duration', 'Quality', 'Dreams']);
+    });
+
+    it('lets two Metrics exchange names', async () => {
+      await repository.update(withMetrics([
+        new Metric('metric-1', 'Quality', 'Numeric'),
+        new Metric('metric-2', 'Hours', 'Text'),
+      ]));
+
+      expect((await stored('obs-1')).metrics.map(metric => [metric.id, metric.name]))
+        .toEqual([['metric-1', 'Quality'], ['metric-2', 'Hours']]);
+    });
+
+    it('refuses an aggregate that has lost a Metric the table holds', async () => {
+      await expect(repository.update(withMetrics([subject.metrics[0]])))
+        .rejects.toThrow('Cannot remove metric metric-2 through update.');
+    });
+
+    it('writes nothing at all when it refuses', async () => {
+      const losingOne = withMetrics([subject.metrics[0]]);
+      losingOne.name = 'Rest';
+
+      await expect(repository.update(losingOne)).rejects.toThrow();
+
+      const reloaded = await stored('obs-1');
+      expect(reloaded.name).toBe('Sleep');
+      expect(reloaded.metrics.map(metric => metric.id)).toEqual(['metric-1', 'metric-2']);
+    });
+
+    it('leaves another Observation\'s Metrics alone', async () => {
+      await repository.update(withMetrics([
+        new Metric('metric-1', 'Duration', 'Numeric'),
+        subject.metrics[1],
+      ]));
+
+      expect((await stored('obs-2')).metrics.map(metric => [metric.id, metric.name]))
+        .toEqual([['metric-3', 'Level']]);
+    });
   });
 });

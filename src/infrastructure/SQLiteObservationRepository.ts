@@ -1,3 +1,4 @@
+import type * as SQLite from 'expo-sqlite';
 import {ObservationRepository} from '../application/ObservationRepository';
 import {Observation} from '../domain/Observation';
 import {Metric, MetricConstraint, MetricValueType} from '../domain/Metric';
@@ -57,8 +58,10 @@ export class SQLiteObservationRepository implements ObservationRepository {
       return [];
     }
 
+    // Declaration order is what every screen renders in, and `rowid` is the
+    // only record of it: `metrics` carries no position column.
     const metricRows = await db.getAllAsync<MetricRow>(
-      'SELECT id, observationId, name, type, constraintJson, description FROM metrics'
+      'SELECT id, observationId, name, type, constraintJson, description FROM metrics ORDER BY rowid'
     );
 
     const metricsByObservation = new Map<string, Metric[]>();
@@ -86,18 +89,67 @@ export class SQLiteObservationRepository implements ObservationRepository {
   }
 
   // `createdAt` is deliberately absent from the SET list: it is what orders the
-  // list, and a rename is not a re-creation. One statement needs no transaction,
-  // and a row that is gone updates nothing - the use case has already
-  // established the Observation exists.
+  // list, and a rename is not a re-creation. A row that is gone updates nothing
+  // - the use case has already established the Observation exists.
   async update(observation: Observation): Promise<void> {
     const db = await getDatabase();
 
-    await db.runAsync(
-      'UPDATE observations SET name = ?, description = ? WHERE id = ?',
-      observation.name,
-      observation.description,
+    await db.withTransactionAsync(async () => {
+      await this.refuseMetricRemoval(db, observation);
+
+      await db.runAsync(
+        'UPDATE observations SET name = ?, description = ? WHERE id = ?',
+        observation.name,
+        observation.description,
+        observation.id
+      );
+
+      // SQLite checks the name index as each statement runs, so two Metrics
+      // exchanging names would collide on the first of the two. Parking every
+      // name on its own id clears the way: ids are unique, and none can be a
+      // name a user typed.
+      await db.runAsync('UPDATE metrics SET name = id WHERE observationId = ?', observation.id);
+
+      for (const metric of observation.metrics) {
+        await db.runAsync(
+          `INSERT INTO metrics (id, observationId, name, type, constraintJson, description)
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET
+             name = excluded.name,
+             type = excluded.type,
+             constraintJson = excluded.constraintJson,
+             description = excluded.description`,
+          metric.id,
+          observation.id,
+          metric.name,
+          metric.type,
+          metric.constraint ? JSON.stringify(metric.constraint) : null,
+          metric.description
+        );
+      }
+    });
+  }
+
+  /**
+   * Removing a Metric row cascades its `record_values` away, and what happens to
+   * the Records behind it is unanswered - so `update` refuses an aggregate that
+   * has lost one rather than keeping the row and letting the caller believe
+   * otherwise (ADR-6).
+   */
+  private async refuseMetricRemoval(
+    db: SQLite.SQLiteDatabase,
+    observation: Observation
+  ): Promise<void> {
+    const rows = await db.getAllAsync<{id: string}>(
+      'SELECT id FROM metrics WHERE observationId = ?',
       observation.id
     );
+
+    const held = new Set(observation.metrics.map(metric => metric.id));
+    const missing = rows.find(row => !held.has(row.id));
+    if (missing) {
+      throw new Error(`Cannot remove metric ${missing.id} through update.`);
+    }
   }
 
   async delete(id: string): Promise<void> {

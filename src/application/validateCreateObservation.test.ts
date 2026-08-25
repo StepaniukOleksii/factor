@@ -4,15 +4,16 @@ import {
     hasErrors,
     validateCreateObservation,
     validateObservationIdentity,
+    validateUpdateObservation,
 } from './validateCreateObservation';
 import type {CreateObservationInput} from './CreateObservationUseCase';
+import type {UpdateObservationInput} from './UpdateObservationUseCase';
 
 /** A sound draft, so each case spoils only the field it is about. */
 function draft(overrides: Partial<CreateObservationInput> = {}): CreateObservationInput {
   return {name: 'Sleep', metrics: [{name: 'Hours', type: 'Numeric'}], ...overrides};
 }
 
-/** Nothing stored yet, which is what every case but the collisions is about. */
 const NOTHING_TAKEN: string[] = [];
 
 describe('validateCreateObservation', () => {
@@ -46,7 +47,6 @@ describe('validateCreateObservation', () => {
       expect(errors.perMetric[0].min).toBeUndefined();
     });
 
-    // Each bound reads fine on its own; only the pair is wrong.
     it('reports an inverted range against neither bound', () => {
       const metrics = [{name: 'Hours', type: 'Numeric', min: '5', max: '1'}];
 
@@ -215,5 +215,98 @@ describe('validateObservationIdentity', () => {
   it('rejects a description past 150 characters', () => {
     expect(validateObservationIdentity('Sleep', 'a'.repeat(151), NOTHING_TAKEN).description)
       .toBe('Observation description cannot exceed 150 characters');
+  });
+});
+
+describe('validateUpdateObservation', () => {
+  /** An edit to an Observation holding one stored Metric, sound unless a case spoils it. */
+  function edit(overrides: Partial<UpdateObservationInput> = {}): UpdateObservationInput {
+    return {
+      observationId: 'obs-1',
+      name: 'Sleep',
+      metrics: [{id: 'metric-1', name: 'Hours', type: 'Numeric'}],
+      ...overrides,
+    };
+  }
+
+  it('finds nothing wrong with a sound edit', () => {
+    expect(hasErrors(validateUpdateObservation(edit(), NOTHING_TAKEN))).toBe(false);
+  });
+
+  it('judges the Observation\'s own fields as creation judges them', () => {
+    expect(validateUpdateObservation(edit({name: '   '}), NOTHING_TAKEN).name)
+      .toBe('Observation name cannot be empty');
+  });
+
+  describe('a stored Metric', () => {
+    it('is refused an empty name', () => {
+      const metrics = [{id: 'metric-1', name: '  ', type: 'Numeric'}];
+
+      expect(validateUpdateObservation(edit({metrics}), NOTHING_TAKEN).perMetric[0].name)
+        .toBe('Metric name cannot be empty');
+    });
+
+    it('is refused a description past 500 characters', () => {
+      const metrics = [{id: 'metric-1', name: 'Hours', type: 'Numeric', description: 'a'.repeat(501)}];
+
+      expect(validateUpdateObservation(edit({metrics}), NOTHING_TAKEN).perMetric[0].description)
+        .toBe('Metric description cannot exceed 500 characters');
+    });
+
+    // Its constraint is stated rather than offered, so nothing submits one to
+    // judge.
+    it('is not judged on the bounds submitted with it', () => {
+      const metrics = [{id: 'metric-1', name: 'Hours', type: 'Numeric', min: '9', max: '5'}];
+
+      expect(hasErrors(validateUpdateObservation(edit({metrics}), NOTHING_TAKEN))).toBe(false);
+    });
+
+    it('is not judged on values submitted against a type that could not hold them', () => {
+      const metrics = [{id: 'metric-1', name: 'Hours', type: 'Numeric', values: ['a', 'b']}];
+
+      expect(hasErrors(validateUpdateObservation(edit({metrics}), NOTHING_TAKEN))).toBe(false);
+    });
+  });
+
+  describe('a Metric being added', () => {
+    it('is judged on its constraint exactly as creation judges one', () => {
+      const metrics = [
+        {id: 'metric-1', name: 'Hours', type: 'Numeric'},
+        {name: 'Caffeine', type: 'Numeric', min: '9', max: '5'},
+      ];
+
+      expect(validateUpdateObservation(edit({metrics}), NOTHING_TAKEN).perMetric[1].range)
+        .toBe('Metric minimum cannot exceed its maximum');
+    });
+
+    it('is refused a Choice short of values', () => {
+      const metrics = [
+        {id: 'metric-1', name: 'Hours', type: 'Numeric'},
+        {name: 'Weather', type: 'Enum', values: ['sunny', '']},
+      ];
+
+      expect(validateUpdateObservation(edit({metrics}), NOTHING_TAKEN).perMetric[1].values)
+        .toBe('A choice metric needs at least 2 values');
+    });
+  });
+
+  // Stored Metrics come first on the form, so the added one is the second of the
+  // pair and the one marked - creation's rule, over a mixed list.
+  it('marks the added Metric of a colliding pair, not the stored one', () => {
+    const metrics = [
+      {id: 'metric-1', name: 'Hours', type: 'Numeric'},
+      {name: 'hours', type: 'Numeric'},
+    ];
+
+    const errors = validateUpdateObservation(edit({metrics}), NOTHING_TAKEN);
+
+    expect(errors.perMetric[0].name).toBeUndefined();
+    expect(errors.perMetric[1].name).toBe('Metric names must be unique');
+  });
+
+  it('accepts a stored Metric keeping its own name', () => {
+    const metrics = [{id: 'metric-1', name: '  HOURS  ', type: 'Numeric'}];
+
+    expect(hasErrors(validateUpdateObservation(edit({metrics}), NOTHING_TAKEN))).toBe(false);
   });
 });

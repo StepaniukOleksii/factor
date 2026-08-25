@@ -9,33 +9,34 @@ import {
   validateCreateObservation
 } from './validateCreateObservation';
 
+/** One Metric as a form submits it, before anything has judged or built it. */
+export interface MetricInput {
+  name: string;
+  type: string;
+  description?: string;
+  /** Lower bound, as typed; blank or absent leaves it unset. */
+  min?: string;
+  /** Upper bound, as typed; blank or absent leaves it unset. */
+  max?: string;
+  /** The values a choice offers, as typed and in the order declared. */
+  values?: string[];
+}
+
 export interface CreateObservationInput {
   name: string;
   description?: string;
-  metrics: {
-    name: string;
-    type: string;
-    description?: string;
-    /** Lower bound, as typed; blank or absent leaves it unset. */
-    min?: string;
-    /** Upper bound, as typed; blank or absent leaves it unset. */
-    max?: string;
-    /** The values a choice offers, as typed and in the order declared. */
-    values?: string[];
-  }[];
+  metrics: MetricInput[];
 }
 
 /**
- * The one constraint a Metric holds, its type deciding which is built - so a
- * range and a set of values can never both be built for one Metric. Reached
- * only once `validateCreateObservation` has passed, so it builds without
+ * Reached only once `validateCreateObservation` has passed, so it builds without
  * judging.
  *
  * A Numeric Metric given neither bound is left unconstrained rather than holding
  * `{}`, which would persist as a meaningless `"{}"` and read as "bounded" to
  * anything testing the field for presence.
  */
-function toMetricConstraint(type: string, min?: string, max?: string, values?: string[]): MetricConstraint {
+export function toMetricConstraint(type: string, min?: string, max?: string, values?: string[]): MetricConstraint {
   if (type === 'Enum') {
     return {allowedValues: declaredEnumValues(values)};
   }
@@ -50,7 +51,6 @@ function toMetricConstraint(type: string, min?: string, max?: string, values?: s
   return constraint.min === undefined && constraint.max === undefined ? null : constraint;
 }
 
-/** What an optional text field stores: absence, never an empty string. */
 export function toStoredText(text?: string): string | null {
   const trimmed = text?.trim() ?? '';
   return trimmed === '' ? null : trimmed;

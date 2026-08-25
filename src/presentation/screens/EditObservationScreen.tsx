@@ -1,28 +1,44 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
 import type {NavigationAction} from '@react-navigation/native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
-import {UpdateObservationUseCase} from '../../application/UpdateObservationUseCase';
+import {UpdateObservationInput, UpdateObservationUseCase} from '../../application/UpdateObservationUseCase';
 import {
+    CreateObservationErrors,
     hasErrors,
-    type ObservationIdentityErrors,
-    validateObservationIdentity,
+    MetricErrors,
+    validateUpdateObservation,
 } from '../../application/validateCreateObservation';
+import {Metric} from '../../domain/Metric';
 import {Observation} from '../../domain/Observation';
 import {OBSERVATION_DESCRIPTION_MAX_LENGTH, OBSERVATION_NAME_MAX_LENGTH} from '../../domain/validationLimits';
 import {
     CenteredState,
+    DashedButton,
     Dialog,
+    EMPTY_METRIC,
     FooterBar,
     LabeledTextField,
+    type MetricDraft,
+    MetricEditorCard,
     PrimaryActionButton,
     ScreenContainer,
     ScreenHeader,
+    toMetricDraft,
     useFooterClearance,
 } from "@presentation/components";
-import {COLORS} from "@presentation/theme";
+import {COLORS, TYPOGRAPHY} from "@presentation/theme";
 import type {RootStackParamList} from '../navigation/routes';
 
 const repository = new SQLiteObservationRepository();
@@ -30,7 +46,22 @@ const useCase = new UpdateObservationUseCase(repository);
 
 export type EditObservationScreenProps = NativeStackScreenProps<RootStackParamList, 'EditObservation'>;
 
-const NOTHING_MARKED: ObservationIdentityErrors = {};
+const NOTHING_MARKED: CreateObservationErrors = {perMetric: []};
+const NO_METRIC_ERRORS: MetricErrors = {};
+
+/**
+ * Only a Metric's name and description can differ - its type and constraint are
+ * not offered, and a stored Metric cannot leave the form - so a card added is
+ * the only way the two lists differ in length.
+ */
+function metricsDiffer(drafts: readonly MetricDraft[], stored: ReadonlyArray<Metric>): boolean {
+    if (drafts.length !== stored.length) {
+        return true;
+    }
+    return drafts.some((draft, index) => draft.id !== stored[index].id
+        || draft.name.trim() !== stored[index].name
+        || draft.description.trim() !== (stored[index].description ?? ''));
+}
 
 export function EditObservationScreen({route, navigation}: EditObservationScreenProps) {
     const {observationId} = route.params;
@@ -38,11 +69,11 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
     const [observation, setObservation] = useState<Observation | null>(null);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [metrics, setMetrics] = useState<MetricDraft[]>([]);
     const [takenNames, setTakenNames] = useState<string[]>([]);
     const [attemptedSave, setAttemptedSave] = useState(false);
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
-    /** The removal an exit was intercepted on, held while the user decides. */
     const [pendingExit, setPendingExit] = useState<NavigationAction | null>(null);
     const footerClearance = useFooterClearance();
     /**
@@ -54,9 +85,8 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
 
     const onBack = () => navigation.goBack();
 
-    // One read supplies both the subject and the names to compare against, so
-    // the table is opened once. A failed load leaves the screen `Not found`; the
-    // use case refuses a bad save regardless.
+    // A failed load leaves the screen `Not found`; the use case refuses a bad
+    // save regardless.
     useEffect(() => {
         setLoading(true);
         repository.findAll()
@@ -65,6 +95,7 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
                 setObservation(subject);
                 setName(subject?.name ?? '');
                 setDescription(subject?.description ?? '');
+                setMetrics(subject?.metrics.map(toMetricDraft) ?? []);
                 setTakenNames(observations
                     .filter(candidate => candidate.id !== observationId)
                     .map(candidate => candidate.name));
@@ -73,18 +104,32 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
             .finally(() => setLoading(false));
     }, [observationId]);
 
-    const errors = validateObservationIdentity(name, description, takenNames);
-    // Judged every render but withheld until the user has tried to save, as the
-    // creation form withholds its own. A stored value past its limit is marked
-    // like anything else: the form judges what it holds, not what was typed.
+    const input: UpdateObservationInput = {
+        observationId,
+        name,
+        description,
+        metrics: metrics.map(metric => ({
+            id: metric.id,
+            name: metric.name,
+            type: metric.type,
+            description: metric.description,
+            min: metric.min,
+            max: metric.max,
+            values: metric.values,
+        })),
+    };
+
+    const errors = validateUpdateObservation(input, takenNames);
+    // A stored value past its limit is marked like anything else: the form
+    // judges what it holds, not what was typed.
     const marked = attemptedSave ? errors : NOTHING_MARKED;
 
     // The loaded Observation is the baseline, trimmed on both sides so trailing
-    // whitespace that would save nothing does not count as a change. A stored
-    // description of `null` is `''` on the form.
+    // whitespace that would save nothing does not count as a change.
     const isDirty = !!observation
         && (name.trim() !== observation.name.trim()
-            || description.trim() !== (observation.description ?? '').trim());
+            || description.trim() !== (observation.description ?? '').trim()
+            || metricsDiffer(metrics, observation.metrics));
 
     // One listener covers every route off this screen - the header arrow, the
     // cross button, Android's back button and the system back gesture are all
@@ -112,6 +157,16 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
         }
     };
 
+    const handleAddMetric = () => setMetrics([...metrics, EMPTY_METRIC]);
+
+    const handleMetricChange = (index: number, metric: MetricDraft) => {
+        setMetrics(metrics.map((existing, i) => i === index ? metric : existing));
+    };
+
+    const handleRemoveMetric = (index: number) => {
+        setMetrics(metrics.filter((_, i) => i !== index));
+    };
+
     const handleSave = async () => {
         setAttemptedSave(true);
         if (hasErrors(errors)) {
@@ -119,7 +174,7 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
         }
         try {
             setSaving(true);
-            await useCase.execute({observationId, name, description});
+            await useCase.execute(input);
             // Only the success path stands the listener down, so a save that
             // throws leaves the next exit still intercepted.
             leavingAfterSave.current = true;
@@ -164,17 +219,21 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
             />
 
             <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView contentContainerStyle={[styles.scrollContent, {paddingBottom: footerClearance}]}>
-                    <View style={styles.fields}>
-                        <LabeledTextField
-                            label="OBSERVATION NAME"
-                            value={name}
-                            onChangeText={setName}
-                            placeholder="e.g., Sleep Quality, Mood"
-                            maxLength={OBSERVATION_NAME_MAX_LENGTH}
-                            showCounter
-                            error={marked.name}
-                        />
+                <View style={styles.stickySection}>
+                    <LabeledTextField
+                        label="OBSERVATION NAME"
+                        value={name}
+                        onChangeText={setName}
+                        placeholder="e.g., Sleep Quality, Mood"
+                        maxLength={OBSERVATION_NAME_MAX_LENGTH}
+                        showCounter
+                        error={marked.name}
+                    />
+                </View>
+
+                <ScrollView style={styles.scrollView}
+                            contentContainerStyle={[styles.scrollContent, {paddingBottom: footerClearance}]}>
+                    <View style={styles.descriptionSection}>
                         <LabeledTextField
                             label="DESCRIPTION"
                             value={description}
@@ -186,6 +245,26 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
                             showCounter
                             error={marked.description}
                         />
+                    </View>
+                    <View style={styles.divider}/>
+                    <View style={styles.metricsContainer}>
+                        <Text style={styles.label}>METRICS</Text>
+
+                        {metrics.map((metric, index) => (
+                            <MetricEditorCard
+                                key={metric.id ?? `added-${index}`}
+                                metric={metric}
+                                index={index}
+                                errors={marked.perMetric[index] ?? NO_METRIC_ERRORS}
+                                onChange={(next) => handleMetricChange(index, next)}
+                                // A stored Metric cannot leave the form: removing
+                                // it would take its Records' values with it.
+                                onRemove={metric.id === undefined ? () => handleRemoveMetric(index) : undefined}
+                                locked={metric.id !== undefined}
+                            />
+                        ))}
+
+                        <DashedButton label="Add Metric" onPress={handleAddMetric}/>
                     </View>
                 </ScrollView>
 
@@ -223,10 +302,29 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    scrollContent: {
+    stickySection: {
         padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.outlineVariant,
+        backgroundColor: COLORS.background,
+        zIndex: 10,
     },
-    fields: {
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingHorizontal: 16,
+    },
+    label: {...TYPOGRAPHY.sectionCaption, marginBottom: 8},
+    descriptionSection: {
+        marginTop: 16,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: COLORS.outlineVariant,
+        marginVertical: 16,
+    },
+    metricsContainer: {
         gap: 16,
     },
 });

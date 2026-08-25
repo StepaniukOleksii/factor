@@ -111,10 +111,15 @@
             margin-top: 4px;
         }
 
-        /* A locked value keeps the field's box so the card holds its rhythm,
-           and reads in the variant colour with no chevron so it reads as
-           stated rather than as entered. */
-        .input.locked { color: var(--on-surface-variant); }
+        /* No box: a bordered one is what every field a user types into wears,
+           so a fact wearing it too is the one thing the card must not say. Left
+           against its own caption rather than inset to a field's text. */
+        .stated {
+            color: var(--on-surface-variant);
+            font-size: 16px;
+            line-height: 22px;
+        }
+        .field.stated-field .field-label-row { margin-bottom: 6px; }
 
         .select {
             display: flex;
@@ -230,13 +235,13 @@
                 <div class="input">dense</div>
                 <div class="counter">5/15</div>
             </div>
-            <div class="field">
+            <div class="field stated-field">
                 <div class="field-label-row"><span class="field-label">TYPE</span></div>
-                <div class="input locked">Numeric</div>
+                <div class="stated">Numeric</div>
             </div>
-            <div class="field">
+            <div class="field stated-field">
                 <div class="field-label-row"><span class="field-label">RANGE</span></div>
-                <div class="input locked">0-100</div>
+                <div class="stated">0-100</div>
             </div>
             <div class="field">
                 <div class="field-label-row"><span class="field-label">DESCRIPTION</span></div>
@@ -252,9 +257,9 @@
                 <div class="input">sparse</div>
                 <div class="counter">6/15</div>
             </div>
-            <div class="field">
+            <div class="field stated-field">
                 <div class="field-label-row"><span class="field-label">TYPE</span></div>
-                <div class="input locked">Numeric</div>
+                <div class="stated">Numeric</div>
             </div>
             <div class="field">
                 <div class="field-label-row"><span class="field-label">DESCRIPTION</span></div>
@@ -270,13 +275,13 @@
                 <div class="input">category</div>
                 <div class="counter">8/15</div>
             </div>
-            <div class="field">
+            <div class="field stated-field">
                 <div class="field-label-row"><span class="field-label">TYPE</span></div>
-                <div class="input locked">Choice</div>
+                <div class="stated">Choice</div>
             </div>
-            <div class="field">
+            <div class="field stated-field">
                 <div class="field-label-row"><span class="field-label">VALUES</span></div>
-                <div class="input locked">a, b, c, d</div>
+                <div class="stated">a, b, c, d</div>
             </div>
             <div class="field">
                 <div class="field-label-row"><span class="field-label">DESCRIPTION</span></div>

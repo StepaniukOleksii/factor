@@ -36,16 +36,27 @@ vi.mock('../../application/UpdateObservationUseCase', () => ({
     })),
 }));
 
-/** The subject every case edits, with a description and Metrics that must stay off the form. */
+/**
+ * The subject every case edits: a description, and a Metric of each shape a
+ * stored card states rather than offers - a bounded Numeric, an unbounded one,
+ * and a Choice.
+ */
 const SUBJECT = new Observation(
     'obs-1',
     'stale records',
-    [new Metric('metric-1', 'value', 'Numeric'), new Metric('metric-2', 'mood', 'Text')],
+    [
+        new Metric('metric-1', 'value', 'Numeric', {min: 0, max: 10}, 'What was measured.'),
+        new Metric('metric-2', 'span', 'Numeric'),
+        new Metric('metric-3', 'mood', 'Enum', {allowedValues: ['low', 'ok', 'high']}),
+    ],
     'Four records, all of them old.',
 );
 
+/** The card an added Metric renders in, the three stored ones coming before it. */
+const ADDED = 3;
+
 /** A second Observation, so there is a name to collide against. */
-const OTHER = new Observation('obs-2', 'no records', [new Metric('metric-3', 'value', 'Numeric')]);
+const OTHER = new Observation('obs-2', 'no records', [new Metric('metric-9', 'value', 'Numeric')]);
 
 function findAllByText(root: any, text: string) {
     return root.findAll(
@@ -67,11 +78,6 @@ function findTouchableWithText(root: any, text: string) {
     return null;
 }
 
-/**
- * The screen takes its Observation from the route and leaves through the stack,
- * so both are faked here. `addListener` records the screen's `beforeRemove`
- * listener, which is how every exit reaches it once one is registered.
- */
 async function renderScreen(observationId = 'obs-1') {
     const goBack = vi.fn();
     const dispatch = vi.fn();
@@ -112,14 +118,34 @@ async function leaveScreen(listeners: Record<string, (event: any) => void>, acti
     return event.preventDefault.mock.calls.length > 0;
 }
 
-/** The form fields captioned `label`, which only `LabeledTextField` carries. */
+/** The form fields captioned `label`, which only `LabeledTextField` carries, in screen order. */
+function fieldsByLabel(root: any, label: string) {
+    return root.root.findAllByProps({label});
+}
+
 function fieldByLabel(root: any, label: string) {
-    return root.root.findAllByProps({label})[0];
+    return fieldsByLabel(root, label)[0];
 }
 
 async function typeInto(root: any, label: string, text: string) {
     await act(async () => {
         fieldByLabel(root, label).props.onChangeText(text);
+    });
+}
+
+function hasTestID(root: any, testID: string) {
+    return root.root.findAllByProps({testID}).length > 0;
+}
+
+async function nameMetric(root: any, name: string, index: number) {
+    await act(async () => {
+        fieldsByLabel(root, 'METRIC NAME')[index].props.onChangeText(name);
+    });
+}
+
+async function addMetric(root: any) {
+    await act(async () => {
+        findTouchableWithText(root.root, 'Add Metric')!.props.onPress();
     });
 }
 
@@ -129,7 +155,6 @@ async function saveObservation(root: any) {
     });
 }
 
-/** Whether the screen has `message` on it anywhere, as the user would read it. */
 function shows(root: any, message: string) {
     return findAllByText(root.root, message).length > 0;
 }
@@ -158,14 +183,110 @@ describe('EditObservationScreen', () => {
         expect(fieldByLabel(root, 'DESCRIPTION').props.value).toBe('');
     });
 
-    // Metric editing stays out of reach: the Observation carries two, and
-    // neither the name nor the type of either is on the form.
-    it('renders no Metric editor', async () => {
-        const {root} = await renderScreen();
+    describe('metrics', () => {
+        it('renders a card per stored Metric, in declaration order', async () => {
+            const {root} = await renderScreen();
 
-        expect(root.root.findAllByProps({label: 'METRIC NAME'})).toHaveLength(0);
-        expect(shows(root, 'value')).toBe(false);
-        expect(shows(root, 'mood')).toBe(false);
+            expect(fieldsByLabel(root, 'METRIC NAME').map((field: any) => field.props.value))
+                .toEqual(['value', 'span', 'mood']);
+        });
+
+        it('pre-fills a stored Metric\'s description', async () => {
+            const {root} = await renderScreen();
+
+            expect(fieldsByLabel(root, 'DESCRIPTION')[1].props.value).toBe('What was measured.');
+        });
+
+        it('states a stored Metric\'s type rather than offering the picker', async () => {
+            const {root} = await renderScreen();
+
+            expect(hasTestID(root, 'metric-type-locked-0')).toBe(true);
+            expect(hasTestID(root, 'metric-type-0')).toBe(false);
+            expect(shows(root, 'Choice')).toBe(true);
+        });
+
+        it('states a bounded Metric\'s range, and nothing at all for an unbounded one', async () => {
+            const {root} = await renderScreen();
+
+            expect(shows(root, '0-10')).toBe(true);
+            expect(hasTestID(root, 'metric-range-locked-1')).toBe(false);
+            expect(hasTestID(root, 'metric-min-0')).toBe(false);
+        });
+
+        it('states a Choice Metric\'s values in declaration order, with no row to edit', async () => {
+            const {root} = await renderScreen();
+
+            expect(shows(root, 'low, ok, high')).toBe(true);
+            expect(hasTestID(root, 'metric-value-2-0')).toBe(false);
+        });
+
+        it('offers no way to take a stored Metric off the form', async () => {
+            const {root} = await renderScreen();
+
+            expect(root.root.findAllByProps({accessibilityLabel: 'Remove metric 1'})).toHaveLength(0);
+        });
+
+        it('adds a card offering the whole editor, and a way to take it back off', async () => {
+            const {root} = await renderScreen();
+
+            await addMetric(root);
+
+            expect(fieldsByLabel(root, 'METRIC NAME')).toHaveLength(4);
+            expect(hasTestID(root, `metric-type-${ADDED}`)).toBe(true);
+            expect(hasTestID(root, `metric-min-${ADDED}`)).toBe(true);
+            expect(root.root.findAllByProps({accessibilityLabel: `Remove metric ${ADDED + 1}`}))
+                .not.toHaveLength(0);
+        });
+
+        it('takes an added card back off again', async () => {
+            const {root} = await renderScreen();
+
+            await addMetric(root);
+            await act(async () => {
+                root.root.findAllByProps({accessibilityLabel: `Remove metric ${ADDED + 1}`})[0]
+                    .props.onPress();
+            });
+
+            expect(fieldsByLabel(root, 'METRIC NAME')).toHaveLength(3);
+        });
+
+        it('marks a duplicate name on the added card rather than on the stored one', async () => {
+            const {root} = await renderScreen();
+
+            await addMetric(root);
+            await nameMetric(root, 'value', ADDED);
+            await saveObservation(root);
+
+            expect(fieldsByLabel(root, 'METRIC NAME')[ADDED].props.error).toBe('Metric names must be unique');
+            expect(fieldsByLabel(root, 'METRIC NAME')[0].props.error).toBeUndefined();
+            expect(mockUpdateObservationExecute).not.toHaveBeenCalled();
+        });
+
+        it('submits every stored Metric under its own id, and an added one under none', async () => {
+            const {root} = await renderScreen();
+
+            await addMetric(root);
+            await nameMetric(root, 'caffeine', ADDED);
+            await saveObservation(root);
+
+            const submitted = mockUpdateObservationExecute.mock.calls[0][0].metrics;
+            expect(submitted.map((metric: any) => [metric.id, metric.name])).toEqual([
+                ['metric-1', 'value'],
+                ['metric-2', 'span'],
+                ['metric-3', 'mood'],
+                [undefined, 'caffeine'],
+            ]);
+        });
+
+        it('submits a renamed Metric under the id it already had', async () => {
+            const {root} = await renderScreen();
+
+            await nameMetric(root, 'reading', 0);
+            await saveObservation(root);
+
+            expect(mockUpdateObservationExecute.mock.calls[0][0].metrics[0])
+                .toMatchObject({id: 'metric-1', name: 'reading', type: 'Numeric'});
+        });
     });
 
     describe('marks', () => {
@@ -236,11 +357,11 @@ describe('EditObservationScreen', () => {
             await typeInto(root, 'DESCRIPTION', 'A new purpose.');
             await saveObservation(root);
 
-            expect(mockUpdateObservationExecute).toHaveBeenCalledWith({
+            expect(mockUpdateObservationExecute).toHaveBeenCalledWith(expect.objectContaining({
                 observationId: 'obs-1',
                 name: 'renamed',
                 description: 'A new purpose.',
-            });
+            }));
             expect(goBack).toHaveBeenCalled();
         });
 
@@ -254,8 +375,6 @@ describe('EditObservationScreen', () => {
             expect(goBack).toHaveBeenCalled();
         });
 
-        // The dialog keeps the one job no field can do: the form passed the rules
-        // and the write failed anyway.
         it('raises a dialog and stays open when the write fails', async () => {
             mockUpdateObservationExecute.mockRejectedValue(new Error('Observation not found'));
             const {root, goBack} = await renderScreen();
@@ -288,9 +407,6 @@ describe('EditObservationScreen', () => {
         });
     });
 
-    // Every route off the form - the header arrow, the cross button, Android's
-    // back button and the system back gesture - is one route removal, so the
-    // `beforeRemove` listener stands in for all four.
     describe('unsaved changes confirmation', () => {
         const dialogVisible = (root: any) => findAllByText(root.root, 'Discard changes?').length > 0;
 
@@ -313,7 +429,33 @@ describe('EditObservationScreen', () => {
             },
         );
 
-        // Trimmed on both sides: whitespace the save would drop is not a change.
+        it('opens the dialog instead of leaving when a Metric was renamed', async () => {
+            const {root, listeners} = await renderScreen();
+
+            await nameMetric(root, 'reading', 0);
+
+            expect(await leaveScreen(listeners)).toBe(true);
+            expect(dialogVisible(root)).toBe(true);
+        });
+
+        it('opens the dialog instead of leaving when a Metric was added', async () => {
+            const {root, listeners} = await renderScreen();
+
+            await addMetric(root);
+
+            expect(await leaveScreen(listeners)).toBe(true);
+            expect(dialogVisible(root)).toBe(true);
+        });
+
+        it('lets a Metric name padded with whitespace leave with no dialog', async () => {
+            const {root, listeners} = await renderScreen();
+
+            await nameMetric(root, '  value  ', 0);
+
+            expect(await leaveScreen(listeners)).toBe(false);
+            expect(dialogVisible(root)).toBe(false);
+        });
+
         it('lets a name padded with whitespace leave with no dialog', async () => {
             const {root, listeners} = await renderScreen();
 

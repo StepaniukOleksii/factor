@@ -154,7 +154,7 @@ export function buildSeedData(): SeedEntry[] {
       flagMetric,
       categoryMetric,
       noteMetric,
-    ], 'Covers every per-metric chart scenario in one place: daily, hourly and year-long trends, a sparse trend with gaps, a metric with too few points to chart, and non-numeric metrics that share records instead of charting.',
+    ], 'Every per-metric chart scenario at once: daily, hourly and year-long trends, a sparse one with gaps, too few points to chart, and non-numeric metrics.',
       daysAgo(365));
 
     const recordValues: TimestampValues = new Map();

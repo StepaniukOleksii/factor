@@ -26,6 +26,14 @@ export {SegmentedFieldProps, SegmentedFieldOption} from './SegmentedField';
 export {SelectField} from './SelectField';
 export {SelectFieldProps, SelectFieldOption} from './SelectField';
 
+/** Dashed outline button appending one more of something to a form - used for Add Metric and Add Value */
+export {DashedButton} from './DashedButton';
+export {DashedButtonProps} from './DashedButton';
+
+/** Editor for one Metric of an Observation - used by the forms that declare an Observation and that edit one */
+export {MetricEditorCard, EMPTY_METRIC, toMetricDraft} from './MetricEditorCard';
+export {MetricEditorCardProps, MetricDraft} from './MetricEditorCard';
+
 /** Centered modal dialog - use when an action from user is needed */
 export {Dialog} from './Dialog';
 export {DialogProps, DialogAction} from './Dialog';
