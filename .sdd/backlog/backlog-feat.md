@@ -25,13 +25,10 @@ ready to become a real spec.
    already used in CreateRecordScreen), with a deletingRecord loading state disabling the buttons meanwhile.
 3. Metric units. An attribute set by user that contains unit information. Limit to three chars. Should be displayed in
    paratheses above the chart after the metric name.
-4. Metric editing on an existing Observation — add, remove, rename, or change bounds and Choice values. Deliberately not
-   part of Observation Editing, which covers name and description alone. [Observation
-   Creation](../features/observation-creation.md) frames metric declaration as one-time and complete ("every Metric it
-   will ever ask for"), and stored Records are validated against the current constraint, so a narrowed bound or a
-   dropped Choice value strands Records the Observation would now refuse, and removing a Metric deletes its stored
-   values outright. What happens to those Records is the question to answer before this becomes a spec. Two decisions
-   taken by Observation Editing are worth reopening here rather than inheriting: whether the edit screen should merge
-   with the create form once both carry Metric editors (it was kept separate precisely because edit had no Metric half),
-   and whether [ADR-6](../adr/6-observation-update-write-path.md)'s deliberately narrow `update` should widen or gain a
-   path beside it.
+4. The destructive half of Metric editing — removing a Metric, narrowing a Numeric bound, and removing or renaming a
+   Choice value. Adding, renaming and redescribing a Metric were specified separately; these four all strand stored
+   Records, and what happens to those is the question to answer before this becomes a spec. Renaming a Choice value is
+   the one that keeps getting left off the list: a Record stores the value's text rather than its position, so `Low` →
+   `Lo` strands exactly as dropping it would, where renaming a Metric costs nothing. Look at what a stranded value
+   already does to the Record form and to the charts before choosing — Numeric and Choice behave differently there
+   today, and neither behaviour was designed.

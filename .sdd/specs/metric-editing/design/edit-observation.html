@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Edit Observation — Metric Editing</title>
+    <style>
+        /* Tokens taken from src/presentation/theme/ so the mockup and the build cannot disagree. */
+        :root {
+            --background: #131313;
+            --surface: #131313;
+            --on-surface: #e5e2e1;
+            --on-surface-variant: #c2c9b9;
+            --surface-container-lowest: #0e0e0e;
+            --surface-container-low: #1c1b1b;
+            --outline-variant: #42493d;
+            --outline: #8c9385;
+            --primary: #f9fff0;
+            --on-primary: #0b3900;
+            --primary-container: #b6f09c;
+            --on-primary-fixed-variant: #205110;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #000;
+            font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            padding: 24px 0;
+        }
+
+        .phone {
+            width: 390px;
+            height: 844px;
+            background: var(--background);
+            color: var(--on-surface);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* --- ScreenHeader ---------------------------------------------- */
+        .header {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px;
+            border-bottom: 1px solid var(--outline-variant);
+            background: var(--surface);
+            flex-shrink: 0;
+        }
+        .header-action { width: 48px; display: flex; align-items: center; justify-content: center; }
+        .header-action.right { justify-content: flex-end; padding-right: 8px; }
+        .header-title {
+            flex: 1;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--primary);
+        }
+
+        /* --- Sticky name section (creation form's layout) --------------- */
+        .sticky {
+            padding: 16px;
+            border-bottom: 1px solid var(--outline-variant);
+            background: var(--background);
+            flex-shrink: 0;
+        }
+
+        .scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 16px;
+        }
+        .scroll::-webkit-scrollbar { width: 0; }
+
+        /* --- Fields ----------------------------------------------------- */
+        .field + .field { margin-top: 16px; }
+        .field-label-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .field-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--on-surface-variant);
+        }
+        .input {
+            background: var(--surface-container-lowest);
+            border: 1px solid var(--outline-variant);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            color: var(--on-surface);
+            font-size: 16px;
+            line-height: 20px;
+        }
+        .input.multiline { min-height: 72px; }
+        .input.placeholder { color: var(--outline); }
+        .counter {
+            font-size: 12px;
+            color: var(--outline);
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        /* A locked value keeps the field's box so the card holds its rhythm,
+           and reads in the variant colour with no chevron so it reads as
+           stated rather than as entered. */
+        .input.locked { color: var(--on-surface-variant); }
+
+        .select {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .icon-button { padding: 4px; margin-right: -4px; display: flex; }
+
+        /* --- Metrics ---------------------------------------------------- */
+        .divider {
+            height: 1px;
+            background: var(--outline-variant);
+            margin: 16px 0;
+        }
+        .section-caption {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--on-surface-variant);
+            margin-bottom: 8px;
+        }
+        .metric-card {
+            background: var(--surface-container-low);
+            border: 1px solid var(--outline-variant);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .bounds-row { display: flex; gap: 12px; }
+        .bounds-row .field { flex: 1; margin-top: 0; }
+        .value-rows { display: flex; flex-direction: column; gap: 12px; }
+
+        .dashed {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border: 1px dashed var(--outline-variant);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--on-surface-variant);
+        }
+        .add-value { margin-top: 12px; }
+
+        /* --- FooterBar -------------------------------------------------- */
+        .footer {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(19, 19, 19, 0.8);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid var(--outline-variant);
+            padding: 16px;
+        }
+        .primary-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            background: var(--primary-container);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            color: var(--on-primary);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .footer-clearance { height: 105px; }
+    </style>
+</head>
+<body>
+<div class="phone">
+
+    <div class="header">
+        <div class="header-action">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#f9fff0"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </div>
+        <div class="header-title">Edit Observation</div>
+        <div class="header-action right">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#f9fff0"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </div>
+    </div>
+
+    <div class="sticky">
+        <div class="field">
+            <div class="field-label-row"><span class="field-label">OBSERVATION NAME</span></div>
+            <div class="input">mixed metrics</div>
+            <div class="counter">13/30</div>
+        </div>
+    </div>
+
+    <div class="scroll">
+        <div class="field" style="margin-top:16px">
+            <div class="field-label-row"><span class="field-label">DESCRIPTION</span></div>
+            <div class="input multiline">Every metric type on one observation, so a single screen shows each chart shape.</div>
+            <div class="counter">78/150</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-caption">METRICS</div>
+
+        <!-- A stored Metric: name and description editable, type and bounds stated. -->
+        <div class="metric-card">
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">METRIC NAME</span></div>
+                <div class="input">dense</div>
+                <div class="counter">5/15</div>
+            </div>
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">TYPE</span></div>
+                <div class="input locked">Numeric</div>
+            </div>
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">RANGE</span></div>
+                <div class="input locked">0-100</div>
+            </div>
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">DESCRIPTION</span></div>
+                <div class="input multiline">A point every day for 45 days.</div>
+                <div class="counter">30/500</div>
+            </div>
+        </div>
+
+        <!-- Unbounded: no RANGE field at all, and no gap where one would be. -->
+        <div class="metric-card">
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">METRIC NAME</span></div>
+                <div class="input">sparse</div>
+                <div class="counter">6/15</div>
+            </div>
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">TYPE</span></div>
+                <div class="input locked">Numeric</div>
+            </div>
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">DESCRIPTION</span></div>
+                <div class="input multiline placeholder">Optional — what does each value mean?</div>
+                <div class="counter">0/500</div>
+            </div>
+        </div>
+
+        <!-- A stored Choice Metric: its declared values, in declaration order. -->
+        <div class="metric-card">
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">METRIC NAME</span></div>
+                <div class="input">category</div>
+                <div class="counter">8/15</div>
+            </div>
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">TYPE</span></div>
+                <div class="input locked">Choice</div>
+            </div>
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">VALUES</span></div>
+                <div class="input locked">a, b, c, d</div>
+            </div>
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">DESCRIPTION</span></div>
+                <div class="input multiline placeholder">Optional — what does each value mean?</div>
+                <div class="counter">0/500</div>
+            </div>
+        </div>
+
+        <!-- A Metric added this session: the full editor, and the only card
+             carrying a delete affordance. -->
+        <div class="metric-card">
+            <div class="field">
+                <div class="field-label-row">
+                    <span class="field-label">METRIC NAME</span>
+                    <span class="icon-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#8c9385"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    </span>
+                </div>
+                <div class="input">caffeine</div>
+                <div class="counter">8/15</div>
+            </div>
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">TYPE</span></div>
+                <div class="input select">
+                    <span>Numeric</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#8c9385"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                </div>
+            </div>
+            <div class="bounds-row">
+                <div class="field">
+                    <div class="field-label-row"><span class="field-label">MIN</span></div>
+                    <div class="input">0</div>
+                </div>
+                <div class="field">
+                    <div class="field-label-row"><span class="field-label">MAX</span></div>
+                    <div class="input placeholder">&nbsp;</div>
+                </div>
+            </div>
+            <div class="field">
+                <div class="field-label-row"><span class="field-label">DESCRIPTION</span></div>
+                <div class="input multiline placeholder">Optional — what does each value mean?</div>
+                <div class="counter">0/500</div>
+            </div>
+        </div>
+
+        <div class="dashed">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#c2c9b9"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            <span>Add Metric</span>
+        </div>
+
+        <div class="footer-clearance"></div>
+    </div>
+
+    <div class="footer">
+        <div class="primary-action">
+            <span>Save Observation</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#205110"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
