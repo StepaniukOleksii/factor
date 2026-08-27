@@ -2,43 +2,65 @@
 
 ## Goal
 
-An Observation outlives the wording it was declared with: it is set up in a minute and recorded against for months. A
-name typed in haste, or a purpose that has since sharpened, leaves a growing body of Records filed under a description
-that misdescribes them. What an Observation says about itself has to be able to catch up with what it is being used for,
-and at no cost to what has accumulated under it — accumulating is the whole of what an Observation is for.
+An Observation is set up in a minute and then recorded against for months. Over that time its name or a Metric's can
+come to read wrong, its description can fall behind what it is actually for, and a Metric it should have been asking for
+all along can turn out to be missing. Editing puts any of that right, and every Record already made against the
+Observation stays as it is.
 
 ## Behaviour
 
 **Reaching it.** Editing starts at **Edit** in the ⋮ menu of [the Observation's own screen](observation-viewing.md): an
-edit icon and ordinary text, above **Delete** ([Observation Deletion](observation-deletion.md)) and against its red, so
-the harmless action is both the first one and told apart from the destructive one before either is tapped. Choosing it
-closes the menu and opens the form.
+edit icon and ordinary text, first in the menu and above **Delete** ([Observation Deletion](observation-deletion.md)).
+Choosing it closes the menu and opens the form.
 
-**What it covers.** Editing reaches the Observation's name and its description, each pre-filled with what is stored, and
-the form is those two fields alone.
+**What it covers.** The Observation's name, its description and its Metrics, each pre-filled with what is stored.
 
-**The fields.** Both behave as the creation form's do, and what they accept belongs there ([Observation
-Creation](observation-creation.md)): each stops accepting characters at its limit and carries a counter throughout, and
-the form stays unmarked until the first attempt to save, after which every mark answers to what is currently on screen —
-so a field clears as it is corrected rather than at the next attempt.
+**The fields.** Every one of them behaves as the creation form's do, and what each accepts belongs there ([Observation
+Creation](observation-creation.md)): each stops accepting characters at its limit and carries a counter throughout. The
+form stays unmarked until the first attempt to save, and from then on every mark answers to what is currently on screen,
+a field clearing as it is corrected.
 
-**Names.** A name is required, and one another Observation holds is refused — matched without regard to casing or the
-whitespace around it. An Observation's own stored name is its to keep, so saving it untouched is accepted, and so is a
-correction to its capitalisation or its spacing alone.
+**The Observation's name.** Required, and one another Observation holds is refused — matched without regard to casing or
+the whitespace around it. Its own stored name is accepted, saved untouched or corrected in its capitalisation or its
+spacing alone.
 
-**Saving.** **Save Observation** writes the name and the description in one step, and it is the same Observation
-afterwards, changed — its Metrics, its Records and the time it was created are as they were, so it holds the position it
-held in [the Observation list](observation-listing.md). A rename is not a re-creation. A description cleared in the form
-is cleared on the Observation, so emptying the field is how a description is taken away.
+**Metrics.** Below the description sits the Observation's Metric list in declaration order, a card each, holding a name,
+a type, a description and whatever that type declares.
 
-**Where the new name shows.** Saving returns to the Observation, whose header carries it on arrival, and it reads the
-same wherever else the Observation appears — the name belongs to the Observation rather than to the screen that changed
-it.
+*A Metric already stored.* Its name and its description are open to overtyping. Its type is stated rather than offered,
+as are the bounds of a Numeric one — `0-100`, `Min 0`, `Max 100`, and nothing at all where it declares none — and the
+values of a Choice one, in the order they were declared. A stated fact carries none of the box a field wears and reads
+in a muted colour. Every stored Metric is carried through the save, holding the values already entered against it.
 
-**Leaving without saving.** A form whose name or description differs from what was loaded asks `Discard changes?` before
-it closes, saying that the changes made to the Observation will be lost. **Keep editing** returns to the form with
-everything still in it; **Discard** leaves, and the Observation is as it was. Whitespace typed around a value counts as
-no difference, since saving it would write nothing, and a form nothing was changed in closes without asking. The
+*A Metric added.* **Add Metric** appends a card editable in full — its name, its type, its description and whatever the
+chosen type declares — behaving as the creation form's cards do ([Observation Creation](observation-creation.md)). For
+as long as it is unsaved it carries a delete affordance, which takes the card off the form.
+
+*Metric names.* Distinct within the Observation, matched by the same casing-blind, whitespace-trimming comparison. Of a
+colliding pair the second is marked, never the first. Stored Metrics come first on the form, and a name colliding with
+one of them is marked on the added card. A stored Metric keeping its own name collides with nothing.
+
+*Where an added Metric lands.* At the end of the Observation's Metric order, reading last everywhere Metrics are shown:
+last of the trend cards ([Trend Charting](trend-charting.md)), last of the Record form's fields ([Record Value
+Entry](record-value-entry.md)), the final column of an expanded Record ([Record Listing](record-listing.md)).
+
+**Saving.** **Save Observation** writes the name, the description, every renamed and redescribed Metric and every added
+one in a single step: all of it lands or none of it does. It is the same Observation afterwards, changed — its Records
+and the time it was created are as they were, and it holds the position it held in [the Observation
+list](observation-listing.md). A description cleared in the form is cleared on what held it, the Observation's and a
+Metric's alike.
+
+**What the Records do.** No edit this form allows changes a Record. A renamed Metric keeps every value ever entered
+against it; its chart and its column carry that history over to the new name. A Record made before a Metric was added
+holds no value for it and reads as unanswered ([Record Value Entry](record-value-entry.md)).
+
+**Where the changes show.** Saving returns to the Observation, its header carrying the new name on arrival. The new name
+of the Observation, and of any Metric, reads the same wherever it appears.
+
+**Leaving without saving.** A form differing from what it loaded asks `Discard changes?` before it closes, saying that
+the changes made to the Observation will be lost. A Metric renamed or redescribed counts, and so does a card added.
+**Keep editing** returns to the form with everything still in it; **Discard** leaves, and the Observation is as it was.
+Whitespace typed around a value counts as no difference, and a form nothing was changed in closes without asking. The
 question comes whichever way out is taken — the cross in the header, the back arrow, the hardware button or the back
 gesture — and discarding carries on to wherever that way out was headed.
 
@@ -50,9 +72,13 @@ found.`
 
 Open the Observation, tap ⋮ at its top right, then **Edit**.
 
-The name sits at the top holding what the Observation is called now, the description below it holding whatever prose it
-has. Overtype either; the form scrolls, so the description stays reachable with the keyboard up. **Save Observation**,
-fixed at the bottom, writes both.
+The name sits at the top holding what the Observation is called now and stays in place while the rest scrolls: the
+description first, then **METRICS** and a card per Metric in the order the Observation declares them, then a dashed
+**Add Metric** at the end.
 
-Saving lands you back on the Observation, its header reading the new name. The cross at the top right or the back arrow
-leaves without saving, asking first if anything was changed.
+Overtype a name or a description anywhere on the form — the Observation's own, or any Metric's. On a stored Metric's
+card the type, the range and the choice values sit alongside as plain text. **Add Metric** appends a fresh card to fill
+in as you would on the creation form, removable by the delete button beside its name for as long as it is unsaved.
+
+**Save Observation**, fixed at the bottom, writes the lot and lands you back on the Observation, its header reading the
+new name. The cross at the top right or the back arrow leaves without saving, asking first if anything was changed.
