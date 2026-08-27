@@ -3,7 +3,7 @@
 * 2026-08-23
 * Feature: observation-editing.md
 * [x] Implemented
-* [ ] E2E tested
+* [x] E2E tested
 
 ## 1. Goal
 
@@ -201,10 +201,13 @@ Extend `.maestro/flows/observation-editing/observation-editing.yaml`. The featur
 steps on the same screen rather than a separate case.
 
 * **Fixture:** `seed`, as the flow already opens with.
-* **Covers:** after the existing rename and collision passes, open `mixed metrics`' edit form; assert `dense`'s card
-  renders `metric-type-locked-0` and no `metric-type-0` picker; tap **Add Metric**, name the new card `caffeine`, save,
-  and assert `caffeine` appears on the details screen below the Metrics that preceded it and again as a field on the
-  Record form.
+* **Covers:** after the existing rename and collision passes, leave that refused form by its discard path and open
+  `mixed metrics`' edit form; assert `dense`'s card renders `metric-type-locked-0` and no `metric-type-0` picker; rename
+  that card to `density` **and** add a `caffeine` card, both in one save. Then assert on the details screen that
+  `density` holds the position `dense` did and `caffeine` comes last, and on the Record form that `density` is still a
+  field of its own. Renaming is what the slice is for and the id-keyed write is the half no mocked repository can prove,
+  so the pass covers it rather than the addition alone — one save reaching a stored Metric and a new one together is
+  also the pass a user makes.
 * **Handles:** all present. The locked type text carries `metric-type-locked-${index}`, which is what lets a flow assert
   the locked form is rendered and the picker is not — every type label is already on screen somewhere on this fixture,
   so absence cannot be asserted on the text. A locked range and value list carry `metric-range-locked-${index}` and

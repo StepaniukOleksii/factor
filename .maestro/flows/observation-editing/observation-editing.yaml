@@ -45,3 +45,103 @@ appId: com.anonymous.factor
 - assertVisible: "An observation with this name already exists"
 # A refused save leaves the form up, with the mark on the field it belongs to.
 - assertVisible: "Edit Observation"
+
+# --- Editing the Metrics of an Observation with history ----------------------
+# The form above still holds the name it was refused, so the way out is the
+# discard path rather than a plain back.
+- tapOn: "Cancel editing"
+- tapOn: "Discard"
+- tapOn: "Back"
+- assertVisible: "Observations"
+
+# `mixed metrics` rather than the Observation renamed above: it is the one
+# fixture declaring a Metric of every type, and it has Records standing behind
+# the Metric this renames.
+- scrollUntilVisible:
+    element: "mixed metrics"
+    direction: DOWN
+    centerElement: true
+- tapOn: "mixed metrics"
+- tapOn: "More options"
+- tapOn: "Edit observation"
+- assertVisible: "Edit Observation"
+
+# `dense` is the first Metric the fixture declares, so its card is index 0. Its
+# type is stated rather than offered: every type label is already somewhere on
+# this form, so the picker's absence is what has to be asserted, not the text.
+- scrollUntilVisible:
+    element:
+      id: "metric-type-locked-0"
+    direction: DOWN
+    centerElement: true
+- assertVisible:
+    id: "metric-type-locked-0"
+- assertNotVisible:
+    id: "metric-type-0"
+
+# Renaming that same card and adding one below it, both in the save that
+# follows: one save reaching a stored Metric and a new one together is the pass
+# a user makes, and the write is one transaction.
+- scrollUntilVisible:
+    element:
+      id: "metric-name-0"
+    direction: UP
+    centerElement: true
+- tapOn:
+    id: "metric-name-0"
+- eraseText
+- inputText: "density"
+- hideKeyboard
+
+# Add Metric is the last thing in the form, so this scroll cannot centre it the
+# way the ones above centre what they are after: with nothing below it to scroll
+# past, the container runs to its end with the button plainly on screen and the
+# step still fails as "not found".
+- scrollUntilVisible:
+    element: "Add Metric"
+    direction: DOWN
+- tapOn: "Add Metric"
+
+# Eight stored Metrics come before it, so the added card is index 8. Centred,
+# because a field merely scrolled into view sits where the keyboard is about to
+# open and the text lands in whatever had focus before - the rest of this card
+# and the button above give it the room to centre in.
+- scrollUntilVisible:
+    element:
+      id: "metric-name-8"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "metric-name-8"
+- inputText: "caffeine"
+- hideKeyboard
+- tapOn: "Save Observation"
+
+# The details screen's own footer, not the Observation's name: the name is what
+# the form's own field holds, so asserting it would pass on a save that was
+# refused and left the form open.
+- assertVisible: "Add Record"
+
+# Trend cards read in the Observation's own Metric order, so the renamed Metric
+# holds the position it was declared in and the added one comes last.
+- scrollUntilVisible:
+    element: "density"
+    direction: DOWN
+- scrollUntilVisible:
+    element: "caffeine"
+    direction: DOWN
+- assertVisible:
+    text: "caffeine"
+    below: "note"
+
+# The Record form is where a rename proves it kept the Metric rather than
+# replacing it: the field is the stored Metric's, still bounded as it was.
+- tapOn: "Add Record"
+- scrollUntilVisible:
+    element: "density value"
+    direction: DOWN
+- assertVisible: "density value"
+- scrollUntilVisible:
+    element: "caffeine value"
+    direction: DOWN
+- assertVisible: "caffeine value"
