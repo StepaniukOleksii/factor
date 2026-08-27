@@ -64,3 +64,6 @@ become a real spec.
     parenthesis: `(count / tallestCount) * (laneHeight - 2 * MARK_INSET)`. The tests move with it — the proportion is
     checked by adding the inset back to both heights (`half.height + 6` against `(largest.height + 6) / 2`, and its
     Boolean twin), which holds for the drawn heights only because both are wrong in the same way.
+11. When a numeric chart has the only record, all lanes show the same number. The record is displayed as a single dot on
+    the chart, so it looks weird that all lanes display same number but the dot is only on one of the lanes. Would be
+    better to show neighbor numbers instead.
