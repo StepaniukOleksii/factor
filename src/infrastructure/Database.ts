@@ -58,7 +58,6 @@ export async function initDatabase(): Promise<void> {
 
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
-      PRAGMA foreign_keys = ON;
 
       ${SCHEMA}
     `);
@@ -89,7 +88,10 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   dbInstance = await SQLite.openDatabaseAsync('factor.db');
   
   try {
-    await dbInstance.execAsync('SELECT 1');
+    // Foreign key enforcement is per connection rather than stored with the
+    // database, so every connection has to state it: without it a deleted
+    // Metric's `record_values` are left behind.
+    await dbInstance.execAsync('PRAGMA foreign_keys = ON');
     console.log('[Database] New connection established and verified.');
   } catch (error: any) {
     console.error('[Database] Failed to verify new database connection:', error?.message || error);
