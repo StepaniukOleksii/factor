@@ -13,6 +13,7 @@ describe('DeleteRecordUseCase', () => {
       getRecentRecords: vi.fn(),
       getByObservationId: vi.fn(),
       countByObservationId: vi.fn(),
+      countValuesByMetricIds: vi.fn(),
       deleteByObservationId: vi.fn(),
       deleteById: vi.fn().mockResolvedValue(undefined),
       getById: vi.fn(),

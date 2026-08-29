@@ -4,6 +4,7 @@ import renderer, {act} from 'react-test-renderer';
 import {MetricDraft, MetricEditorCard, toMetricDraft} from './MetricEditorCard';
 import {Metric} from '../../domain/Metric';
 import type {MetricErrors} from '../../application/validateCreateObservation';
+import {COLORS} from '@presentation/theme';
 
 vi.mock('react-native', () => {
     const RN = require('react-native-web');
@@ -34,10 +35,10 @@ interface RenderOptions {
     errors?: MetricErrors;
     onChange?: (metric: MetricDraft) => void;
     onRemove?: () => void;
-    locked?: boolean;
+    stored?: boolean;
 }
 
-function renderCard({metric = NUMERIC, errors = {}, onChange = vi.fn(), onRemove, locked}: RenderOptions = {}) {
+function renderCard({metric = NUMERIC, errors = {}, onChange = vi.fn(), onRemove, stored}: RenderOptions = {}) {
     let root: any;
     act(() => {
         root = renderer.create(
@@ -47,7 +48,7 @@ function renderCard({metric = NUMERIC, errors = {}, onChange = vi.fn(), onRemove
                 errors={errors}
                 onChange={onChange}
                 onRemove={onRemove}
-                locked={locked}
+                stored={stored}
             />,
         );
     });
@@ -65,7 +66,7 @@ const has = (root: any, testID: string) => root.root.findAllByProps({testID}).le
 const fieldByLabel = (root: any, label: string) => root.root.findAllByProps({label})[0];
 
 describe('MetricEditorCard', () => {
-    describe('unlocked', () => {
+    describe('added', () => {
         it('offers the type picker and both bounds', () => {
             const root = renderCard();
 
@@ -114,9 +115,9 @@ describe('MetricEditorCard', () => {
         });
     });
 
-    describe('locked', () => {
+    describe('stored', () => {
         it('states the type in place of the picker', () => {
-            const root = renderCard({metric: {...NUMERIC, type: 'Enum', values: ['a', 'b']}, locked: true});
+            const root = renderCard({metric: {...NUMERIC, type: 'Enum', values: ['a', 'b']}, stored: true});
 
             expect(has(root, 'metric-type-locked-0')).toBe(true);
             expect(has(root, 'metric-type-0')).toBe(false);
@@ -124,7 +125,7 @@ describe('MetricEditorCard', () => {
         });
 
         it('states a range in place of the bounds', () => {
-            const root = renderCard({locked: true});
+            const root = renderCard({stored: true});
 
             expect(shows(root, '0-24')).toBe(true);
             expect(has(root, 'metric-min-0')).toBe(false);
@@ -135,19 +136,19 @@ describe('MetricEditorCard', () => {
             ['a lower bound alone', '0', '', 'Min 0'],
             ['an upper bound alone', '', '24', 'Max 24'],
         ])('states %s the way the Record form does', (_kind, min, max, expected) => {
-            const root = renderCard({metric: {...NUMERIC, min, max}, locked: true});
+            const root = renderCard({metric: {...NUMERIC, min, max}, stored: true});
 
             expect(shows(root, expected)).toBe(true);
         });
 
         it('states nothing at all for an unbounded Metric', () => {
-            const root = renderCard({metric: {...NUMERIC, min: '', max: ''}, locked: true});
+            const root = renderCard({metric: {...NUMERIC, min: '', max: ''}, stored: true});
 
             expect(has(root, 'metric-range-locked-0')).toBe(false);
         });
 
         it('states a Choice\'s values in declaration order, with no row to edit', () => {
-            const root = renderCard({metric: {...NUMERIC, type: 'Enum', values: ['a', 'b', 'c']}, locked: true});
+            const root = renderCard({metric: {...NUMERIC, type: 'Enum', values: ['a', 'b', 'c']}, stored: true});
 
             expect(shows(root, 'a, b, c')).toBe(true);
             expect(has(root, 'metric-value-0-0')).toBe(false);
@@ -156,7 +157,7 @@ describe('MetricEditorCard', () => {
 
         it('still takes a new name and a new description', () => {
             const onChange = vi.fn();
-            const root = renderCard({onChange, locked: true});
+            const root = renderCard({onChange, stored: true});
 
             act(() => {
                 fieldByLabel(root, 'METRIC NAME').props.onChangeText('Duration');
@@ -167,10 +168,16 @@ describe('MetricEditorCard', () => {
     });
 
     describe('the delete affordance', () => {
+        const removeButton = (root: any, label: string) =>
+            root.root.findAllByProps({accessibilityLabel: label});
+
+        const bin = (root: any) =>
+            removeButton(root, 'Remove metric Hours')[0].findByType('MaterialIcons');
+
         it('is absent without an onRemove', () => {
             const root = renderCard();
 
-            expect(root.root.findAllByProps({accessibilityLabel: 'Remove metric 1'})).toHaveLength(0);
+            expect(removeButton(root, 'Remove metric Hours')).toHaveLength(0);
         });
 
         it('calls onRemove when given one', () => {
@@ -178,10 +185,35 @@ describe('MetricEditorCard', () => {
             const root = renderCard({onRemove});
 
             act(() => {
-                root.root.findAllByProps({accessibilityLabel: 'Remove metric 1'})[0].props.onPress();
+                removeButton(root, 'Remove metric Hours')[0].props.onPress();
             });
 
             expect(onRemove).toHaveBeenCalled();
+        });
+
+        it('names the Metric it removes', () => {
+            const root = renderCard({metric: {...NUMERIC, name: '  insufficient  '}, onRemove: vi.fn()});
+
+            expect(removeButton(root, 'Remove metric insufficient')).not.toHaveLength(0);
+        });
+
+        // How an added card starts, and how it stays until a name is typed.
+        it('falls back to its position while the name is blank', () => {
+            const root = renderCard({metric: {...NUMERIC, name: ' '}, onRemove: vi.fn()});
+
+            expect(removeButton(root, 'Remove metric 1')).not.toHaveLength(0);
+        });
+
+        it('draws in the error colour on a stored card', () => {
+            const root = renderCard({onRemove: vi.fn(), stored: true});
+
+            expect(bin(root).props.color).toBe(COLORS.error);
+        });
+
+        it('draws in the outline colour on an added one', () => {
+            const root = renderCard({onRemove: vi.fn()});
+
+            expect(bin(root).props.color).toBe(COLORS.outline);
         });
     });
 });

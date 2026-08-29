@@ -111,6 +111,21 @@ export class SQLiteRecordRepository implements RecordRepository {
     return rows[0].count;
   }
 
+  async countValuesByMetricIds(metricIds: readonly string[]): Promise<number> {
+    if (metricIds.length === 0) {
+      return 0;
+    }
+
+    const db = await getDatabase();
+    const placeholders = metricIds.map(() => '?').join(',');
+    const rows = await db.getAllAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM record_values WHERE metricId IN (${placeholders})`,
+      ...metricIds
+    );
+
+    return rows[0].count;
+  }
+
   async deleteByObservationId(observationId: string): Promise<void> {
     const db = await getDatabase();
     await db.runAsync(

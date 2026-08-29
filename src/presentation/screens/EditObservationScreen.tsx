@@ -13,6 +13,8 @@ import {MaterialIcons} from '@expo/vector-icons';
 import type {NavigationAction} from '@react-navigation/native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {SQLiteObservationRepository} from '../../infrastructure/SQLiteObservationRepository';
+import {SQLiteRecordRepository} from '../../infrastructure/SQLiteRecordRepository';
+import {CountMetricValuesUseCase} from '../../application/CountMetricValuesUseCase';
 import {UpdateObservationInput, UpdateObservationUseCase} from '../../application/UpdateObservationUseCase';
 import {
     CreateObservationErrors,
@@ -39,10 +41,12 @@ import {
     useFooterClearance,
 } from "@presentation/components";
 import {COLORS, TYPOGRAPHY} from "@presentation/theme";
+import {type MetricRemovalPrompt, metricRemovalPrompt} from '@shared/metricRemovalPrompt';
 import type {RootStackParamList} from '../navigation/routes';
 
 const repository = new SQLiteObservationRepository();
 const useCase = new UpdateObservationUseCase(repository);
+const countMetricValuesUseCase = new CountMetricValuesUseCase(new SQLiteRecordRepository());
 
 export type EditObservationScreenProps = NativeStackScreenProps<RootStackParamList, 'EditObservation'>;
 
@@ -50,9 +54,8 @@ const NOTHING_MARKED: CreateObservationErrors = {perMetric: []};
 const NO_METRIC_ERRORS: MetricErrors = {};
 
 /**
- * Only a Metric's name and description can differ - its type and constraint are
- * not offered, and a stored Metric cannot leave the form - so a card added is
- * the only way the two lists differ in length.
+ * Only a Metric's name and description can differ, its type and constraint
+ * being stated rather than offered.
  */
 function metricsDiffer(drafts: readonly MetricDraft[], stored: ReadonlyArray<Metric>): boolean {
     if (drafts.length !== stored.length) {
@@ -75,6 +78,7 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [pendingExit, setPendingExit] = useState<NavigationAction | null>(null);
+    const [removalPrompt, setRemovalPrompt] = useState<MetricRemovalPrompt | null>(null);
     const footerClearance = useFooterClearance();
     /**
      * Saving removes this route too, and the form is still dirty against the
@@ -167,26 +171,53 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
         setMetrics(metrics.filter((_, i) => i !== index));
     };
 
-    const handleSave = async () => {
-        setAttemptedSave(true);
-        if (hasErrors(errors)) {
-            return;
-        }
+    // The last resort, for what no field is holding: the write failing, the
+    // count failing, or the Observation having been deleted meanwhile.
+    const reportFailure = (error: any) =>
+        Alert.alert('Error', error.message || 'An error occurred while saving.');
+
+    const write = async () => {
         try {
             setSaving(true);
             await useCase.execute(input);
             // Only the success path stands the listener down, so a save that
             // throws leaves the next exit still intercepted.
             leavingAfterSave.current = true;
+            setRemovalPrompt(null);
             navigation.goBack();
         } catch (error: any) {
-            // The last resort, for what no field is holding: the write failing,
-            // or the Observation having been deleted meanwhile.
-            Alert.alert('Error', error.message || 'An error occurred while saving.');
+            reportFailure(error);
         } finally {
             setSaving(false);
         }
     };
+
+    const handleSave = async () => {
+        setAttemptedSave(true);
+        if (hasErrors(errors)) {
+            return;
+        }
+
+        const removed = observation
+            ? observation.metrics.filter(metric => !metrics.some(draft => draft.id === metric.id))
+            : [];
+        if (removed.length === 0) {
+            await write();
+            return;
+        }
+
+        try {
+            setSaving(true);
+            const valueCount = await countMetricValuesUseCase.execute(removed.map(metric => metric.id));
+            setRemovalPrompt(metricRemovalPrompt(removed.map(metric => metric.name), valueCount));
+        } catch (error: any) {
+            reportFailure(error);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCancelRemoval = () => setRemovalPrompt(null);
 
     if (loading) {
         return (
@@ -257,10 +288,8 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
                                 index={index}
                                 errors={marked.perMetric[index] ?? NO_METRIC_ERRORS}
                                 onChange={(next) => handleMetricChange(index, next)}
-                                // A stored Metric cannot leave the form: removing
-                                // it would take its Records' values with it.
-                                onRemove={metric.id === undefined ? () => handleRemoveMetric(index) : undefined}
-                                locked={metric.id !== undefined}
+                                onRemove={metrics.length > 1 ? () => handleRemoveMetric(index) : undefined}
+                                stored={metric.id !== undefined}
                             />
                         ))}
 
@@ -291,6 +320,28 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
                         onPress: handleDiscard,
                         variant: "destructive",
                         accessibilityLabel: "Discard unsaved changes",
+                    },
+                ]}
+            />
+
+            <Dialog
+                visible={removalPrompt !== null}
+                title={removalPrompt?.title ?? ''}
+                message={removalPrompt?.message}
+                onRequestClose={handleCancelRemoval}
+                actions={[
+                    {
+                        label: "Cancel",
+                        onPress: handleCancelRemoval,
+                        disabled: saving,
+                        accessibilityLabel: "Cancel metric deletion",
+                    },
+                    {
+                        label: saving ? "Deleting…" : "Delete",
+                        onPress: write,
+                        variant: "destructive",
+                        disabled: saving,
+                        accessibilityLabel: "Confirm metric deletion",
                     },
                 ]}
             />

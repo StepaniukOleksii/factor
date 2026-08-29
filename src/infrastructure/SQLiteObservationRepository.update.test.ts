@@ -43,6 +43,10 @@ describe('SQLiteObservationRepository.update', () => {
 
   beforeEach(async () => {
     handle.db = new DatabaseSync(':memory:');
+    // Stated rather than inherited from the driver's default, as the app's own
+    // connection states it: without it a removed Metric's `record_values` are
+    // left behind and every test here still passes.
+    handle.db.exec('PRAGMA foreign_keys = ON');
     handle.db.exec(SCHEMA);
     repository = new SQLiteObservationRepository();
 
@@ -182,20 +186,62 @@ describe('SQLiteObservationRepository.update', () => {
         .toEqual([['metric-1', 'Quality'], ['metric-2', 'Hours']]);
     });
 
-    it('refuses an aggregate that has lost a Metric the table holds', async () => {
-      await expect(repository.update(withMetrics([subject.metrics[0]])))
-        .rejects.toThrow('Cannot remove metric metric-2 through update.');
-    });
+    describe('a Metric the aggregate has lost', () => {
+      // A second value on `rec-1` and a Record answering `metric-1` alone, so
+      // what survives the removal and what is left holding nothing both show.
+      beforeEach(() => {
+        handle.db.exec(
+          `INSERT INTO record_values (recordId, metricId, valueJson) VALUES ('rec-1', 'metric-2', '"Good"')`);
+        handle.db.exec(
+          "INSERT INTO records (id, observationId, timestamp, note) VALUES ('rec-2', 'obs-1', 1700000001000, null)");
+        handle.db.exec(
+          "INSERT INTO record_values (recordId, metricId, valueJson) VALUES ('rec-2', 'metric-1', '8')");
+      });
 
-    it('writes nothing at all when it refuses', async () => {
-      const losingOne = withMetrics([subject.metrics[0]]);
-      losingOne.name = 'Rest';
+      it('is deleted, and the Metrics it still holds are not', async () => {
+        await repository.update(withMetrics([subject.metrics[1]]));
 
-      await expect(repository.update(losingOne)).rejects.toThrow();
+        expect((await stored('obs-1')).metrics.map(metric => [metric.id, metric.name]))
+          .toEqual([['metric-2', 'Quality']]);
+      });
 
-      const reloaded = await stored('obs-1');
-      expect(reloaded.name).toBe('Sleep');
-      expect(reloaded.metrics.map(metric => metric.id)).toEqual(['metric-1', 'metric-2']);
+      it('takes its stored values with it, leaving the others on the same Record', async () => {
+        await repository.update(withMetrics([subject.metrics[1]]));
+
+        expect(handle.db.prepare('SELECT recordId, metricId, valueJson FROM record_values').all())
+          .toEqual([{recordId: 'rec-1', metricId: 'metric-2', valueJson: '"Good"'}]);
+      });
+
+      it('leaves a Record now holding no value where it was', async () => {
+        await repository.update(withMetrics([subject.metrics[1]]));
+
+        expect(handle.db.prepare('SELECT id FROM records ORDER BY id').all())
+          .toEqual([{id: 'rec-1'}, {id: 'rec-2'}]);
+      });
+
+      it('frees its name for a Metric added in the same call', async () => {
+        await repository.update(withMetrics([
+          subject.metrics[1],
+          new Metric('metric-4', 'Hours', 'Numeric'),
+        ]));
+
+        expect((await stored('obs-1')).metrics.map(metric => [metric.id, metric.name]))
+          .toEqual([['metric-2', 'Quality'], ['metric-4', 'Hours']]);
+      });
+
+      it('leaves another Observation\'s Metrics and values alone', async () => {
+        handle.db.exec(
+          "INSERT INTO records (id, observationId, timestamp, note) VALUES ('rec-3', 'obs-2', 1700000002000, null)");
+        handle.db.exec(
+          "INSERT INTO record_values (recordId, metricId, valueJson) VALUES ('rec-3', 'metric-3', '3')");
+
+        await repository.update(withMetrics([subject.metrics[1]]));
+
+        expect((await stored('obs-2')).metrics.map(metric => metric.id)).toEqual(['metric-3']);
+        expect(handle.db.prepare(
+          "SELECT metricId FROM record_values WHERE recordId = 'rec-3'").all())
+          .toEqual([{metricId: 'metric-3'}]);
+      });
     });
 
     it('leaves another Observation\'s Metrics alone', async () => {

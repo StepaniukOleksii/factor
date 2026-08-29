@@ -44,13 +44,6 @@ export class UpdateObservationUseCase {
     }
 
     const storedMetrics = new Map(observation.metrics.map(metric => [metric.id, metric]));
-    const submittedIds = new Set(input.metrics.map(metric => metric.id));
-    for (const id of storedMetrics.keys()) {
-      if (!submittedIds.has(id)) {
-        throw new Error('A metric cannot be removed from an observation');
-      }
-    }
-
     const metrics = input.metrics.map(submitted => this.toMetric(submitted, storedMetrics));
 
     // A whole new aggregate rather than the loaded one edited in place: the

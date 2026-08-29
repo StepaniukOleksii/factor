@@ -6,8 +6,7 @@ import {Metric} from '../domain/Metric';
 import {Observation} from '../domain/Observation';
 
 // What the unique indexes refuse is SQLite's own behaviour - `NOCASE` above all -
-// so these run the app's own schema in a real in-memory database. The suite
-// beside this one mocks the driver away, to assert the SQL instead.
+// so these run the app's own schema in a real in-memory database.
 
 const {handle} = vi.hoisted(() => ({handle: {} as {db: DatabaseSync}}));
 
@@ -39,6 +38,9 @@ describe('SQLiteObservationRepository against the real schema', () => {
 
   beforeEach(() => {
     handle.db = new DatabaseSync(':memory:');
+    // Stated rather than inherited from the driver's default, as the app's own
+    // connection states it.
+    handle.db.exec('PRAGMA foreign_keys = ON');
     handle.db.exec(SCHEMA);
     repository = new SQLiteObservationRepository();
   });

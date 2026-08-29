@@ -69,13 +69,22 @@ export interface MetricEditorCardProps {
     onChange: (metric: MetricDraft) => void;
     /** Omitted where this Metric may not leave the form; no delete affordance renders then. */
     onRemove?: () => void;
-    /** A Metric already stored: its type and constraint are stated rather than offered. */
-    locked?: boolean;
+    /**
+     * A Metric already stored: its type and constraint are stated rather than
+     * offered, and its delete affordance is marked destructive.
+     */
+    stored?: boolean;
 }
 
 /**
- * `locked` replaces the type and constraint controls with what they hold rather
+ * `stored` replaces the type and constraint controls with what they hold rather
  * than disabling them: a disabled control still invites the tap it would refuse.
+ *
+ * Its other consequence is the delete affordance's colour. Both kinds of card
+ * carry one, and nothing else on a card reliably says which of the two things
+ * the icon means - discarding what was just typed, or destroying a year of
+ * Records - a stored Text Metric differing from an added one only in stating a
+ * type rather than offering it.
  */
 export function MetricEditorCard(
     {
@@ -84,7 +93,7 @@ export function MetricEditorCard(
         errors,
         onChange,
         onRemove,
-        locked = false,
+        stored = false,
     }: MetricEditorCardProps) {
 
     const change = <K extends keyof MetricDraft>(key: K, value: MetricDraft[K]) =>
@@ -127,8 +136,9 @@ export function MetricEditorCard(
                         labelAccessory={onRemove ? (
                             <TouchableOpacity onPress={onRemove} style={styles.deleteButton}
                                               accessibilityRole="button"
-                                              accessibilityLabel={`Remove metric ${index + 1}`}>
-                                <MaterialIcons name="delete" size={20} color={COLORS.outline}/>
+                                              accessibilityLabel={`Remove metric ${metric.name.trim() || index + 1}`}>
+                                <MaterialIcons name="delete" size={20}
+                                               color={stored ? COLORS.error : COLORS.outline}/>
                             </TouchableOpacity>
                         ) : undefined}
                         value={metric.name}
@@ -140,7 +150,7 @@ export function MetricEditorCard(
                     />
                 </View>
 
-                {locked ? renderStated('TYPE', formatMetricType(metric.type), `metric-type-locked-${index}`) : (
+                {stored ? renderStated('TYPE', formatMetricType(metric.type), `metric-type-locked-${index}`) : (
                     <View style={styles.metricField}>
                         <SelectField<MetricValueType>
                             label="TYPE"
@@ -154,7 +164,7 @@ export function MetricEditorCard(
                     </View>
                 )}
 
-                {metric.type === 'Numeric' && (locked ? (
+                {metric.type === 'Numeric' && (stored ? (
                     range !== undefined ? renderStated('RANGE', range, `metric-range-locked-${index}`) : null
                 ) : (
                     <View>
@@ -186,7 +196,7 @@ export function MetricEditorCard(
                     </View>
                 ))}
 
-                {metric.type === 'Enum' && (locked ? (
+                {metric.type === 'Enum' && (stored ? (
                     renderStated('VALUES', metric.values.join(', '), `metric-values-locked-${index}`)
                 ) : (
                     <View>
@@ -265,8 +275,6 @@ const styles = StyleSheet.create({
     boundField: {
         flex: 1,
     },
-    // Tighter than the card's field spacing: the rows are one list inside a
-    // field rather than fields in their own right.
     valueRows: {
         gap: 12,
     },

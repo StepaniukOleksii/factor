@@ -125,6 +125,32 @@ describe('SQLiteRecordRepository', () => {
     });
   });
 
+  describe('countValuesByMetricIds', () => {
+    it('should count the values stored across every metric it was given', async () => {
+      mockGetAllAsync.mockResolvedValueOnce([{count: 45}]);
+
+      const result = await repository.countValuesByMetricIds(['metric-1', 'metric-2']);
+
+      expect(mockGetAllAsync).toHaveBeenCalledWith(
+        'SELECT COUNT(*) as count FROM record_values WHERE metricId IN (?,?)',
+        'metric-1',
+        'metric-2'
+      );
+      expect(result).toBe(45);
+    });
+
+    it('should return zero for a metric nothing was recorded against', async () => {
+      mockGetAllAsync.mockResolvedValueOnce([{count: 0}]);
+
+      expect(await repository.countValuesByMetricIds(['metric-1'])).toBe(0);
+    });
+
+    it('should return zero for an empty list without querying', async () => {
+      expect(await repository.countValuesByMetricIds([])).toBe(0);
+      expect(mockGetAllAsync).not.toHaveBeenCalled();
+    });
+  });
+
   it('should delete all records for a given observation ID', async () => {
     await repository.deleteByObservationId('obs-1');
 

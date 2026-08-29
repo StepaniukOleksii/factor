@@ -180,9 +180,15 @@ describe('UpdateObservationUseCase', () => {
       expect(updatedMetric('metric-2').name).toBe('Hours');
     });
 
-    it('cannot be left off the submission, which would be a removal', async () => {
-      await expect(useCase.execute(edit({metrics: [storedMetricInputs()[0]]})))
-        .rejects.toThrow('A metric cannot be removed from an observation');
+    it('is removed by being left off the submission', async () => {
+      await useCase.execute(edit({metrics: [storedMetricInputs()[0]]}));
+
+      expect(updated().metrics.map(metric => metric.id)).toEqual(['metric-1']);
+    });
+
+    it('cannot be the last one, leaving the Observation with none', async () => {
+      await expect(useCase.execute(edit({metrics: []})))
+        .rejects.toThrow('At least one metric is required');
       expect(repository.update).not.toHaveBeenCalled();
     });
 
@@ -191,6 +197,19 @@ describe('UpdateObservationUseCase', () => {
 
       await expect(useCase.execute(edit({metrics}))).rejects.toThrow('Metric not found');
       expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('is removed alongside a rename and an addition taking its name', async () => {
+      await useCase.execute(edit({
+        metrics: [
+          {id: 'metric-1', name: 'Duration', type: 'Numeric'},
+          {name: 'Quality', type: 'Text'},
+        ],
+      }));
+
+      expect(repository.update).toHaveBeenCalledTimes(1);
+      expect(updated().metrics.map(metric => [metric.id, metric.name]))
+        .toEqual([['metric-1', 'Duration'], ['metric-new', 'Quality']]);
     });
   });
 

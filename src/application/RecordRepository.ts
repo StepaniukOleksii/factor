@@ -7,12 +7,15 @@ export interface RecordRepository {
   getRecentRecords(observationId: string, limit: number): Promise<Record[]>;
   /**
    * Records for the given Observation whose `timestamp` falls in the half-open
-   * range `[range.start, range.end)`, ordered ascending by timestamp. Scoped
-   * retrieval for charting, independent of `getRecentRecords`.
+   * range `[range.start, range.end)`, ordered ascending by timestamp.
    */
   getByObservationId(observationId: string, range: TimeRange): Promise<Record[]>;
-  /** Every Record the Observation holds, counted rather than retrieved: no window, no limit. */
   countByObservationId(observationId: string): Promise<number>;
+  /**
+   * The stored values held across those Metrics, one Record answering two of
+   * them counting twice.
+   */
+  countValuesByMetricIds(metricIds: readonly string[]): Promise<number>;
   deleteByObservationId(observationId: string): Promise<void>;
   deleteById(recordId: string): Promise<void>;
   getById(recordId: string): Promise<Record | null>;

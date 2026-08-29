@@ -95,7 +95,7 @@ export class SQLiteObservationRepository implements ObservationRepository {
     const db = await getDatabase();
 
     await db.withTransactionAsync(async () => {
-      await this.refuseMetricRemoval(db, observation);
+      await this.deleteRemovedMetrics(db, observation);
 
       await db.runAsync(
         'UPDATE observations SET name = ?, description = ? WHERE id = ?',
@@ -131,25 +131,22 @@ export class SQLiteObservationRepository implements ObservationRepository {
   }
 
   /**
-   * Removing a Metric row cascades its `record_values` away, and what happens to
-   * the Records behind it is unanswered - so `update` refuses an aggregate that
-   * has lost one rather than keeping the row and letting the caller believe
-   * otherwise (ADR-6).
+   * The aggregate is the whole statement of what the Observation holds, so a
+   * Metric absent from it is gone - its `record_values` with it, through the
+   * schema's own cascade (ADR-6).
    */
-  private async refuseMetricRemoval(
+  private async deleteRemovedMetrics(
     db: SQLite.SQLiteDatabase,
     observation: Observation
   ): Promise<void> {
-    const rows = await db.getAllAsync<{id: string}>(
-      'SELECT id FROM metrics WHERE observationId = ?',
-      observation.id
-    );
+    const held = observation.metrics.map(metric => metric.id);
+    const placeholders = held.map(() => '?').join(',');
 
-    const held = new Set(observation.metrics.map(metric => metric.id));
-    const missing = rows.find(row => !held.has(row.id));
-    if (missing) {
-      throw new Error(`Cannot remove metric ${missing.id} through update.`);
-    }
+    await db.runAsync(
+      `DELETE FROM metrics WHERE observationId = ? AND id NOT IN (${placeholders})`,
+      observation.id,
+      ...held
+    );
   }
 
   async delete(id: string): Promise<void> {

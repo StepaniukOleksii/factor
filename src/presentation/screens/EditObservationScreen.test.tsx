@@ -7,8 +7,8 @@ import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
 import {OBSERVATION_DESCRIPTION_MAX_LENGTH} from '../../domain/validationLimits';
 
-const {mockUpdateObservationExecute, mockFindAll} = vi.hoisted(() => {
-    return {mockUpdateObservationExecute: vi.fn(), mockFindAll: vi.fn()};
+const {mockUpdateObservationExecute, mockFindAll, mockCountMetricValues} = vi.hoisted(() => {
+    return {mockUpdateObservationExecute: vi.fn(), mockFindAll: vi.fn(), mockCountMetricValues: vi.fn()};
 });
 
 vi.mock('react-native', () => {
@@ -30,9 +30,17 @@ vi.mock('../../infrastructure/SQLiteObservationRepository', () => ({
         findAll: mockFindAll,
     })),
 }));
+vi.mock('../../infrastructure/SQLiteRecordRepository', () => ({
+    SQLiteRecordRepository: vi.fn().mockImplementation(() => ({})),
+}));
 vi.mock('../../application/UpdateObservationUseCase', () => ({
     UpdateObservationUseCase: vi.fn().mockImplementation(() => ({
         execute: mockUpdateObservationExecute,
+    })),
+}));
+vi.mock('../../application/CountMetricValuesUseCase', () => ({
+    CountMetricValuesUseCase: vi.fn().mockImplementation(() => ({
+        execute: mockCountMetricValues,
     })),
 }));
 
@@ -118,7 +126,7 @@ async function leaveScreen(listeners: Record<string, (event: any) => void>, acti
     return event.preventDefault.mock.calls.length > 0;
 }
 
-/** The form fields captioned `label`, which only `LabeledTextField` carries, in screen order. */
+/** The form fields captioned `label`, in screen order. */
 function fieldsByLabel(root: any, label: string) {
     return root.root.findAllByProps({label});
 }
@@ -149,6 +157,23 @@ async function addMetric(root: any) {
     });
 }
 
+/** Taps the bin on the card the label names, as a user does. */
+async function removeMetric(root: any, label: string) {
+    await act(async () => {
+        root.root.findAllByProps({accessibilityLabel: label})[0].props.onPress();
+    });
+}
+
+async function pressDialogAction(root: any, label: string) {
+    await act(async () => {
+        await findTouchableWithText(root.root, label)!.props.onPress();
+    });
+}
+
+function metricNames(root: any): string[] {
+    return fieldsByLabel(root, 'METRIC NAME').map((field: any) => field.props.value);
+}
+
 async function saveObservation(root: any) {
     await act(async () => {
         await findTouchableWithText(root.root, 'Save Observation')!.props.onPress();
@@ -163,6 +188,7 @@ describe('EditObservationScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockUpdateObservationExecute.mockResolvedValue(undefined);
+        mockCountMetricValues.mockResolvedValue(1);
         mockFindAll.mockResolvedValue([SUBJECT, OTHER]);
         vi.spyOn(Alert, 'alert').mockImplementation(() => {
         });
@@ -187,8 +213,7 @@ describe('EditObservationScreen', () => {
         it('renders a card per stored Metric, in declaration order', async () => {
             const {root} = await renderScreen();
 
-            expect(fieldsByLabel(root, 'METRIC NAME').map((field: any) => field.props.value))
-                .toEqual(['value', 'span', 'mood']);
+            expect(metricNames(root)).toEqual(['value', 'span', 'mood']);
         });
 
         it('pre-fills a stored Metric\'s description', async () => {
@@ -220,10 +245,20 @@ describe('EditObservationScreen', () => {
             expect(hasTestID(root, 'metric-value-2-0')).toBe(false);
         });
 
-        it('offers no way to take a stored Metric off the form', async () => {
+        it('offers a way to take a stored Metric off the form', async () => {
             const {root} = await renderScreen();
 
-            expect(root.root.findAllByProps({accessibilityLabel: 'Remove metric 1'})).toHaveLength(0);
+            expect(root.root.findAllByProps({accessibilityLabel: 'Remove metric value'}))
+                .not.toHaveLength(0);
+        });
+
+        it('offers none while the form holds a single card', async () => {
+            mockFindAll.mockResolvedValue([OTHER]);
+
+            const {root} = await renderScreen('obs-2');
+
+            expect(root.root.findAllByProps({accessibilityLabel: 'Remove metric value'}))
+                .toHaveLength(0);
         });
 
         it('adds a card offering the whole editor, and a way to take it back off', async () => {
@@ -286,6 +321,82 @@ describe('EditObservationScreen', () => {
 
             expect(mockUpdateObservationExecute.mock.calls[0][0].metrics[0])
                 .toMatchObject({id: 'metric-1', name: 'reading', type: 'Numeric'});
+        });
+    });
+
+    describe('removing a stored Metric', () => {
+        const REMOVE_VALUE = 'Remove metric value';
+        const PROMPT = '“value” will be removed, along with 1 recorded value. '
+            + 'This cannot be undone.';
+
+        it('takes the card off the form and writes nothing', async () => {
+            const {root} = await renderScreen();
+
+            await removeMetric(root, REMOVE_VALUE);
+
+            expect(metricNames(root)).toEqual(['span', 'mood']);
+            expect(mockUpdateObservationExecute).not.toHaveBeenCalled();
+        });
+
+        it('asks before writing, naming the Metric and what goes with it', async () => {
+            const {root} = await renderScreen();
+
+            await removeMetric(root, REMOVE_VALUE);
+            await saveObservation(root);
+
+            expect(mockCountMetricValues).toHaveBeenCalledWith(['metric-1']);
+            expect(shows(root, 'Delete metric?')).toBe(true);
+            expect(shows(root, PROMPT)).toBe(true);
+            expect(mockUpdateObservationExecute).not.toHaveBeenCalled();
+        });
+
+        it('writes nothing and keeps the form as it was on Cancel', async () => {
+            const {root} = await renderScreen();
+
+            await removeMetric(root, REMOVE_VALUE);
+            await nameMetric(root, 'duration', 0);
+            await saveObservation(root);
+            await pressDialogAction(root, 'Cancel');
+
+            expect(shows(root, 'Delete metric?')).toBe(false);
+            expect(metricNames(root)).toEqual(['duration', 'mood']);
+            expect(mockUpdateObservationExecute).not.toHaveBeenCalled();
+        });
+
+        it('writes the Metrics the form still holds, once, on Delete', async () => {
+            const {root, goBack} = await renderScreen();
+
+            await removeMetric(root, REMOVE_VALUE);
+            await saveObservation(root);
+            await pressDialogAction(root, 'Delete');
+
+            expect(mockUpdateObservationExecute).toHaveBeenCalledTimes(1);
+            expect(mockUpdateObservationExecute.mock.calls[0][0].metrics
+                .map((metric: any) => metric.id)).toEqual(['metric-2', 'metric-3']);
+            expect(goBack).toHaveBeenCalled();
+        });
+
+        it('asks nothing of a save that dropped no stored Metric', async () => {
+            const {root} = await renderScreen();
+
+            await typeInto(root, 'OBSERVATION NAME', 'renamed');
+            await saveObservation(root);
+
+            expect(mockCountMetricValues).not.toHaveBeenCalled();
+            expect(shows(root, 'Delete metric?')).toBe(false);
+            expect(mockUpdateObservationExecute).toHaveBeenCalledTimes(1);
+        });
+
+        it('raises a dialog and asks nothing when the count fails', async () => {
+            mockCountMetricValues.mockRejectedValue(new Error('Database is locked'));
+            const {root} = await renderScreen();
+
+            await removeMetric(root, REMOVE_VALUE);
+            await saveObservation(root);
+
+            expect(Alert.alert).toHaveBeenCalledWith('Error', 'Database is locked');
+            expect(shows(root, 'Delete metric?')).toBe(false);
+            expect(mockUpdateObservationExecute).not.toHaveBeenCalled();
         });
     });
 
@@ -433,6 +544,15 @@ describe('EditObservationScreen', () => {
             const {root, listeners} = await renderScreen();
 
             await nameMetric(root, 'reading', 0);
+
+            expect(await leaveScreen(listeners)).toBe(true);
+            expect(dialogVisible(root)).toBe(true);
+        });
+
+        it('opens the dialog instead of leaving when a Metric was removed', async () => {
+            const {root, listeners} = await renderScreen();
+
+            await removeMetric(root, 'Remove metric value');
 
             expect(await leaveScreen(listeners)).toBe(true);
             expect(dialogVisible(root)).toBe(true);
