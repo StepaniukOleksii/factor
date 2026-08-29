@@ -3,7 +3,7 @@
 * 2026-08-28
 * Feature: observation-editing.md
 * [x] Implemented
-* [ ] E2E tested
+* [x] E2E tested
 
 ## 1. Goal
 

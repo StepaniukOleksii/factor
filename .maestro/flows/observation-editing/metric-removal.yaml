@@ -1,0 +1,61 @@
+appId: com.anonymous.factor
+---
+# Removing a stored Metric through the details screen's kebab menu: the
+# confirmation the save opens over the Records standing behind that Metric, and
+# the two screens the Metric stops showing on once it is confirmed.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no records"
+
+# `mixed metrics` is the fixture whose `insufficient` has a Record behind it, so
+# the confirmation counts a value rather than reading as the empty case.
+- scrollUntilVisible:
+    element: "mixed metrics"
+    direction: DOWN
+    centerElement: true
+- tapOn: "mixed metrics"
+- tapOn: "More options"
+- tapOn: "Edit observation"
+- assertVisible: "Edit Observation"
+
+# Centred, and given three times the default timeout: `insufficient` is the
+# fifth of eight cards, and 20s reaches it or centres it but not both. Merely
+# scrolled into view it stops at the bottom edge, under the footer bar, where
+# the tap lands on the footer instead.
+- scrollUntilVisible:
+    element: "Remove metric insufficient"
+    direction: DOWN
+    centerElement: true
+    timeout: 60000
+- tapOn: "Remove metric insufficient"
+- tapOn: "Save Observation"
+
+# Matched on the phrase rather than on the Metric's own name, which the message
+# carries in typographic quotes. The card is off the form by now, so nothing
+# else on screen holds it.
+- assertVisible: ".*will be removed.*"
+- tapOn: "Confirm metric deletion"
+
+# The details screen's own footer, not the Observation's name: the form's own
+# field is still holding that name, so asserting it would pass on a save that
+# was refused and left the form open.
+- assertVisible: "Add Record"
+
+# `assertNotVisible` answers only for what is rendered, so both checks below are
+# anchored on `flag`, the Metric declared straight after `insufficient` — what
+# is gone would occupy the space immediately above it.
+- scrollUntilVisible:
+    element: "flag"
+    direction: DOWN
+    centerElement: true
+- assertNotVisible: "insufficient"
+
+- tapOn: "Add Record"
+- scrollUntilVisible:
+    element: "flag"
+    direction: DOWN
+    centerElement: true
+- assertNotVisible: "insufficient value"
