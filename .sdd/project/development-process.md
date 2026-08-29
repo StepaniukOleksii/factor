@@ -95,8 +95,9 @@ one whose feature file has not yet been rewritten. `feature-writing` deletes the
 
 ### The branch
 
-Each slice runs on `feat/[slice-name]`, matching its folder under `.sdd/specs/`. Every stage commits under its own tag:
-`[SPEC]`, `[IMPL]`, `[E2E]`, `[FEAT]`.
+Each slice runs on `feat/[slice-name]`, matching its folder under `.sdd/specs/`. Every stage commits under its own tag.
+`change-committing` carries the tags — the slice's four and the ones work outside a slice takes — and how a message is
+written.
 
 Landing folds each run of commits sharing a tag into one, rebases onto master and fast-forwards, then deletes the
 branch. Master carries no merge commits.
@@ -188,10 +189,10 @@ side effect of another, and each states its own scope limit.
 | `e2e-testing`       | a spec's Verification names a flow, or a flow fails | Maestro flows, and the accessibility handles they need to reach elements |
 | `feature-writing`   | the spec's boxes are settled                        | the durable descriptions, and the spec deletion that retires the slice   |
 
-Three helpers own no stage of their own, and are listed nowhere above: `comment-pruning` audits code against the comment
+Four helpers own no stage of their own, and are listed nowhere above: `comment-pruning` audits code against the comment
 rule in `coding-guidelines.md`, invoked when someone asks for it rather than at any fixed point in a slice;
-`slice-landing` performs step 6; and `emulator-verifying` boots the app and screenshots it where a question is settled
-faster by looking.
+`change-committing` writes the commit a stage or a standalone change ends in; `slice-landing` performs step 6; and
+`emulator-verifying` boots the app and screenshots it where a question is settled faster by looking.
 
 ---
 
