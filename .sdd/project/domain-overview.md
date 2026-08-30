@@ -48,6 +48,10 @@ A Metric is never shared: one defined on another Observation is a different Metr
 
 A Metric's name is at most 15 characters and unique within its Observation, compared under the name identity rule below.
 
+A Metric may also cease to exist while its Observation goes on, so long as the Observation keeps one. Every value stored
+against it is destroyed with it, and its name is free within that Observation from then on — the same way a deleted
+Observation frees its own.
+
 A Metric carries an optional description of at most 500 characters: prose explaining what it means and what its values
 stand for, kept with the line breaks it was written with so a per-value legend reads as a list. It guides whoever is
 entering a value and never constrains one — a value is judged by the Metric's type and constraint alone.
