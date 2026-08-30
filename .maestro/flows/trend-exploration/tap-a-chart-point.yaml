@@ -106,7 +106,7 @@ appId: com.anonymous.factor
 - assertVisible: '(.+) – \1'
 
 # A day is as narrow as zoom goes: this lands on the point and changes nothing.
-# The day is bucketed by the hour, and both its Records share the 09:00 one.
+# The day is bucketed by the hour, and both its Records share one of them.
 - tapOn:
     id: "numeric-trend-chart-pressable"
     point: "43%,50%"
@@ -132,10 +132,11 @@ appId: com.anonymous.factor
 - tapOn: "no numeric"
 - runFlow: ../../subflows/wait-for-trends.yaml
 
-# Its Records sit at 09:00 on alternate days, 0 to 8 days back, so the default 1M
-# window gives each a day bucket of its own. A column is aimed at its middle
-# rather than at the bucket start a Numeric point is drawn on, and the newest of
-# those buckets runs from 29/30 of the plot to its right edge: 97% of the canvas.
+# Its Records sit at the seed's anchor hour on alternate days, 0 to 8 days back,
+# so the default 1M window gives each a day bucket of its own. A column is aimed
+# at its middle rather than at the bucket start a Numeric point is drawn on, and
+# the newest of those buckets runs from 29/30 of the plot to its right edge: 97%
+# of the canvas.
 - tapOn:
     id: "category-swimlane-chart-pressable"
     index: 0
@@ -176,11 +177,10 @@ appId: com.anonymous.factor
     direction: DOWN
     centerElement: true
 
-# `note`'s Records sit at 09:00 on alternate days, so the default 1M window gives
-# each a day bucket of its own, and a mark is drawn on its bucket's start rather
-# than at a swimlane column's middle: the newest 29/30 across the plot, 96% of the
-# canvas. Run before 09:00 that Record is still in the future and the nearest mark
-# is a bucket to the left - inside the tolerance, and a Record just the same.
+# `note`'s Records sit at the seed's anchor hour on alternate days, so the
+# default 1M window gives each a day bucket of its own, and a mark is drawn on
+# its bucket's start rather than at a swimlane column's middle: the newest 29/30
+# across the plot, 96% of the canvas.
 - tapOn:
     id: "text-marker-chart-pressable"
     point: "96%,50%"

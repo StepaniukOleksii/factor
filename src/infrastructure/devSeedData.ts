@@ -50,9 +50,26 @@ function randRange(min: number, max: number): number {
   return min + rand() * (max - min);
 }
 
-function daysAgo(n: number, hour = 9, minute = 0): Date {
+/**
+ * The hour of day every daily fixture is anchored to: 09:00, or the current hour
+ * when the seed is run before nine. A chart window ends at the current instant,
+ * so an anchor past it would date today's Records into the future - outside
+ * every window, and today's bucket missing from every chart.
+ */
+function anchorHour(): number {
+  return Math.min(9, new Date().getHours());
+}
+
+/**
+ * `n` days back, at today's anchor hour. `hoursLater` and `minutesLater` place a
+ * Record later in that same day, as an offset from the anchor rather than a
+ * clock time of its own, so a pair meant to share an hour goes on sharing one
+ * whatever hour the seed runs in. The anchor is never past 09:00, so the widest
+ * offset below still lands on its own day.
+ */
+function daysAgo(n: number, hoursLater = 0, minutesLater = 0): Date {
   const d = new Date();
-  d.setHours(hour, minute, 0, 0);
+  d.setHours(anchorHour() + hoursLater, minutesLater, 0, 0);
   d.setDate(d.getDate() - n);
   return d;
 }
@@ -127,7 +144,7 @@ export function buildSeedData(): SeedEntry[] {
       'Every 3 hours over the last 21, then one point per day for 12 days.\n' +
       'At 1D the only metric dense enough to fill the hour-bucketed window.\n' +
       'At 1W and 1M still populated, at day resolution.\n' +
-      'The day 3 back also carries a 09:30 and a 15:00 — the only hour anywhere holding two records.');
+      'The day 3 back also carries a second record half an hour on and a third six hours later — the only hour anywhere holding two records.');
     // Near METRIC_DESCRIPTION_MAX_LENGTH, so the dialog's longest body is on the form.
     const yearlyMetric = new Metric(Crypto.randomUUID(), 'yearly', 'Numeric', {min: 0},
       "One point every 14 days across 350 days, so the 1Y window's 30-day buckets have about a dozen " +
@@ -181,14 +198,14 @@ export function buildSeedData(): SeedEntry[] {
       setValueAt(recordValues, daysAgo(i), hourlyMetric.id, bounded(60 + Math.cos(i / 3) * 18 + randRange(-5, 5)));
     }
     // One of those days carries a cluster of its own: a second Record half an hour
-    // after that day's, sharing its clock hour, and a third in the afternoon. A
+    // after that day's, sharing its clock hour, and a third six hours on. A
     // chart zoomed down to this day is bucketed by the hour, so the first two stay
     // folded into one aggregated point while the third gives the chart a second
     // point to draw - the one shape zoom cannot resolve any further, since an hour
     // is as fine as a day-wide window is ever bucketed. Both extra Records share
     // the day of an existing one, so every window's point count is what it was.
-    setValueAt(recordValues, daysAgo(CLUSTER_DAY, 9, 30), hourlyMetric.id, bounded(60 + randRange(-5, 5)));
-    setValueAt(recordValues, daysAgo(CLUSTER_DAY, 15), hourlyMetric.id, bounded(70 + randRange(-5, 5)));
+    setValueAt(recordValues, daysAgo(CLUSTER_DAY, 0, 30), hourlyMetric.id, bounded(60 + randRange(-5, 5)));
+    setValueAt(recordValues, daysAgo(CLUSTER_DAY, 6), hourlyMetric.id, bounded(70 + randRange(-5, 5)));
 
     // yearly: a point every two weeks for most of a year => the longest window's 30-day
     // buckets have ~12 points to draw instead of one clump against its right edge.
@@ -215,8 +232,8 @@ export function buildSeedData(): SeedEntry[] {
 
     // RECENT RECORDS shows the three most recent records, and which those are
     // shifts with the hour the seed runs: hoursAgo(3) moves with the clock while
-    // daysAgo(0) is pinned at 09:00, so noting both puts one noted and one
-    // un-noted record on that list at any time of day. The daysAgo(0) one also
+    // daysAgo(0) sits at the day's anchor hour, so noting both puts one noted
+    // and one un-noted record on that list at any time of day. The daysAgo(0) one also
     // carries the `note` metric's own value, so both appear on one expanded card.
     const recordNotes: TimestampNotes = new Map([
       [hoursAgo(3).getTime(), 'The most recent sub-day record: a short note on one line.'],
@@ -271,7 +288,7 @@ export function buildSeedData(): SeedEntry[] {
     const recordValues: TimestampValues = new Map();
     setValueAt(recordValues, daysAgo(58), valueMetric.id, 20);
     setValueAt(recordValues, daysAgo(50), valueMetric.id, 52);
-    setValueAt(recordValues, daysAgo(50, 9, 30), valueMetric.id, 58);
+    setValueAt(recordValues, daysAgo(50, 0, 30), valueMetric.id, 58);
     setValueAt(recordValues, daysAgo(42), valueMetric.id, 85);
 
     entries.push({observation, records: buildRecords(observation, recordValues)});

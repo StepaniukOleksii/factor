@@ -20,7 +20,9 @@ fixture set — don't run it if you have manually-entered data on the device you
 The dataset is deterministic: the same metric values and the same offsets from "now" are generated every time (see the
 `SEED` constant in `devSeedData.ts`). Absolute timestamps still shift with "now" each time you reseed — that's required,
 since the whole point is for records to land inside whichever rolling trend-chart window is selected whenever you run
-it.
+it. Every daily record is anchored to **09:00**, or to the current hour when you reseed before nine — an anchor past the
+current instant would date today's records into the future, outside every window, and cost each chart its newest
+bucket.
 
 **Naming.** Observation and metric names are short, all-lowercase descriptions of the scenario they cover (e.g. `mixed
 metrics`, `dense`) rather than realistic tracker names (e.g. "Sleep", "Hours") — so seeded data is instantly
@@ -63,12 +65,12 @@ Its other four metrics, and every metric on the other observations, carry none.
 
 Two of `mixed metrics`' records carry an optional Record **note** — free text about that one occasion, which is not a
 metric. The most recent sub-day `hourly` record (3 hours back) carries a short single-line one; today's shared record
-(09:00, the one `dense`, `flag`, `category` and `note` all write to) carries one close to the 150-character limit
-containing a line break, so wrapping and newline preservation are both on screen. Every other seeded record, here and on
-the other observations, carries none. Those two because RECENT RECORDS shows the three most recent records and which
-those are shifts with the hour you reseed: the sub-day one moves with the clock while today's is pinned at 09:00, so at
-any time of day the list holds at least one record with a note and one without. Today's also puts the `note` metric's
-own value and the record's note on one expanded card, where nothing should invite confusing them.
+(the one `dense`, `flag`, `category` and `note` all write to) carries one close to the 150-character limit containing a
+line break, so wrapping and newline preservation are both on screen. Every other seeded record, here and on the other
+observations, carries none. Those two because RECENT RECORDS shows the three most recent records and which those are
+shifts with the hour you reseed: the sub-day one moves with the clock while today's sits at the anchor hour, so at any
+time of day the list holds at least one record with a note and one without. Today's also puts the `note` metric's own
+value and the record's note on one expanded card, where nothing should invite confusing them.
 
 Each observation also states **when it was created**, backdated to before its own oldest record rather than left at the
 moment the seed ran — four observations built in one pass would otherwise share a millisecond and leave the list's
@@ -80,13 +82,13 @@ shows the four in:
 | `no records`    | today          | 0                                                                    |
 | `no numeric`    | 30 days ago    | 5                                                                    |
 | `stale records` | 90 days ago    | 4                                                                    |
-| `mixed metrics` | 365 days ago   | 82 — 81 when the reseed ran at an hour that put one of `hourly`'s sub-day records on the 09:00 already holding one |
+| `mixed metrics` | 365 days ago   | 82 — 81 when the reseed ran at an hour that put one of `hourly`'s sub-day records on the anchor hour already holding one |
 
 | Observation     | Metrics                                              | Record pattern                                     | What it's for                                                                                                                 |
 |-----------------|------------------------------------------------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | `mixed metrics` | Numeric `dense` (0-100)                              | one point per day, 45 days                         | A densely-populated trend chart                                                                                               |
 |                 | Numeric `sparse` (unbounded)                         | one point every ~3 days, 60 days                   | A trend chart with visible gaps between points                                                                                |
-|                 | Numeric `hourly` (0-100)                             | every 3h over the last 21h, then daily for 12 days — of which the day 3 back also carries a 09:30 and a 15:00 | The only metric dense enough to fill the hour-bucketed `1D` window; its extra day-3 pair is the only hour anywhere holding two Records |
+|                 | Numeric `hourly` (0-100)                             | every 3h over the last 21h, then daily for 12 days — of which the day 3 back also carries a second Record half an hour after its own and a third six hours later | The only metric dense enough to fill the hour-bucketed `1D` window; its extra day-3 pair is the only hour anywhere holding two Records |
 |                 | Numeric `yearly` (min 0)                             | one point every 14 days, 350 days                  | Fills the 30-day-bucketed `1Y` window instead of clumping at its right edge                                                   |
 |                 | Numeric `insufficient` (max 100)                     | exactly 1 point, 5 days ago                        | Both sides of the placeholder-vs-dot boundary: "Not enough data yet" at `1D`, a single dot at every wider preset             |
 |                 | Boolean `flag`, Enum `category` (a/b/c/d), Text `note` | shared records, every other day, 20 days           | Two swimlane cards interleaved after the Numeric ones — a two-lane one and a four-lane one, so the shortest and the tallest card in the section, a swimlane being as tall as its lanes — and `note`'s marker card, shorter than either, below them; one record carrying several value types at once |
@@ -112,22 +114,21 @@ you tap it (these are asserted by `devSeedData.test.ts`, so they stay true):
 | `hourly`            | **7** | 7    | 13   | 2      |
 | `yearly`            | 1     | 1    | 3    | **13** |
 | `insufficient`      | 0     | 1    | 1    | 1      |
-| `flag` (Boolean)    | 0 / 1 | 4    | 10   | 2      |
-| `category` (Enum)   | 0 / 1 | 4    | 10   | 2      |
-| `note` (Text)       | 0 / 1 | 4    | 10   | 2      |
+| `flag` (Boolean)    | 1     | 4    | 10   | 2      |
+| `category` (Enum)   | 1     | 4    | 10   | 2      |
+| `note` (Text)       | 1     | 4    | 10   | 2      |
 
 Every preset has at least one metric that charts and at least one that doesn't, so a single screen shows both states
 side by side at any selection.
 
-`flag`, `category` and `note` share records sitting at 09:00 on alternate days, and a 24-hour window holds exactly one
-09:00 — so at `1D` each draws a single mark after a reseed run past 09:00 and the placeholder after one run before it.
-Both are correct. The same is true of `no numeric`'s `mood` and `done`, which share records on the same schedule and
-draw 5 marks at `1M` and 2 columns at `1Y`.
+`flag`, `category` and `note` share records sitting at the anchor hour on alternate days, and a 24-hour window holds
+exactly one of those — so at `1D` each draws a single mark. The same is true of `no numeric`'s `mood` and `done`, which
+share records on the same schedule and draw 5 marks at `1M` and 2 columns at `1Y`.
 
 `hourly`'s extra day-3 Records share a day with one it already had, so they change none of these counts — they only show
-up once a chart is zoomed down to that day, where the two inside 09:00-10:00 stay folded into one aggregated point while
-the 15:00 one gives the chart a second point beside it. That is the shape zoom comes to rest on, reached here by picking
-the day out by hand — `stale records` is where it can be reached by tapping, and the two differ in what the resting day
+up once a chart is zoomed down to that day, where the two inside the anchor hour stay folded into one aggregated point
+while the third gives the chart a second point beside it. That is the shape zoom comes to rest on, reached here by
+picking the day out by hand — `stale records` is where it can be reached by tapping, and the two differ in what the resting day
 still has left to draw.
 
 ## Manual verification checklist
@@ -179,10 +180,11 @@ Open **`mixed metrics`** details screen (time range selector defaults to `1M`):
 
 Still on **`mixed metrics`**, tap through the time range selector and check against the table above:
 
-- `1D` — only `hourly` draws a line; `dense` and `sparse` drop to a single dot each, and `insufficient` (its one record
-  is 5 days old, outside this window) shows `Not enough data yet`, as `flag`, `category` and `note` do too when the
-  reseed ran before 09:00 — each placeholder standing in a card of exactly the height that card's marks are drawn in, so
-  `flag` stays the short one, `category` the tall one, and nothing below them moves.
+- `1D` — only `hourly` draws a line; `dense` and `sparse` drop to a single dot each, and `flag`, `category` and `note`
+  to a single mark each — `flag` still the short card and `category` the tall one, a swimlane's height coming from its
+  lanes rather than from what it drew. `insufficient` (its one record is 5 days old, outside this window) shows `Not
+  enough data yet`, its placeholder standing in a card of exactly the height that card's chart is drawn in, so nothing
+  below it moves.
 - `1W` / `1M` — `dense`, `sparse` and `hourly` all chart, at progressively more points.
 - `1Y` — `yearly` fills out across the window; `dense` and `sparse` shrink to 3 points bunched at the right-hand edge,
   since all their records fall in the last two months. `flag` and `category` each collapse to two columns at that edge —
@@ -225,7 +227,7 @@ Open **`no numeric`** details screen:
   in it. On `mood` no value repeats within either bucket, so every mark still fills its lane and the columns differ in
   how many lanes they occupy rather than in height; on `done` a mark is as tall as the records that gave that answer, so
   an answer given twice where the other was given once draws twice the lane, and only where a column splits evenly do
-  its two marks match. At `1D`, either a single mark or `Not enough data yet`, per the 09:00 rule above.
+  its two marks match. At `1D`, a single mark on each — the anchor-hour rule above.
 - RECENT RECORDS shows entries carrying an enum value and a boolean together.
 
 Still on **`no numeric`**, at the default `1M`, tap the cards themselves — the same act as tapping a Numeric point, on a

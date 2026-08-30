@@ -53,6 +53,19 @@ function pointCount(observationName: string, metricName: string, preset: TimeRan
   ).length;
 }
 
+/** The hour-bucketed points a chart zoomed onto `hourly`'s cluster day draws. */
+function clusterDayPoints(): MetricSeriesPoint[] {
+  const {observation, records} = entry('mixed metrics');
+  const hourly = observation.metrics.find(metric => metric.name === 'hourly')!;
+  const clusterDay = new Date();
+  clusterDay.setHours(0, 0, 0, 0);
+  clusterDay.setDate(clusterDay.getDate() - 3);
+  const nextDay = new Date(clusterDay);
+  nextDay.setDate(nextDay.getDate() + 1);
+
+  return getMetricSeries.execute(records, hourly, {start: clusterDay, end: nextDay}, {bucketSizeMs: 60 * 60 * 1000});
+}
+
 describe('seeded chart coverage', () => {
   // The details screen needs two aggregated points to draw a line rather than a
   // lone dot. Manual verification of the time range selector depends on some
@@ -85,20 +98,7 @@ describe('seeded chart coverage', () => {
   // with several Records and something else to draw alongside it, which no
   // metric offered until `hourly` gained its cluster.
   it('gives a zoomed-in day an hour holding several Records, and a second point beside it', () => {
-    const {observation, records} = entry('mixed metrics');
-    const hourly = observation.metrics.find(metric => metric.name === 'hourly')!;
-    const clusterDay = new Date();
-    clusterDay.setHours(0, 0, 0, 0);
-    clusterDay.setDate(clusterDay.getDate() - 3);
-    const nextDay = new Date(clusterDay);
-    nextDay.setDate(nextDay.getDate() + 1);
-
-    const points = getMetricSeries.execute(
-      records,
-      hourly,
-      {start: clusterDay, end: nextDay},
-      {bucketSizeMs: 60 * 60 * 1000},
-    );
+    const points = clusterDayPoints();
 
     expect(points.length).toBeGreaterThanOrEqual(2);
     expect(points.some(point => point.recordCount > 1)).toBe(true);
@@ -225,6 +225,64 @@ describe('seeded chart coverage', () => {
     for (const preset of PRESETS.filter(preset => preset !== '1D')) {
       expect(pointCount('mixed metrics', 'insufficient', preset)).toBe(1);
     }
+  });
+});
+
+// Every assertion above reads the wall clock, so one that holds only at certain
+// hours still passes whenever the suite happens to run at another. The seed's
+// anchor hour is that kind of hinge - 09:00 for most of the day, the current hour
+// before nine - and only a run before nine reaches the second case. These pin the
+// clock either side of it and read the same shape off both.
+describe('seeded anchor hour', () => {
+  const HOURS: [string, Date][] = [
+    ['before nine', new Date(2026, 7, 4, 3, 20)],
+    ['past nine', new Date(2026, 7, 4, 14, 20)],
+  ];
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it.each(HOURS)('timestamps no Record in the future seeded at %s', (_hour, now) => {
+    vi.setSystemTime(now);
+
+    for (const {observation, records} of buildSeedData()) {
+      expect(
+        records.every(record => record.timestamp.getTime() <= now.getTime()),
+        observation.name,
+      ).toBe(true);
+    }
+  });
+
+  // The counts the shared Metrics assert above, which turn on today's Record
+  // being inside every window - the first thing an anchor past the current hour
+  // would cost.
+  it.each(HOURS)('buckets the shared Metrics the same way seeded at %s', (_hour, now) => {
+    vi.setSystemTime(now);
+
+    for (const metricName of ['category', 'flag', 'note']) {
+      expect(pointCount('mixed metrics', metricName, '1D'), metricName).toBe(1);
+      expect(pointCount('mixed metrics', metricName, '1W'), metricName).toBe(4);
+      expect(pointCount('mixed metrics', metricName, '1M'), metricName).toBe(10);
+      expect(pointCount('mixed metrics', metricName, '1Y'), metricName).toBe(2);
+    }
+  });
+
+  // `hourly`'s cluster is placed as an offset from the anchor rather than at a
+  // clock time, which is what keeps its pair inside one hour wherever the anchor
+  // lands - and the extra Records on their own day, where the counts above
+  // already account for them.
+  it.each(HOURS)('keeps the cluster day an hour deep, seeded at %s', (_hour, now) => {
+    vi.setSystemTime(now);
+
+    const points = clusterDayPoints();
+
+    expect(points.length).toBeGreaterThanOrEqual(2);
+    expect(points.some(point => point.recordCount > 1)).toBe(true);
   });
 });
 
@@ -483,10 +541,10 @@ describe('seeded Metric bounds', () => {
 // The details screen's noted-and-un-noted states are eyeballed on these two
 // Records alone - the claim testing-data.md makes.
 describe('seeded Record notes', () => {
-  // The seed reads the wall clock, and `hoursAgo(3)` lands on 09:00 - the hour
-  // `daysAgo(0)` is pinned to - for the hour either side of midday, merging the
-  // two noted Records into one. Pinning the clock keeps the count below
-  // independent of when the suite runs.
+  // The seed reads the wall clock, and `hoursAgo(3)` lands on 09:00 - the anchor
+  // hour `daysAgo(0)` sits at past nine - for the hour either side of midday,
+  // merging the two noted Records into one. Pinning the clock keeps the count
+  // below independent of when the suite runs.
   const NOW = new Date(2026, 7, 4, 14, 20);
   const SHARED_RECORD_AT = new Date(2026, 7, 4, 9, 0);
 
