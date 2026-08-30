@@ -95,6 +95,9 @@ export class SQLiteObservationRepository implements ObservationRepository {
     const db = await getDatabase();
 
     await db.withTransactionAsync(async () => {
+      // Ahead of the parking below, so a Metric added on this same save can
+      // take a removed one's name: the name index would refuse that insert
+      // while the row still holding the name is there.
       await this.deleteRemovedMetrics(db, observation);
 
       await db.runAsync(
