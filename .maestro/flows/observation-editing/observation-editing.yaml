@@ -66,16 +66,17 @@ appId: com.anonymous.factor
 - tapOn: "Edit observation"
 - assertVisible: "Edit Observation"
 
-# `dense` is the first Metric the fixture declares, so its card is index 0. Its
-# type is stated rather than offered: every type label is already somewhere on
-# this form, so the picker's absence is what has to be asserted, not the text.
-- scrollUntilVisible:
-    element:
+# `dense` is the first Metric the fixture declares, so its card is index 0, and
+# that card opens on the first screen of the form. The row is waited for where
+# it already is rather than scrolled to: a scroll leaves it behind instead,
+# carrying the form past it and reaching the end with nothing below matching.
+#
+# Its type is stated rather than offered: every type label is already somewhere
+# on this form, so the picker's absence is what has to be asserted, not the text.
+- extendedWaitUntil:
+    visible:
       id: "metric-type-locked-0"
-    direction: DOWN
-    centerElement: true
-- assertVisible:
-    id: "metric-type-locked-0"
+    timeout: 30000
 - assertNotVisible:
     id: "metric-type-0"
 
@@ -95,11 +96,15 @@ appId: com.anonymous.factor
 
 # Add Metric is the last thing in the form, so this scroll cannot centre it the
 # way the ones above centre what they are after: with nothing below it to scroll
-# past, the container runs to its end with the button plainly on screen and the
-# step still fails as "not found".
+# past, the container runs to its end and centring never comes.
+#
+# The timeout carries the whole length of the form, eight Metric cards of it,
+# read afresh after every swipe. The default twenty seconds runs out partway
+# down and reports the button missing rather than slow.
 - scrollUntilVisible:
     element: "Add Metric"
     direction: DOWN
+    timeout: 60000
 - tapOn: "Add Metric"
 
 # Eight stored Metrics come before it, so the added card is index 8. Centred,
