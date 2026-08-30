@@ -21,10 +21,12 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.anonymous.factor"
+      "package": "io.github.stepaniukoleksii.factor",
+      "versionCode": 1
     },
     "plugins": [
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "./plugins/withReleaseSigning"
     ]
   }
 }

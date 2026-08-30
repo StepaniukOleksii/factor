@@ -16,6 +16,9 @@ expo-env.d.ts
 .kotlin/
 *.orig.*
 *.jks
+
+# Release signing key — never committed; back it up off this machine
+/keys/
 *.p8
 *.p12
 *.key

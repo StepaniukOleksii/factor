@@ -36,7 +36,8 @@
   "scripts": {
     "start": "expo start",
     "start-tunnel": "npx expo start --tunnel",
-    "android": "expo run:android",
+    "android": "expo run:android --app-id io.github.stepaniukoleksii.factor.dev",
+    "android:release": "expo run:android --variant release",
     "ios": "expo run:ios",
     "test": "vitest run",
     "test:watch": "vitest",
