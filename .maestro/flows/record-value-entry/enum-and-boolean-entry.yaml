@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # What an Enum Metric's field and a Boolean Metric's segments accept: unanswered
 # to begin with, answered, cleared again, and read back from a stored Record.

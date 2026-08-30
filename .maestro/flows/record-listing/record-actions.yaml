@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # The menu a long press on a Record opens, and the confirmation sitting behind
 # its Delete action. Every path here is dismissed rather than carried out.

@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # The opening every flow shares: start the app against Metro, then put the
 # database into a known state. See testing-android-e2e.md for why the launch

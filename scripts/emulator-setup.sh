@@ -12,7 +12,11 @@
 set -uo pipefail
 
 AVD_NAME="Pixel_7"
-PACKAGE="com.anonymous.factor"
+PACKAGE="io.github.stepaniukoleksii.factor.dev"
+# Component name, not just the scheme: the release build registers the same
+# `exp+factor` deep link, so a bare VIEW intent opens Android's app chooser and the
+# app never starts. The activity class keeps the unsuffixed namespace.
+LAUNCH_ACTIVITY="$PACKAGE/io.github.stepaniukoleksii.factor.MainActivity"
 PORT=8081
 BOOT_TIMEOUT=180
 BUILD_TIMEOUT=900
@@ -142,7 +146,7 @@ log "App window displayed — reconnecting via 10.0.2.2 before the JS wait"
 # emulator-verifier skill uses) so the bundle loads deterministically.
 relaunch_dev_client() {
   adb -s "$DEVICE" shell am force-stop "$PACKAGE" >/dev/null 2>&1
-  adb -s "$DEVICE" shell am start -a android.intent.action.VIEW \
+  adb -s "$DEVICE" shell am start -n "$LAUNCH_ACTIVITY" -a android.intent.action.VIEW \
     -d "exp+factor://expo-development-client/?url=http://10.0.2.2:${PORT}" >/dev/null 2>&1
 }
 

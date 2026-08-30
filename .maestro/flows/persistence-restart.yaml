@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # What the app writes is still there after its process ends and starts again.
 

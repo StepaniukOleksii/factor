@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # The Observation Details screen ignores a back press and a segment tap alike
 # while a window's Records are still loading, and the time range selector is

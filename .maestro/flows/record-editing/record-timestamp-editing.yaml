@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # Editing a Record's Date and Time through the native pickers, and what becomes
 # of the change on save and on leaving.

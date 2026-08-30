@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # Deleting a Record from the Observation Details screen: the list refills from
 # the Records behind the three on show, and empties once none are left.

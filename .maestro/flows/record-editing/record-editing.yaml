@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # Editing a Record: the form opens on the stored values, a saved change reaches
 # the Observation Details screen, and an abandoned one leaves the Record alone.

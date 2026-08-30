@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # What pressing a chart point does, which depends on how many Records it stands
 # for: one opens that Record, several narrow the window onto them. All three

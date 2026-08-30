@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # The rest of what a Record form asks for: a Numeric Metric's declared range, the
 # help behind a described Metric's label, and the note at the foot.

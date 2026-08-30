@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # Adding a Record by both routes in. They open the same form and differ in where
 # saving leaves you: the Observation you came from, or its screen put in the

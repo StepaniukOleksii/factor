@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # Removing a stored Metric through the details screen's kebab menu: the
 # confirmation the save opens over the Records standing behind that Metric, and

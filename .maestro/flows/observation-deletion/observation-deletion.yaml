@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # Deleting an Observation, cancelling once first to show that Cancel is safe.
 # Covers the header kebab menu, the confirmation modal, and the pop-to-list

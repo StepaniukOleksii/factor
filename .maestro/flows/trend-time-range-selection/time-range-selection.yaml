@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # The window every chart in the Trends section shares: the one it opens on, the
 # range modal behind the Custom segment, the switch to a preset, and how long a

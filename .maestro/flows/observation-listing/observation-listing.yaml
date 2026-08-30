@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # The screen the app opens on: its empty state, the route to Observation
 # creation, and what each item carries once there are Observations to list.

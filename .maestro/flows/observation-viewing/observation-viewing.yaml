@@ -1,4 +1,4 @@
-appId: com.anonymous.factor
+appId: io.github.stepaniukoleksii.factor.dev
 ---
 # Opening an Observation from the list and reading it: its description, its
 # Records collapsed and expanded, the route on to a new Record, and the empty
