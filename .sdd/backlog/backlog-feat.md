@@ -25,10 +25,10 @@ ready to become a real spec.
    already used in CreateRecordScreen), with a deletingRecord loading state disabling the buttons meanwhile.
 3. Metric units. An attribute set by user that contains unit information. Limit to three chars. Should be displayed in
    paratheses above the chart after the metric name.
-4. The rest of the destructive half of Metric editing — narrowing a Numeric bound, and removing or renaming a Choice
-   value. Removing a Metric was specified separately and answered the stranding question for itself: its stored values
-   are destroyed with it (ADR-6). These three do not remove the Metric, so that answer does not carry — each leaves a
-   stored value its own definition no longer admits. Renaming a Choice value is the one that keeps getting left off the
-   list: a Record stores the value's text rather than its position, so `Low` → `Lo` strands exactly as dropping it
-   would, where renaming a Metric costs nothing. Look at what a stranded value already does to the Record form and to
-   the charts before choosing — Numeric and Choice behave differently there today, and neither behaviour was designed.
+4. The Metric edits still left out: narrowing a Numeric bound, and removing or renaming a Choice value. Removing a whole
+   Metric now works ([Observation Editing](../features/observation-editing.md)) and destroys every value stored against
+   it ([ADR-6](../adr/6-observation-update-write-path.md)). These three keep the Metric, so that answer does not fit:
+   each leaves behind a stored value the Metric no longer allows. Renaming a Choice value is the easy one to forget — a
+   Record stores the value's text, not its position, so `Low` → `Lo` strands it just as deleting it would, while
+   renaming a Metric costs nothing. Before deciding, check what a stranded value already does on the Record form and in
+   the charts: Numeric and Choice differ there today, and neither behaviour was designed.
