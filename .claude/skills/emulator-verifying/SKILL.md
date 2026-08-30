@@ -31,9 +31,11 @@ ever resolve `emulator-*` serials, so they're safe even if a physical device is 
     * If the JS bundle fails to load mid-session (Metro restarted independently of the app), logcat shows repeated
       `okhttp.OkHttpClient` / `BundleDownloader` errors and the app is stuck on a "Bundling"/"Reloading" banner — the
       emulator's simulated network cycling through connectivity probes, not a real bug. Force-stop and relaunch: `adb -s
-      <serial> shell am force-stop com.anonymous.factor`, then reopen via the intent in step 3.
-3. **Reload without rebuilding**: `adb -s <serial> shell am start -a android.intent.action.VIEW -d
-   "exp+factor://expo-development-client/?url=http://10.0.2.2:8081"`. `10.0.2.2` is the emulator's alias for the host's
-   loopback — doesn't apply to a physical device.
+      <serial> shell am force-stop io.github.stepaniukoleksii.factor.dev`, then reopen via the intent in step 3.
+3. **Reload without rebuilding**: `adb -s <serial> shell am start -n
+   io.github.stepaniukoleksii.factor.dev/io.github.stepaniukoleksii.factor.MainActivity -a android.intent.action.VIEW -d
+   "exp+factor://expo-development-client/?url=http://10.0.2.2:8081"`. The explicit component matters: the release build
+   registers the same `exp+factor` scheme, so a bare VIEW intent opens the app chooser instead. `10.0.2.2` is the
+   emulator's alias for the host's loopback — doesn't apply to a physical device.
 4. **Teardown**: `bash scripts/emulator-teardown.sh`. Always run this, even after a setup or screenshot failure — it's
    idempotent.

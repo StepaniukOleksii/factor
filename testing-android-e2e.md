@@ -83,7 +83,9 @@ Tear down manually when done: `bash scripts/emulator-teardown.sh`.
 ## How flows are written
 
 Each flow is one file of declarative [Maestro](https://maestro.mobile.dev) YAML (`tapOn`, `inputText`, `assertVisible`,
-…) under `.maestro/flows/`, opening with the app id — `com.anonymous.factor`, matching `app.json`'s `android.package`.
+…) under `.maestro/flows/`, opening with the app id — `io.github.stepaniukoleksii.factor.dev`. That is the development
+build's id: `app.json`'s `android.package` plus the `.dev` suffix that keeps it separate from the real installed app
+(see [releasing-android.md](releasing-android.md)).
 
 `.maestro/subflows/` holds fragments shared between flows, and sits outside `flows/` on purpose. `.maestro/config.yaml`
 globs `flows/*.yaml` and `flows/*/*.yaml`, so a fragment is never picked up and run as a flow of its own — which is what

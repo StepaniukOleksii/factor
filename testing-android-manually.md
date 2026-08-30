@@ -9,6 +9,10 @@ the app can no longer run inside the plain Expo Go app — it needs a custom dev
 This project only targets Android for now. iOS is intentionally out of scope: it would require a Mac for a local build,
 or EAS Build's cloud service, and isn't needed yet.
 
+This covers the development build only — the one that loads its JavaScript from Metro. The standalone build used for
+real, with real data on the phone, is covered in [releasing-android.md](releasing-android.md). The two install as
+separate apps and never touch each other's data.
+
 The main testing method is a physical Android device, not the emulator — today that means opening the app in Expo Go.
 The setup below replaces Expo Go with a custom development build installed once on that same device. After that one-time
 install, day-to-day testing looks the same as it does now: open the app on your phone and it connects to Metro
@@ -80,9 +84,10 @@ npx expo run:android
 ```
 
 `expo run:android` compiles the native app (first run will take several minutes) and installs it directly on the
-connected device, replacing the need to open Expo Go — you'll get a separate "Factor" dev-client app icon on the phone.
-This is a one-time install per device; you don't repeat it for ordinary JS changes, only when a native dependency
-changes (see below).
+connected device, replacing the need to open Expo Go — you'll get a separate "Factor Dev" dev-client app icon on the
+phone. It is labelled and installed apart from the real "Factor" app on purpose, under the application id
+`io.github.stepaniukoleksii.factor.dev`. This is a one-time install per device; you don't repeat it for ordinary JS
+changes, only when a native dependency changes (see below).
 
 **Alternative — EAS Build (cloud), no cable needed:** `npx eas-cli build --profile development --platform android`
 compiles the same kind of build on Expo's servers instead of locally. First use requires `npx eas-cli login` and
