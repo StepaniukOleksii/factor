@@ -23,8 +23,8 @@ ready to become a real spec.
       single-Observation slices above are built and proven.
 2. On failure, the record isn't removed, the modal stays open, and an error is surfaced via alert(...) (same pattern
    already used in CreateRecordScreen), with a deletingRecord loading state disabling the buttons meanwhile.
-3. Metric units. An attribute set by user that contains unit information. Limit to three chars. Should be displayed in
-   paratheses above the chart after the metric name.
+3. Metric units. An attribute set by user that contains unit information. Should be displayed in paratheses above the
+   chart after the metric name.
 4. The Metric edits still left out: narrowing a Numeric bound, and removing or renaming a Choice value. Removing a whole
    Metric now works ([Observation Editing](../features/observation-editing.md)) and destroys every value stored against
    it ([ADR-6](../adr/6-observation-update-write-path.md)). These three keep the Metric, so that answer does not fit:
