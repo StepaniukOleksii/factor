@@ -89,5 +89,7 @@ Costs:
   those strand stored values without removing the Metric, so nothing here decides what becomes of them.
 * Any further Observation-level column — a per-Observation setting, a display preference — is written through `update`
   rather than earning a method of its own.
-* Metric order is the `metrics` table's `rowid` order. Inserting a Metric mid-list or reordering needs a `position`
-  column, and therefore a schema migration mechanism the project does not have.
+* Metric order is the `metrics` table's `position` column, and this write is what sets it: every Metric the aggregate
+  holds is written on every save, each taking its ordinal in the aggregate's own list. Nothing renumbers separately, and
+  no index enforces that an Observation's positions are distinct — this write assigning the whole set at once is what
+  keeps them so.
