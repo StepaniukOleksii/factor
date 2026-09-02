@@ -43,7 +43,8 @@ frees is available within that same save, to a card added under it or to a Metri
 
 *Where an added Metric lands.* At the end of the Observation's Metric order, reading last everywhere Metrics are shown:
 last of the trend cards ([Trend Charting](trend-charting.md)), last of the Record form's fields ([Record Value
-Entry](record-value-entry.md)), the final column of an expanded Record ([Record Listing](record-listing.md)).
+Entry](record-value-entry.md)), the final column of an expanded Record ([Record Listing](record-listing.md)). It moves
+up from there like any other card ([Metric Ordering](metric-ordering.md)).
 
 **Taking a Metric off the form.** A bin beside a card's name takes that card off the form, and does that alone: the
 Observation, its Metrics and its Records stand as they were until the form is saved. The bin is there while the form

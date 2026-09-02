@@ -37,8 +37,8 @@ From that first attempt on, each mark answers to what is currently on screen, so
 rather than at the next attempt. A refusal belonging to no single field sits under the pair or the group it is about: a
 minimum exceeding its maximum belongs to neither bound alone, and a Choice short of values belongs to no one row.
 
-**Metrics are this Observation's own.** Each is declared here from scratch and keeps the position it was added in, so
-two Observations both measuring hours each define one of their own.
+**Metrics are this Observation's own.** Each is declared here from scratch, in an order the form itself sets ([Metric
+Ordering](metric-ordering.md)), so two Observations both measuring hours each define one of their own.
 
 ## Usage
 

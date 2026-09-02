@@ -13,7 +13,7 @@ An Observation carries:
 * An optional description of at most 150 characters — what it is for and why it is tracked, beyond what a short name can
   say.
 * The time it was created, fixed when it is created and never changed after.
-* One or more Metrics.
+* One or more Metrics, in an order the Observation keeps and is read in wherever they are shown.
 * The Records made against it.
 
 Examples:
