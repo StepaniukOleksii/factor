@@ -3,7 +3,7 @@
 * 2026-09-01
 * Feature: metric-ordering.md (new)
 * [x] Implemented
-* [ ] E2E tested
+* [x] E2E tested
 
 ## 1. Goal
 

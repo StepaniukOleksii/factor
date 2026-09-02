@@ -1,0 +1,90 @@
+appId: io.github.stepaniukoleksii.factor.dev
+---
+# Placing a Metric on both forms: the order cards are moved into while an
+# Observation is being declared, and the order an existing Observation's cards
+# are moved into afterwards - each read back off the details screen, whose trend
+# cards come in the Observation's own Metric order.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "no records"
+
+# --- Ordering the Metrics of an Observation being created --------------------
+- tapOn: "Create observation"
+- assertVisible: "New Observation"
+
+- tapOn: "e.g., Sleep Quality, Mood"
+- inputText: "ordering"
+- tapOn: "e.g., Duration"
+- inputText: "alpha"
+- hideKeyboard
+
+- scrollUntilVisible:
+    element: "Add Metric"
+    direction: DOWN
+    centerElement: true
+- tapOn: "Add Metric"
+
+# Two cards from here on, and their name fields differ in nothing a flow can
+# read: same label, and Android keeps the placeholder on the filled one too.
+#
+# Centred rather than merely scrolled to: the tap that follows opens the
+# keyboard, and a field sitting at the bottom edge ends up under it, where the
+# text lands in whichever field had focus before.
+- scrollUntilVisible:
+    element:
+      id: "metric-name-1"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "metric-name-1"
+- inputText: "beta"
+- hideKeyboard
+
+- tapOn: "Move metric beta up"
+- tapOn: "Create Observation"
+
+- assertVisible: "Observations"
+- tapOn: "ordering"
+
+# Neither the order the two cards were filled in nor alphabetical order, so a
+# save that ignored the move could not produce this.
+- assertVisible: "beta"
+- assertVisible:
+    text: "alpha"
+    below: "beta"
+
+# The header arrow rather than a back press: this screen swallows one while its
+# Records are loading, and arriving here started exactly that load.
+- tapOn: "Back"
+
+# --- Reordering the Metrics of an Observation that already exists ------------
+# `no numeric` rather than `mixed metrics`: two Metrics, both charted, so both
+# trend cards sit on the first screen of the details view and the order reads
+# without scrolling.
+- tapOn: "no numeric"
+- assertVisible:
+    text: "done"
+    below: "mood"
+
+- tapOn: "More options"
+- tapOn: "Edit observation"
+- assertVisible: "Edit Observation"
+
+- scrollUntilVisible:
+    element: "Move metric done up"
+    direction: DOWN
+    centerElement: true
+- tapOn: "Move metric done up"
+- tapOn: "Save Observation"
+
+# The details screen's own footer, not the Observation's name: the form's own
+# field is still holding that name, so asserting it would pass on a save that
+# was refused and left the form open. A reorder destroys nothing, so no
+# confirmation stands between the save and this screen.
+- assertVisible: "Add Record"
+- assertVisible:
+    text: "mood"
+    below: "done"
