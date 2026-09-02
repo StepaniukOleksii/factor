@@ -136,6 +136,8 @@ export function buildSeedData(): SeedEntry[] {
     // Record form shows every state of the info button at once. The four bound
     // shapes are spread the same way: a closed range on `dense` and `hourly`, a
     // floor on `yearly`, a ceiling on `insufficient`, and none on `sparse`.
+    // Units go on two of the five Numeric Metrics for the same reason: both
+    // states read side by side in one trend section and on one Record form.
     const denseMetric = new Metric(Crypto.randomUUID(), 'dense', 'Numeric', {min: 0, max: 100},
       'One point per day for 45 days — the densely-populated trend chart.');
     const sparseMetric = new Metric(Crypto.randomUUID(), 'sparse', 'Numeric');
@@ -144,7 +146,8 @@ export function buildSeedData(): SeedEntry[] {
       'Every 3 hours over the last 21, then one point per day for 12 days.\n' +
       'At 1D the only metric dense enough to fill the hour-bucketed window.\n' +
       'At 1W and 1M still populated, at day resolution.\n' +
-      'The day 3 back also carries a second record half an hour on and a third six hours later — the only hour anywhere holding two records.');
+      'The day 3 back also carries a second record half an hour on and a third six hours later — the only hour anywhere holding two records.',
+      'min');
     // Near METRIC_DESCRIPTION_MAX_LENGTH, so the dialog's longest body is on the form.
     const yearlyMetric = new Metric(Crypto.randomUUID(), 'yearly', 'Numeric', {min: 0},
       "One point every 14 days across 350 days, so the 1Y window's 30-day buckets have about a dozen " +
@@ -152,7 +155,10 @@ export function buildSeedData(): SeedEntry[] {
       'nearly-empty chart at 1M, where only three of them fall inside the window — the same metric, two ' +
       'very different charts, without a single record having moved. This text runs close to the ' +
       '500-character limit deliberately, so the longest body the dialog can show is on the form every ' +
-      'time the fixtures are reseeded.');
+      'time the fixtures are reseeded.',
+      // Exactly METRIC_UNIT_MAX_LENGTH, so the longest unit a card title and a
+      // Record column can hold is on screen after every reseed.
+      'kcal/d');
     const insufficientMetric = new Metric(Crypto.randomUUID(), 'insufficient', 'Numeric', {max: 100});
     // The only described non-Numeric Metric, covering the SegmentedField path.
     const flagMetric = new Metric(Crypto.randomUUID(), 'flag', 'Boolean', null,

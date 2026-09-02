@@ -28,6 +28,7 @@ export const SCHEMA = `
     type TEXT NOT NULL,
     constraintJson TEXT,
     description TEXT,
+    unit TEXT,
     FOREIGN KEY (observationId) REFERENCES observations (id) ON DELETE CASCADE
   );
 

@@ -18,6 +18,7 @@ interface MetricRow {
   type: string;
   constraintJson: string | null;
   description: string | null;
+  unit: string | null;
 }
 
 export class SQLiteObservationRepository implements ObservationRepository {
@@ -35,14 +36,16 @@ export class SQLiteObservationRepository implements ObservationRepository {
 
       for (const [position, metric] of observation.metrics.entries()) {
         await db.runAsync(
-          'INSERT INTO metrics (id, observationId, position, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          `INSERT INTO metrics (id, observationId, position, name, type, constraintJson, description, unit)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           metric.id,
           observation.id,
           position,
           metric.name,
           metric.type,
           metric.constraint ? JSON.stringify(metric.constraint) : null,
-          metric.description
+          metric.description,
+          metric.unit
         );
       }
     });
@@ -60,7 +63,7 @@ export class SQLiteObservationRepository implements ObservationRepository {
     }
 
     const metricRows = await db.getAllAsync<MetricRow>(
-      'SELECT id, observationId, name, type, constraintJson, description FROM metrics ORDER BY observationId, position'
+      'SELECT id, observationId, name, type, constraintJson, description, unit FROM metrics ORDER BY observationId, position'
     );
 
     const metricsByObservation = new Map<string, Metric[]>();
@@ -73,7 +76,8 @@ export class SQLiteObservationRepository implements ObservationRepository {
         row.name,
         row.type as MetricValueType,
         constraint,
-        row.description
+        row.description,
+        row.unit
       );
 
       const existing = metricsByObservation.get(row.observationId) ?? [];
@@ -114,21 +118,23 @@ export class SQLiteObservationRepository implements ObservationRepository {
 
       for (const [position, metric] of observation.metrics.entries()) {
         await db.runAsync(
-          `INSERT INTO metrics (id, observationId, position, name, type, constraintJson, description)
-           VALUES (?, ?, ?, ?, ?, ?, ?)
+          `INSERT INTO metrics (id, observationId, position, name, type, constraintJson, description, unit)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
              position = excluded.position,
              name = excluded.name,
              type = excluded.type,
              constraintJson = excluded.constraintJson,
-             description = excluded.description`,
+             description = excluded.description,
+             unit = excluded.unit`,
           metric.id,
           observation.id,
           position,
           metric.name,
           metric.type,
           metric.constraint ? JSON.stringify(metric.constraint) : null,
-          metric.description
+          metric.description,
+          metric.unit
         );
       }
     });

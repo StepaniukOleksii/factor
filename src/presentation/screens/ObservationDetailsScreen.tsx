@@ -40,7 +40,7 @@ import {
     useFooterClearance
 } from "@presentation/components";
 import {COLORS, ELEVATION, RADIUS, TYPOGRAPHY} from "@presentation/theme";
-import {formatMetricValue} from "@presentation/metricDisplay";
+import {formatMetricLabel, formatMetricValue} from "@presentation/metricDisplay";
 import {formatRecordCount} from '@shared/formatRecordCount';
 import {formatRelativeTime} from '@shared/formatRelativeTime';
 import {rendererRegistry} from '../charts/rendererRegistry';
@@ -471,7 +471,9 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                     const hasEnoughData = points.length >= 1;
                                     return (
                                         <View key={metric.id} style={styles.trendCard}>
-                                            <Text style={styles.trendCardTitle}>{metric.name}</Text>
+                                            <Text style={styles.trendCardTitle}>
+                                                {formatMetricLabel(metric.name, metric.unit)}
+                                            </Text>
                                             {hasEnoughData ? (
                                                 <View
                                                     testID="trend-chart"
@@ -573,7 +575,9 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                                             <View key={metric.id}
                                                                   style={[styles.metricValueBlock, index === observation.metrics.length - 1 && styles.metricValueBlockLast]}>
                                                                 <Text
-                                                                    style={styles.metricValueLabel}>{metric.name.toUpperCase()}</Text>
+                                                                    style={styles.metricValueLabel}>
+                                                                    {formatMetricLabel(metric.name.toUpperCase(), metric.unit)}
+                                                                </Text>
                                                                 <Text style={styles.metricValueText}>{displayVal}</Text>
                                                             </View>
                                                         );

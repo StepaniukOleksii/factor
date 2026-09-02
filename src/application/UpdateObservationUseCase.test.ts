@@ -159,6 +159,24 @@ describe('UpdateObservationUseCase', () => {
       expect(updated().metrics.map(metric => metric.id)).toEqual(['metric-1', 'metric-2']);
     });
 
+    it('takes the unit it was submitted with, trimmed', async () => {
+      const metrics = storedMetricInputs();
+      metrics[0] = {...metrics[0], unit: '  min  '};
+
+      await useCase.execute(edit({metrics}));
+
+      expect(updatedMetric('metric-1').unit).toBe('min');
+    });
+
+    it('has its unit cleared by an emptied field', async () => {
+      const metrics = storedMetricInputs();
+      metrics[0] = {...metrics[0], unit: '   '};
+
+      await useCase.execute(edit({metrics}));
+
+      expect(updatedMetric('metric-1').unit).toBeNull();
+    });
+
     it('has its description cleared by an emptied field', async () => {
       const metrics = storedMetricInputs();
       metrics[0] = {...metrics[0], description: '   '};
@@ -214,7 +232,13 @@ describe('UpdateObservationUseCase', () => {
   });
 
   describe('a Metric being added', () => {
-    const added: UpdateMetricInput = {name: ' Caffeine ', type: 'Numeric', min: '0', description: ' Cups '};
+    const added: UpdateMetricInput = {
+      name: ' Caffeine ',
+      type: 'Numeric',
+      min: '0',
+      description: ' Cups ',
+      unit: ' mg ',
+    };
 
     it('is appended under a fresh id, after every stored Metric', async () => {
       await useCase.execute(edit({metrics: [...storedMetricInputs(), added]}));
@@ -223,11 +247,12 @@ describe('UpdateObservationUseCase', () => {
         .toEqual(['metric-1', 'metric-2', 'metric-new']);
     });
 
-    it('carries the name, description and constraint its type declares', async () => {
+    it('carries the name, description, unit and constraint its type declares', async () => {
       await useCase.execute(edit({metrics: [...storedMetricInputs(), added]}));
 
       expect(updatedMetric('metric-new').name).toBe('Caffeine');
       expect(updatedMetric('metric-new').description).toBe('Cups');
+      expect(updatedMetric('metric-new').unit).toBe('mg');
       expect(updatedMetric('metric-new').type).toBe('Numeric');
       expect(updatedMetric('metric-new').constraint as NumericConstraint).toEqual({min: 0});
     });

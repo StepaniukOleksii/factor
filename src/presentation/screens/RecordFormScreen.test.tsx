@@ -1027,6 +1027,40 @@ describe('RecordFormScreen', () => {
         });
     });
 
+    describe('metric units', () => {
+        const withUnit = new Metric('metric-11', 'hourly', 'Numeric', {min: 0, max: 100}, null, 'min');
+        const withoutUnit = new Metric('metric-12', 'dense', 'Numeric');
+        const enumWithout = new Metric('metric-13', 'mood', 'Enum', {allowedValues: ['low', 'high']});
+        const united = new Observation('obs-1', 'mixed metrics', [withUnit, withoutUnit, enumWithout]);
+
+        const field = (root: any, metricId: string) =>
+            root.root.findByProps({testID: `record-metric-${metricId}`});
+
+        beforeEach(() => {
+            mockGetObservationByIdExecute.mockResolvedValue(united);
+        });
+
+        it('labels a field with the unit its Metric declares', async () => {
+            const {root} = await renderScreen();
+
+            expect(field(root, 'metric-11').props.label).toBe('hourly (min)');
+        });
+
+        it('labels a field with the name alone where the Metric declares none', async () => {
+            const {root} = await renderScreen();
+
+            expect(field(root, 'metric-12').props.label).toBe('dense');
+            expect(field(root, 'metric-13').props.label).toBe('mood');
+        });
+
+        it('announces the unit as part of the field a screen reader reaches', async () => {
+            const {root} = await renderScreen();
+
+            expect(field(root, 'metric-11').props.accessibilityLabel).toBe('hourly (min) value');
+            expect(field(root, 'metric-12').props.accessibilityLabel).toBe('dense value');
+        });
+    });
+
     // All four bound shapes on one Observation, so a single form covers each
     // placeholder and each refusal message - and the unbounded Metric proves
     // nothing is enforced where nothing was declared.

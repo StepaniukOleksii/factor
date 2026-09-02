@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {
     BOOLEAN_METRIC_OPTIONS,
+    formatMetricLabel,
     formatMetricRange,
     formatMetricType,
     formatMetricValue,
@@ -18,6 +19,22 @@ describe('formatMetricType', () => {
 
     it.each(['Numeric', 'Text'] as const)('leaves %s as it is', type => {
         expect(formatMetricType(type)).toBe(type);
+    });
+});
+
+describe('formatMetricLabel', () => {
+    it('puts a declared unit after the name, in parentheses', () => {
+        expect(formatMetricLabel('hourly', 'min')).toBe('hourly (min)');
+    });
+
+    it('is the name alone where the Metric declares no unit', () => {
+        expect(formatMetricLabel('hourly', null)).toBe('hourly');
+    });
+
+    // The caller hands in the casing it wants for the name; the unit keeps its
+    // own, `KCAL/D` not being the unit `kcal/d` is.
+    it('leaves the casing of both halves as it was given them', () => {
+        expect(formatMetricLabel('HOURLY', 'kcal/d')).toBe('HOURLY (kcal/d)');
     });
 });
 

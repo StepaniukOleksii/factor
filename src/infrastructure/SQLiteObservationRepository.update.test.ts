@@ -146,6 +146,22 @@ describe('SQLiteObservationRepository.update', () => {
       expect(reloaded.constraint).toEqual({min: 0});
     });
 
+    it('round-trips a unit onto a Metric that had none, and clears it again', async () => {
+      await repository.update(withMetrics([
+        new Metric('metric-1', 'Hours', 'Numeric', null, null, 'min'),
+        subject.metrics[1],
+      ]));
+
+      expect((await stored('obs-1')).metrics[0].unit).toBe('min');
+
+      await repository.update(withMetrics([
+        new Metric('metric-1', 'Hours', 'Numeric'),
+        subject.metrics[1],
+      ]));
+
+      expect((await stored('obs-1')).metrics[0].unit).toBeNull();
+    });
+
     it('keeps the values a renamed Metric\'s Records hold', async () => {
       await repository.update(withMetrics([
         new Metric('metric-1', 'Duration', 'Numeric'),

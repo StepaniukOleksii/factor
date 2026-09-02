@@ -700,6 +700,51 @@ describe('ObservationDetailsScreen Observation Actions', () => {
     });
 });
 
+describe('ObservationDetailsScreen Metric Units', () => {
+    const observationWithUnits = {
+        id: 'obs-1',
+        name: 'mixed metrics',
+        createdAt: CREATED_AT,
+        metrics: [
+            {id: 'm1', name: 'hourly', type: 'Numeric', unit: 'min'},
+            {id: 'm2', name: 'dense', type: 'Numeric', unit: null},
+        ],
+    } as unknown as Observation;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(observationWithUnits);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+        mockGetRecentRecordsExecute.mockResolvedValue([]);
+        vi.stubGlobal('alert', vi.fn());
+    });
+
+    it('titles a trend card with the unit its Metric declares, and without where it declares none', async () => {
+        const root = await renderScreen();
+
+        expect(findAllByText(root.root, 'hourly (min)').length).toBeGreaterThan(0);
+        expect(findAllByText(root.root, 'dense').length).toBeGreaterThan(0);
+        expect(findAllByText(root.root, 'hourly').length).toBe(0);
+    });
+
+    it("heads an expanded Record's column with the name uppercased and the unit as declared", async () => {
+        mockGetRecentRecordsExecute.mockResolvedValue([{
+            id: 'rec-1',
+            observationId: 'obs-1',
+            timestamp: new Date('2026-07-04T12:00:00Z'),
+            values: new Map([['m1', 45]]),
+        } as unknown as DomainRecord]);
+        const root = await renderScreen();
+
+        await act(async () => {
+            findRecordHeader(root.root).props.onPress();
+        });
+
+        expect(findAllByText(root.root, 'HOURLY (min)').length).toBeGreaterThan(0);
+        expect(findAllByText(root.root, 'DENSE').length).toBeGreaterThan(0);
+    });
+});
+
 describe('ObservationDetailsScreen Record Values', () => {
     const observationWithBoolean = {
         id: 'obs-1',

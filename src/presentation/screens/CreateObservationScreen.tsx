@@ -74,6 +74,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
             min: m.min,
             max: m.max,
             values: m.values,
+            unit: m.unit,
         })),
     };
 

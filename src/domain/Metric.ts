@@ -23,19 +23,27 @@ export class Metric extends Entity<string> {
    * `validateValue`: it never constrains the value itself.
    */
   public description: string | null;
+  /**
+   * What this Metric's numbers count, shown after its name wherever the Metric
+   * is named. Beside `description` in being no part of `validateValue`: it says
+   * what a number means, never what it may be.
+   */
+  public unit: string | null;
 
   constructor(
     id: string,
     name: string,
     type: MetricValueType,
     constraint: MetricConstraint = null,
-    description: string | null = null
+    description: string | null = null,
+    unit: string | null = null
   ) {
     super(id);
     this.name = name;
     this.type = type;
     this.constraint = constraint;
     this.description = description;
+    this.unit = unit;
   }
 
   public normalizeValue(value: any): any {

@@ -149,6 +149,42 @@ describe('validateCreateObservation', () => {
     });
   });
 
+  describe('a Metric unit', () => {
+    it('accepts one at the limit', () => {
+      const metrics = [{name: 'Hours', type: 'Numeric', unit: 'kcal/d'}];
+
+      expect(hasErrors(validateCreateObservation(draft({metrics}), NOTHING_TAKEN))).toBe(false);
+    });
+
+    it('accepts one padded past the limit that trims back within it', () => {
+      const metrics = [{name: 'Hours', type: 'Numeric', unit: '   kcal/d   '}];
+
+      expect(hasErrors(validateCreateObservation(draft({metrics}), NOTHING_TAKEN))).toBe(false);
+    });
+
+    it('refuses one past the limit', () => {
+      const metrics = [{name: 'Hours', type: 'Numeric', unit: 'kcal/day'}];
+
+      expect(validateCreateObservation(draft({metrics}), NOTHING_TAKEN).perMetric[0].unit)
+        .toBe('Metric unit cannot exceed 6 characters');
+    });
+
+    // No field renders it: the card offers no unit off Numeric, so this only
+    // catches a caller that submitted one anyway.
+    it.each(['Text', 'Boolean', 'Enum'])('refuses one on a %s Metric', (type) => {
+      const metrics = [{name: 'Hours', type, unit: 'kg', values: ['a', 'b']}];
+
+      expect(validateCreateObservation(draft({metrics}), NOTHING_TAKEN).perMetric[0].constraint)
+        .toBe('Only a Numeric metric can have a unit');
+    });
+
+    it('passes over a unit of nothing but whitespace on a Metric that could not hold one', () => {
+      const metrics = [{name: 'Hours', type: 'Text', unit: '   '}];
+
+      expect(hasErrors(validateCreateObservation(draft({metrics}), NOTHING_TAKEN))).toBe(false);
+    });
+  });
+
   describe('firstErrorMessage', () => {
     it('is undefined for a sound draft', () => {
       expect(firstErrorMessage(validateCreateObservation(draft(), NOTHING_TAKEN))).toBeUndefined();
@@ -158,6 +194,29 @@ describe('validateCreateObservation', () => {
       const errors = validateCreateObservation({name: '', metrics: [{name: '', type: 'Numeric'}]}, NOTHING_TAKEN);
 
       expect(firstErrorMessage(errors)).toBe('Observation name cannot be empty');
+    });
+
+    // The order the fields sit in on the card, so the message names the earliest
+    // thing on screen to put right.
+    it("gives a Metric's description before its unit", () => {
+      const metrics = [{
+        name: 'Hours',
+        type: 'Numeric',
+        description: 'a'.repeat(501),
+        unit: 'kcal/day',
+      }];
+
+      const errors = validateCreateObservation(draft({metrics}), NOTHING_TAKEN);
+
+      expect(firstErrorMessage(errors)).toBe('Metric description cannot exceed 500 characters');
+    });
+
+    it("gives a Metric's unit before its constraint", () => {
+      const metrics = [{name: 'Hours', type: 'Text', unit: 'kcal/day'}];
+
+      const errors = validateCreateObservation(draft({metrics}), NOTHING_TAKEN);
+
+      expect(firstErrorMessage(errors)).toBe('Metric unit cannot exceed 6 characters');
     });
 
     it('gives the earlier of two unsound Metrics', () => {
@@ -251,6 +310,13 @@ describe('validateUpdateObservation', () => {
 
       expect(validateUpdateObservation(edit({metrics}), NOTHING_TAKEN).perMetric[0].description)
         .toBe('Metric description cannot exceed 500 characters');
+    });
+
+    it('is refused a unit past 6 characters', () => {
+      const metrics = [{id: 'metric-1', name: 'Hours', type: 'Numeric', unit: 'kcal/day'}];
+
+      expect(validateUpdateObservation(edit({metrics}), NOTHING_TAKEN).perMetric[0].unit)
+        .toBe('Metric unit cannot exceed 6 characters');
     });
 
     // Its constraint is stated rather than offered, so nothing submits one to

@@ -5,6 +5,7 @@ import {emptyMetricDraft, MetricDraft, MetricEditorCard, moveMetricDraft, toMetr
 import {Metric} from '../../domain/Metric';
 import type {MetricErrors} from '../../application/validateCreateObservation';
 import {COLORS} from '@presentation/theme';
+import {METRIC_UNIT_MAX_LENGTH} from '../../domain/validationLimits';
 
 vi.mock('react-native', () => {
     const RN = require('react-native-web');
@@ -29,6 +30,7 @@ const NUMERIC: MetricDraft = {
     min: '0',
     max: '24',
     values: ['', ''],
+    unit: 'h',
 };
 
 interface RenderOptions {
@@ -82,6 +84,20 @@ describe('MetricEditorCard', () => {
             expect(has(root, 'metric-type-locked-0')).toBe(false);
         });
 
+        it('offers the unit beside the bounds, capped at its limit', () => {
+            const root = renderCard();
+
+            expect(has(root, 'metric-unit-0')).toBe(true);
+            expect(fieldByLabel(root, 'UNIT').props.maxLength).toBe(METRIC_UNIT_MAX_LENGTH);
+            expect(fieldByLabel(root, 'UNIT').props.showCounter).toBe(true);
+        });
+
+        it.each(['Text', 'Boolean', 'Enum'] as const)('offers no unit on a %s Metric', type => {
+            const root = renderCard({metric: {...NUMERIC, type, unit: ''}});
+
+            expect(has(root, 'metric-unit-0')).toBe(false);
+        });
+
         it('offers a value row per declared value, and Add Value below them', () => {
             const root = renderCard({metric: {...NUMERIC, type: 'Enum', values: ['sunny', 'rainy']}});
 
@@ -110,7 +126,7 @@ describe('MetricEditorCard', () => {
             });
 
             expect(onChange).toHaveBeenCalledWith(
-                {...NUMERIC, type: 'Text', min: '', max: '', values: ['', '']});
+                {...NUMERIC, type: 'Text', min: '', max: '', values: ['', ''], unit: ''});
         });
 
         it('marks each field with the error it was given', () => {
@@ -128,6 +144,27 @@ describe('MetricEditorCard', () => {
             expect(has(root, 'metric-type-locked-0')).toBe(true);
             expect(has(root, 'metric-type-0')).toBe(false);
             expect(shows(root, 'Choice')).toBe(true);
+        });
+
+        it('leaves the unit open to editing, the range beside it stated', () => {
+            const root = renderCard({stored: true});
+
+            expect(has(root, 'metric-unit-0')).toBe(true);
+            expect(fieldByLabel(root, 'UNIT').props.value).toBe('h');
+            expect(has(root, 'metric-range-locked-0')).toBe(true);
+        });
+
+        it('offers no unit on a stored Metric that could not hold one', () => {
+            const root = renderCard({metric: {...NUMERIC, type: 'Text', unit: ''}, stored: true});
+
+            expect(has(root, 'metric-unit-0')).toBe(false);
+        });
+
+        it('offers the unit on a Numeric Metric declaring no range', () => {
+            const root = renderCard({metric: {...NUMERIC, min: '', max: ''}, stored: true});
+
+            expect(has(root, 'metric-unit-0')).toBe(true);
+            expect(has(root, 'metric-range-locked-0')).toBe(false);
         });
 
         it('states a range in place of the bounds', () => {

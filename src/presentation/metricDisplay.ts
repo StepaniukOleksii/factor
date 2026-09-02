@@ -52,6 +52,18 @@ export function formatMetricType(type: MetricValueType): string {
 }
 
 /**
+ * How a Metric is named to a user: its name, and what its numbers count after
+ * it.
+ *
+ * Takes the name rather than the Metric so the caller keeps the casing: an
+ * expanded Record's column header uppercases the name, and `KCAL/D` is not the
+ * unit `kcal/d` is.
+ */
+export function formatMetricLabel(name: string, unit: string | null): string {
+    return unit ? `${name} (${unit})` : name;
+}
+
+/**
  * A stored Metric value as the user should read it, or a placeholder when the
  * Record holds none. `false` is a value like any other - only a missing one gets
  * the placeholder.

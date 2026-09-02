@@ -4,6 +4,7 @@ import {
   METRIC_ENUM_MAX_VALUES,
   METRIC_ENUM_VALUE_MAX_LENGTH,
   METRIC_NAME_MAX_LENGTH,
+  METRIC_UNIT_MAX_LENGTH,
   OBSERVATION_DESCRIPTION_MAX_LENGTH,
   OBSERVATION_NAME_MAX_LENGTH,
 } from '../domain/validationLimits';
@@ -13,6 +14,7 @@ import type {UpdateObservationInput} from './UpdateObservationUseCase';
 export interface MetricErrors {
   name?: string;
   description?: string;
+  unit?: string;
   min?: string;
   max?: string;
   /** The two bounds against each other, which belongs to neither field. */
@@ -100,6 +102,9 @@ function constraintErrors(metric: MetricInput): MetricErrors {
   if (bounded && metric.type !== 'Numeric') {
     return {constraint: 'Only a Numeric metric can have bounds'};
   }
+  if (isDeclared(metric.unit) && metric.type !== 'Numeric') {
+    return {constraint: 'Only a Numeric metric can have a unit'};
+  }
   if (values.length > 0 && metric.type !== 'Enum') {
     return {constraint: 'Only a choice metric can have values'};
   }
@@ -124,6 +129,10 @@ function metricIdentityErrors(metric: MetricInput): MetricErrors {
   // line breaks the user typed.
   if ((metric.description?.trim() ?? '').length > METRIC_DESCRIPTION_MAX_LENGTH) {
     errors.description = `Metric description cannot exceed ${METRIC_DESCRIPTION_MAX_LENGTH} characters`;
+  }
+
+  if ((metric.unit?.trim() ?? '').length > METRIC_UNIT_MAX_LENGTH) {
+    errors.unit = `Metric unit cannot exceed ${METRIC_UNIT_MAX_LENGTH} characters`;
   }
 
   return errors;
@@ -191,9 +200,10 @@ export function validateCreateObservation(
 }
 
 /**
- * A Metric already stored is judged on its name and its description alone: its
- * type and constraint are not up for editing, so nothing submits them and there
- * is nothing to judge. One being added is judged exactly as creation judges it.
+ * A Metric already stored is judged on the three things its card leaves open -
+ * its name, its description and its unit: its type and constraint are not up for
+ * editing, so nothing submits them and there is nothing to judge. One being
+ * added is judged exactly as creation judges it.
  *
  * @param takenNames as `validateObservationIdentity` takes them.
  */
@@ -218,7 +228,7 @@ export function firstErrorMessage(errors: Partial<CreateObservationErrors>): str
     return observationLevel;
   }
   for (const metric of errors.perMetric ?? []) {
-    const message = metric.name ?? metric.description ?? metric.constraint
+    const message = metric.name ?? metric.description ?? metric.unit ?? metric.constraint
       ?? metric.values ?? metric.min ?? metric.max ?? metric.range;
     if (message !== undefined) {
       return message;

@@ -8,6 +8,7 @@ import {
     METRIC_ENUM_MAX_VALUES,
     METRIC_ENUM_VALUE_MAX_LENGTH,
     METRIC_NAME_MAX_LENGTH,
+    METRIC_UNIT_MAX_LENGTH,
 } from "../../domain/validationLimits";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatMetricType, formatTypedRange} from "@presentation/metricDisplay";
@@ -35,6 +36,8 @@ export interface MetricDraft {
     max: string;
     /** The values offered, as typed and in declaration order. Enum Metrics only. */
     values: string[];
+    /** What the numbers count, as typed; empty leaves it unset. Numeric Metrics only. */
+    unit: string;
 }
 
 /** Two rows, the fewest a Choice Metric may declare - so the minimum is visible rather than discovered on save. */
@@ -56,6 +59,7 @@ export function emptyMetricDraft(): MetricDraft {
         min: '',
         max: '',
         values: EMPTY_METRIC_VALUES,
+        unit: '',
     };
 }
 
@@ -91,6 +95,7 @@ export function toMetricDraft(metric: Metric): MetricDraft {
         min: numeric?.min !== undefined ? String(numeric.min) : '',
         max: numeric?.max !== undefined ? String(numeric.max) : '',
         values: allowed ?? EMPTY_METRIC_VALUES,
+        unit: metric.unit ?? '',
     };
 }
 
@@ -150,6 +155,7 @@ export function MetricEditorCard(
         min: type === 'Numeric' ? metric.min : '',
         max: type === 'Numeric' ? metric.max : '',
         values: type === 'Enum' ? metric.values : EMPTY_METRIC_VALUES,
+        unit: type === 'Numeric' ? metric.unit : '',
     });
 
     const changeValue = (valueIndex: number, value: string) =>
@@ -203,6 +209,18 @@ export function MetricEditorCard(
         </View>
     ) : undefined;
 
+    const unitField = (
+        <LabeledTextField
+            label="UNIT"
+            testID={`metric-unit-${index}`}
+            value={metric.unit}
+            onChangeText={(val) => change('unit', val)}
+            maxLength={METRIC_UNIT_MAX_LENGTH}
+            showCounter
+            error={errors.unit}
+        />
+    );
+
     return (
         <View style={styles.metricCard}>
             <View style={styles.metricGrid}>
@@ -235,7 +253,14 @@ export function MetricEditorCard(
                 )}
 
                 {metric.type === 'Numeric' && (stored ? (
-                    range !== undefined ? renderStated('RANGE', range, `metric-range-locked-${index}`) : null
+                    <>
+                        {range !== undefined
+                            ? renderStated('RANGE', range, `metric-range-locked-${index}`)
+                            : null}
+                        {/* A field of its own: the range beside it is stated
+                            text, so there is no row for it to join. */}
+                        <View style={styles.metricField}>{unitField}</View>
+                    </>
                 ) : (
                     <View>
                         <View style={styles.boundsRow}>
@@ -259,6 +284,7 @@ export function MetricEditorCard(
                                     error={errors.max}
                                 />
                             </View>
+                            <View style={styles.boundField}>{unitField}</View>
                         </View>
                         {errors.range ? (
                             <Text style={styles.groupError}>{errors.range}</Text>

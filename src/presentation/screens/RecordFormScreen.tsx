@@ -28,6 +28,7 @@ import {
 } from "@presentation/components";
 import {
     BOOLEAN_METRIC_OPTIONS,
+    formatMetricLabel,
     formatMetricRange,
     formatRangeError,
     NO_METRIC_VALUE,
@@ -335,6 +336,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
 
     const renderMetricInput = (metric: Metric) => {
         const error = errors[metric.id];
+        const label = formatMetricLabel(metric.name, metric.unit);
 
         // Two answers fit the row inline, so a Boolean is answered in one tap and
         // never opens anything. Both segments start unselected, so "not answered
@@ -343,7 +345,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
             return (
                 <View key={metric.id} style={styles.inputContainer}>
                     <SegmentedField<boolean>
-                        label={metric.name}
+                        label={label}
                         testID={`record-metric-${metric.id}`}
                         options={BOOLEAN_METRIC_OPTIONS}
                         selected={values[metric.id]}
@@ -363,7 +365,7 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
             return (
                 <View key={metric.id} style={styles.inputContainer}>
                     <SelectField<string>
-                        label={metric.name}
+                        label={label}
                         testID={`record-metric-${metric.id}`}
                         options={toEnumOptions(metric.constraint as EnumConstraint | null)}
                         selected={values[metric.id]}
@@ -381,9 +383,9 @@ export function RecordFormScreen({route, navigation}: RecordFormScreenProps) {
         return (
             <View key={metric.id} style={styles.inputContainer}>
                 <LabeledTextField
-                    label={metric.name}
+                    label={label}
                     testID={`record-metric-${metric.id}`}
-                    accessibilityLabel={`${metric.name} value`}
+                    accessibilityLabel={`${label} value`}
                     error={error}
                     helpText={metric.description ?? undefined}
                     keyboardType={isNumeric ? 'numeric' : undefined}

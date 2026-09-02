@@ -63,7 +63,8 @@ export class UpdateObservationUseCase {
   /**
    * A stored Metric keeps its id, its type and its constraint whatever was
    * submitted beside them, so this path cannot narrow a bound or drop a Choice
-   * value.
+   * value. Its name, description and unit are the submitted ones: none of the
+   * three can strand a value recorded against it.
    */
   private toMetric(submitted: UpdateMetricInput, stored: Map<string, Metric>): Metric {
     if (submitted.id === undefined) {
@@ -72,7 +73,8 @@ export class UpdateObservationUseCase {
         submitted.name.trim(),
         submitted.type as MetricValueType,
         toMetricConstraint(submitted.type, submitted.min, submitted.max, submitted.values),
-        toStoredText(submitted.description)
+        toStoredText(submitted.description),
+        toStoredText(submitted.unit)
       );
     }
 
@@ -86,7 +88,8 @@ export class UpdateObservationUseCase {
       submitted.name.trim(),
       existing.type,
       existing.constraint,
-      toStoredText(submitted.description)
+      toStoredText(submitted.description),
+      toStoredText(submitted.unit)
     );
   }
 }

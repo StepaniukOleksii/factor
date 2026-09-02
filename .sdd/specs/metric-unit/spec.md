@@ -4,7 +4,7 @@
 * Feature: observation-creation.md — with a clause each in observation-editing.md, trend-charting.md,
   record-value-entry.md and record-listing.md for where it shows, and in domain-overview.md's Metric section for the
   attribute itself
-* [ ] Implemented
+* [x] Implemented
 * [ ] E2E tested
 
 ## 1. Goal
@@ -79,9 +79,9 @@ order the fields sit in on the card.
 `CREATE TABLE IF NOT EXISTS` only, so an existing `metrics` table keeps the columns it has and every statement naming
 `unit` fails against it. That reaches the released app (`io.github.stepaniukoleksii.factor`) and the real data in it,
 which has to be cleared through Android's app storage settings — the dev menu's reseed is compiled out of a release
-build ([releasing-android.md](../../../releasing-android.md)). This is the standing consequence
-[ADR-6](../../adr/6-observation-update-write-path.md) names of the project having no migration mechanism, accepted again
-here rather than answered.
+build ([releasing-android.md](../../../releasing-android.md)). The project has no migration mechanism, and this slice
+does not introduce one — the same answer [Metric Ordering](../../features/metric-ordering.md) gave when it added the
+`position` column, accepted again here rather than reopened.
 
 ### 3.4 Presentation
 
@@ -91,8 +91,10 @@ the name's casing: the expanded Record's column header uppercases the Metric's n
 it, `kcal/d` and `KCAL/D` not being the same unit to anyone who reads them. Every other caller passes `metric.name` as
 it stands.
 
-**`MetricEditorCard`** — `MetricDraft` gains `unit: string`, empty on `EMPTY_METRIC`, filled by `toMetricDraft` from the
-stored Metric, and cleared by `selectType` for every type but Numeric alongside `min`, `max` and `values`.
+**`MetricEditorCard`** — `MetricDraft` gains `unit: string`, empty on `emptyMetricDraft()`, filled by `toMetricDraft`
+from the stored Metric, and cleared by `selectType` for every type but Numeric alongside `min`, `max` and `values`. It
+moves with its card ([Metric Ordering](../../features/metric-ordering.md)), the whole draft being what `moveMetricDraft`
+reorders.
 
 * *An editable Numeric card* renders UNIT as a third cell of the existing `boundsRow`, equal in width to MIN and MAX:
   the three of them together are what say what the number is, and a six-character field given the card's full width

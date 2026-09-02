@@ -20,6 +20,8 @@ export interface MetricInput {
   max?: string;
   /** The values a choice offers, as typed and in the order declared. */
   values?: string[];
+  /** What the numbers count, as typed; blank or absent leaves it unset. Numeric Metrics only. */
+  unit?: string;
 }
 
 export interface CreateObservationInput {
@@ -72,7 +74,8 @@ export class CreateObservationUseCase {
       m.name.trim(),
       m.type as MetricValueType,
       toMetricConstraint(m.type, m.min, m.max, m.values),
-      toStoredText(m.description)
+      toStoredText(m.description),
+      toStoredText(m.unit)
     ));
 
     const observation = new Observation(

@@ -20,6 +20,7 @@ import {
   METRIC_DESCRIPTION_MAX_LENGTH,
   METRIC_ENUM_VALUE_MAX_LENGTH,
   METRIC_NAME_MAX_LENGTH,
+  METRIC_UNIT_MAX_LENGTH,
   OBSERVATION_DESCRIPTION_MAX_LENGTH,
   OBSERVATION_NAME_MAX_LENGTH,
   RECORD_NOTE_MAX_LENGTH,
@@ -416,6 +417,15 @@ describe('seeded lengths', () => {
       for (const metric of observation.metrics) {
         expect(metric.name.length, `"${metric.name}" on "${observation.name}"`)
           .toBeLessThanOrEqual(METRIC_NAME_MAX_LENGTH);
+      }
+    }
+  });
+
+  it('keeps every Metric unit within its limit', () => {
+    for (const {observation} of buildSeedData()) {
+      for (const metric of observation.metrics) {
+        expect(metric.unit?.length ?? 0, `"${metric.name}" on "${observation.name}"`)
+          .toBeLessThanOrEqual(METRIC_UNIT_MAX_LENGTH);
       }
     }
   });

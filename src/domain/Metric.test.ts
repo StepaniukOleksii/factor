@@ -104,4 +104,22 @@ describe('Metric', () => {
       expect(metric.validateValue(-1)).toBe(false);
     });
   });
+
+  describe('unit', () => {
+    it('should default to null', () => {
+      expect(new Metric('m1', 'Duration', 'Numeric').unit).toBeNull();
+      expect(new Metric('m1', 'Duration', 'Numeric', { min: 0 }, 'Minutes.').unit).toBeNull();
+    });
+
+    it('should carry the unit it is given', () => {
+      expect(new Metric('m1', 'Duration', 'Numeric', null, null, 'min').unit).toBe('min');
+    });
+
+    // What a number counts, never what it may be.
+    it('should not affect value validation', () => {
+      const metric = new Metric('m1', 'Duration', 'Numeric', { min: 0 }, null, 'min');
+      expect(metric.validateValue(10)).toBe(true);
+      expect(metric.validateValue(-1)).toBe(false);
+    });
+  });
 });

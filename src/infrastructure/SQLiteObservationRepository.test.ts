@@ -51,24 +51,26 @@ describe('SQLiteObservationRepository', () => {
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       2,
-      'INSERT INTO metrics (id, observationId, position, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      expect.stringContaining('INSERT INTO metrics'),
       'metric-1',
       'obs-1',
       0,
       'Temperature',
       'Numeric',
       null,
+      null,
       null
     );
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       3,
-      'INSERT INTO metrics (id, observationId, position, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      expect.stringContaining('INSERT INTO metrics'),
       'metric-2',
       'obs-1',
       1,
       'Condition',
       'Text',
+      null,
       null,
       null
     );
@@ -86,14 +88,31 @@ describe('SQLiteObservationRepository', () => {
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       2, expect.any(String), 'metric-1', 'obs-1', 0, 'Temperature', 'Numeric', null,
-      'Degrees Celsius, outdoors.'
+      'Degrees Celsius, outdoors.', null
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       3, expect.any(String), 'metric-2', 'obs-1', 1, 'Condition', 'Text', null,
-      'One of:\nclear\nrain\nsnow'
+      'One of:\nclear\nrain\nsnow', null
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      4, expect.any(String), 'metric-3', 'obs-1', 2, 'Windy', 'Boolean', null, null
+      4, expect.any(String), 'metric-3', 'obs-1', 2, 'Windy', 'Boolean', null, null, null
+    );
+  });
+
+  it('should persist each metric unit, including null', async () => {
+    const metrics = [
+      new Metric('metric-1', 'Temperature', 'Numeric', null, null, '°C'),
+      new Metric('metric-2', 'Condition', 'Text')
+    ];
+    const observation = new Observation('obs-1', 'Weather', metrics);
+
+    await repository.save(observation);
+
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      2, expect.any(String), 'metric-1', 'obs-1', 0, 'Temperature', 'Numeric', null, null, '°C'
+    );
+    expect(mockRunAsync).toHaveBeenNthCalledWith(
+      3, expect.any(String), 'metric-2', 'obs-1', 1, 'Condition', 'Text', null, null, null
     );
   });
 
@@ -109,16 +128,16 @@ describe('SQLiteObservationRepository', () => {
     await repository.save(observation);
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      2, expect.any(String), 'metric-1', 'obs-1', 0, 'Level', 'Numeric', '{"min":1,"max":5}', null
+      2, expect.any(String), 'metric-1', 'obs-1', 0, 'Level', 'Numeric', '{"min":1,"max":5}', null, null
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      3, expect.any(String), 'metric-2', 'obs-1', 1, 'Floor', 'Numeric', '{"min":-40}', null
+      3, expect.any(String), 'metric-2', 'obs-1', 1, 'Floor', 'Numeric', '{"min":-40}', null, null
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      4, expect.any(String), 'metric-3', 'obs-1', 2, 'Ceiling', 'Numeric', '{"max":0.5}', null
+      4, expect.any(String), 'metric-3', 'obs-1', 2, 'Ceiling', 'Numeric', '{"max":0.5}', null, null
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      5, expect.any(String), 'metric-4', 'obs-1', 3, 'Free', 'Numeric', null, null
+      5, expect.any(String), 'metric-4', 'obs-1', 3, 'Free', 'Numeric', null, null, null
     );
   });
 
@@ -353,11 +372,33 @@ describe('SQLiteObservationRepository', () => {
       const result = await repository.findAll();
 
       expect(mockGetAllAsync).toHaveBeenLastCalledWith(
-        'SELECT id, observationId, name, type, constraintJson, description FROM metrics ORDER BY observationId, position'
+        'SELECT id, observationId, name, type, constraintJson, description, unit FROM metrics ORDER BY observationId, position'
       );
       expect(result[0].metrics[0].description).toBe('Degrees Celsius, outdoors.');
       expect(result[0].metrics[1].description).toBe('One of:\nclear\nrain\nsnow');
       expect(result[0].metrics[2].description).toBeNull();
+    });
+
+    it('should round-trip each metric unit, including null', async () => {
+      mockGetAllAsync
+        .mockResolvedValueOnce([
+          { id: 'obs-1', name: 'Weather', description: null, createdAt: 1000 }
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'm-1', observationId: 'obs-1', name: 'Degrees', type: 'Numeric',
+            constraintJson: null, description: null, unit: '°C'
+          },
+          {
+            id: 'm-2', observationId: 'obs-1', name: 'Condition', type: 'Text',
+            constraintJson: null, description: null, unit: null
+          }
+        ]);
+
+      const result = await repository.findAll();
+
+      expect(result[0].metrics[0].unit).toBe('°C');
+      expect(result[0].metrics[1].unit).toBeNull();
     });
   });
 

@@ -228,6 +228,45 @@ describe('CreateObservationUseCase', () => {
     });
   });
 
+  describe('metric units', () => {
+    const savedMetrics = () =>
+      ((mockRepository.save as any).mock.calls[0][0] as Observation).metrics;
+
+    it('should accept and trim a valid metric unit', async () => {
+      await useCase.execute({
+        name: 'Coffee',
+        metrics: [{name: 'Cups', type: 'Numeric', unit: '  ml  '}]
+      });
+
+      expect(savedMetrics()[0].unit).toBe('ml');
+    });
+
+    it('should reject a metric unit longer than 6 characters', async () => {
+      const input = {
+        name: 'Coffee',
+        metrics: [{name: 'Cups', type: 'Numeric', unit: 'kcal/day'}]
+      };
+
+      await expect(useCase.execute(input)).rejects.toThrow('Metric unit cannot exceed 6 characters');
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['an empty', ''],
+      ['a whitespace-only', '   '],
+    ])('should normalize %s metric unit to null', async (_kind, unit) => {
+      await useCase.execute({name: 'Coffee', metrics: [{name: 'Cups', type: 'Numeric', unit}]});
+
+      expect(savedMetrics()[0].unit).toBeNull();
+    });
+
+    it('should default a metric unit to null when omitted', async () => {
+      await useCase.execute({name: 'Coffee', metrics: [{name: 'Cups', type: 'Numeric'}]});
+
+      expect(savedMetrics()[0].unit).toBeNull();
+    });
+  });
+
   describe('metric descriptions', () => {
     const savedMetrics = () =>
       ((mockRepository.save as any).mock.calls[0][0] as Observation).metrics;

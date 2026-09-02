@@ -55,8 +55,8 @@ const NOTHING_MARKED: CreateObservationErrors = {perMetric: []};
 const NO_METRIC_ERRORS: MetricErrors = {};
 
 /**
- * Only a Metric's name and description can differ, its type and constraint
- * being stated rather than offered.
+ * Only a Metric's name, description and unit can differ, its type and
+ * constraint being stated rather than offered.
  */
 function metricsDiffer(drafts: readonly MetricDraft[], stored: ReadonlyArray<Metric>): boolean {
     if (drafts.length !== stored.length) {
@@ -64,7 +64,8 @@ function metricsDiffer(drafts: readonly MetricDraft[], stored: ReadonlyArray<Met
     }
     return drafts.some((draft, index) => draft.id !== stored[index].id
         || draft.name.trim() !== stored[index].name
-        || draft.description.trim() !== (stored[index].description ?? ''));
+        || draft.description.trim() !== (stored[index].description ?? '')
+        || draft.unit.trim() !== (stored[index].unit ?? ''));
 }
 
 export function EditObservationScreen({route, navigation}: EditObservationScreenProps) {
@@ -121,6 +122,7 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
             min: metric.min,
             max: metric.max,
             values: metric.values,
+            unit: metric.unit,
         })),
     };
 
