@@ -1,7 +1,7 @@
 import React from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
-import {MetricDraft, MetricEditorCard, toMetricDraft} from './MetricEditorCard';
+import {emptyMetricDraft, MetricDraft, MetricEditorCard, moveMetricDraft, toMetricDraft} from './MetricEditorCard';
 import {Metric} from '../../domain/Metric';
 import type {MetricErrors} from '../../application/validateCreateObservation';
 import {COLORS} from '@presentation/theme';
@@ -21,6 +21,7 @@ vi.mock('@expo/vector-icons', () => ({
 }));
 
 const NUMERIC: MetricDraft = {
+    key: 'draft-hours',
     id: 'metric-1',
     name: 'Hours',
     type: 'Numeric',
@@ -35,10 +36,13 @@ interface RenderOptions {
     errors?: MetricErrors;
     onChange?: (metric: MetricDraft) => void;
     onRemove?: () => void;
+    onMoveUp?: () => void;
+    onMoveDown?: () => void;
     stored?: boolean;
 }
 
-function renderCard({metric = NUMERIC, errors = {}, onChange = vi.fn(), onRemove, stored}: RenderOptions = {}) {
+function renderCard(
+    {metric = NUMERIC, errors = {}, onChange = vi.fn(), onRemove, onMoveUp, onMoveDown, stored}: RenderOptions = {}) {
     let root: any;
     act(() => {
         root = renderer.create(
@@ -48,6 +52,8 @@ function renderCard({metric = NUMERIC, errors = {}, onChange = vi.fn(), onRemove
                 errors={errors}
                 onChange={onChange}
                 onRemove={onRemove}
+                onMoveUp={onMoveUp}
+                onMoveDown={onMoveDown}
                 stored={stored}
             />,
         );
@@ -216,6 +222,115 @@ describe('MetricEditorCard', () => {
             expect(bin(root).props.color).toBe(COLORS.outline);
         });
     });
+
+    describe('the move affordances', () => {
+        const arrow = (root: any, label: string) =>
+            root.root.findAllByProps({accessibilityLabel: label});
+
+        const icon = (root: any, label: string) => arrow(root, label)[0].findByType('MaterialIcons');
+
+        it('are both absent on a card that can move neither way', () => {
+            const root = renderCard({onRemove: vi.fn()});
+
+            expect(arrow(root, 'Move metric Hours up')).toHaveLength(0);
+            expect(arrow(root, 'Move metric Hours down')).toHaveLength(0);
+        });
+
+        it('are both present when only one move can be made', () => {
+            const root = renderCard({onMoveDown: vi.fn()});
+
+            expect(arrow(root, 'Move metric Hours up')).not.toHaveLength(0);
+            expect(arrow(root, 'Move metric Hours down')).not.toHaveLength(0);
+        });
+
+        it('calls the handler of the arrow that was tapped', () => {
+            const onMoveUp = vi.fn();
+            const onMoveDown = vi.fn();
+            const root = renderCard({onMoveUp, onMoveDown});
+
+            act(() => {
+                arrow(root, 'Move metric Hours down')[0].props.onPress();
+            });
+
+            expect(onMoveDown).toHaveBeenCalled();
+            expect(onMoveUp).not.toHaveBeenCalled();
+        });
+
+        it('reports the move it cannot make as disabled', () => {
+            const root = renderCard({onMoveDown: vi.fn()});
+
+            const up = arrow(root, 'Move metric Hours up')[0];
+            expect(up.props.disabled).toBe(true);
+            expect(up.props.accessibilityState).toEqual({disabled: true});
+
+            const down = arrow(root, 'Move metric Hours down')[0];
+            expect(down.props.disabled).toBe(false);
+            expect(down.props.accessibilityState).toEqual({disabled: false});
+        });
+
+        it('dims the arrow whose move cannot be made', () => {
+            const root = renderCard({onMoveDown: vi.fn()});
+
+            expect(icon(root, 'Move metric Hours up').props.color).toBe(COLORS.outlineVariant);
+            expect(icon(root, 'Move metric Hours down').props.color).toBe(COLORS.outline);
+        });
+
+        // A move is destructive of nothing, so it never takes the bin's red.
+        it('keeps the outline colour on a stored card', () => {
+            const root = renderCard({onMoveUp: vi.fn(), onMoveDown: vi.fn(), stored: true});
+
+            expect(icon(root, 'Move metric Hours up').props.color).toBe(COLORS.outline);
+        });
+
+        it('names the Metric it moves', () => {
+            const root = renderCard({metric: {...NUMERIC, name: '  insufficient  '}, onMoveUp: vi.fn()});
+
+            expect(arrow(root, 'Move metric insufficient up')).not.toHaveLength(0);
+        });
+
+        it('falls back to its position while the name is blank', () => {
+            const root = renderCard({metric: {...NUMERIC, name: ' '}, onMoveUp: vi.fn()});
+
+            expect(arrow(root, 'Move metric 1 up')).not.toHaveLength(0);
+        });
+    });
+});
+
+describe('moveMetricDraft', () => {
+    const draft = (name: string): MetricDraft => ({...NUMERIC, key: name, name});
+    const names = (drafts: readonly MetricDraft[]) => drafts.map(one => one.name);
+
+    const drafts = [draft('a'), draft('b'), draft('c')];
+
+    it('moves a draft up, sliding the one it passes down', () => {
+        expect(names(moveMetricDraft(drafts, 2, 1))).toEqual(['a', 'c', 'b']);
+    });
+
+    it('moves a draft down, sliding the one it passes up', () => {
+        expect(names(moveMetricDraft(drafts, 0, 1))).toEqual(['b', 'a', 'c']);
+    });
+
+    it('leaves every other draft in its existing relative order', () => {
+        expect(names(moveMetricDraft([...drafts, draft('d')], 3, 0))).toEqual(['d', 'a', 'b', 'c']);
+    });
+
+    it('moves nothing for an index outside the list', () => {
+        expect(names(moveMetricDraft(drafts, 0, 3))).toEqual(['a', 'b', 'c']);
+        expect(names(moveMetricDraft(drafts, -1, 0))).toEqual(['a', 'b', 'c']);
+    });
+
+    it('leaves the array it was given alone', () => {
+        const moved = moveMetricDraft(drafts, 0, 2);
+
+        expect(moved).not.toBe(drafts);
+        expect(names(drafts)).toEqual(['a', 'b', 'c']);
+    });
+});
+
+describe('emptyMetricDraft', () => {
+    it('keys each draft apart from the one before it', () => {
+        expect(emptyMetricDraft().key).not.toBe(emptyMetricDraft().key);
+    });
 });
 
 describe('toMetricDraft', () => {
@@ -240,5 +355,11 @@ describe('toMetricDraft', () => {
 
     it('reads a Metric with no description as an empty field', () => {
         expect(toMetricDraft(new Metric('m-1', 'Notes', 'Text')).description).toBe('');
+    });
+
+    it('keys each draft apart, so two Metrics never share a card', () => {
+        const metric = new Metric('m-1', 'Hours', 'Numeric');
+
+        expect(toMetricDraft(metric).key).not.toBe(toMetricDraft(metric).key);
     });
 });

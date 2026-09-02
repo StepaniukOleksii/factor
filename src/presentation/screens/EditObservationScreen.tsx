@@ -29,11 +29,12 @@ import {
     CenteredState,
     DashedButton,
     Dialog,
-    EMPTY_METRIC,
+    emptyMetricDraft,
     FooterBar,
     LabeledTextField,
     type MetricDraft,
     MetricEditorCard,
+    moveMetricDraft,
     PrimaryActionButton,
     ScreenContainer,
     ScreenHeader,
@@ -161,7 +162,7 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
         }
     };
 
-    const handleAddMetric = () => setMetrics([...metrics, EMPTY_METRIC]);
+    const handleAddMetric = () => setMetrics([...metrics, emptyMetricDraft()]);
 
     const handleMetricChange = (index: number, metric: MetricDraft) => {
         setMetrics(metrics.map((existing, i) => i === index ? metric : existing));
@@ -169,6 +170,10 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
 
     const handleRemoveMetric = (index: number) => {
         setMetrics(metrics.filter((_, i) => i !== index));
+    };
+
+    const handleMoveMetric = (from: number, to: number) => {
+        setMetrics(moveMetricDraft(metrics, from, to));
     };
 
     // The last resort, for what no field is holding: the write failing, the
@@ -283,12 +288,14 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
 
                         {metrics.map((metric, index) => (
                             <MetricEditorCard
-                                key={metric.id ?? `added-${index}`}
+                                key={metric.key}
                                 metric={metric}
                                 index={index}
                                 errors={marked.perMetric[index] ?? NO_METRIC_ERRORS}
                                 onChange={(next) => handleMetricChange(index, next)}
                                 onRemove={metrics.length > 1 ? () => handleRemoveMetric(index) : undefined}
+                                onMoveUp={index > 0 ? () => handleMoveMetric(index, index - 1) : undefined}
+                                onMoveDown={index < metrics.length - 1 ? () => handleMoveMetric(index, index + 1) : undefined}
                                 stored={metric.id !== undefined}
                             />
                         ))}

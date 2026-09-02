@@ -51,9 +51,10 @@ describe('SQLiteObservationRepository', () => {
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       2,
-      'INSERT INTO metrics (id, observationId, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO metrics (id, observationId, position, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
       'metric-1',
       'obs-1',
+      0,
       'Temperature',
       'Numeric',
       null,
@@ -62,9 +63,10 @@ describe('SQLiteObservationRepository', () => {
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
       3,
-      'INSERT INTO metrics (id, observationId, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO metrics (id, observationId, position, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
       'metric-2',
       'obs-1',
+      1,
       'Condition',
       'Text',
       null,
@@ -83,15 +85,15 @@ describe('SQLiteObservationRepository', () => {
     await repository.save(observation);
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      2, expect.any(String), 'metric-1', 'obs-1', 'Temperature', 'Numeric', null,
+      2, expect.any(String), 'metric-1', 'obs-1', 0, 'Temperature', 'Numeric', null,
       'Degrees Celsius, outdoors.'
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      3, expect.any(String), 'metric-2', 'obs-1', 'Condition', 'Text', null,
+      3, expect.any(String), 'metric-2', 'obs-1', 1, 'Condition', 'Text', null,
       'One of:\nclear\nrain\nsnow'
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      4, expect.any(String), 'metric-3', 'obs-1', 'Windy', 'Boolean', null, null
+      4, expect.any(String), 'metric-3', 'obs-1', 2, 'Windy', 'Boolean', null, null
     );
   });
 
@@ -107,16 +109,16 @@ describe('SQLiteObservationRepository', () => {
     await repository.save(observation);
 
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      2, expect.any(String), 'metric-1', 'obs-1', 'Level', 'Numeric', '{"min":1,"max":5}', null
+      2, expect.any(String), 'metric-1', 'obs-1', 0, 'Level', 'Numeric', '{"min":1,"max":5}', null
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      3, expect.any(String), 'metric-2', 'obs-1', 'Floor', 'Numeric', '{"min":-40}', null
+      3, expect.any(String), 'metric-2', 'obs-1', 1, 'Floor', 'Numeric', '{"min":-40}', null
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      4, expect.any(String), 'metric-3', 'obs-1', 'Ceiling', 'Numeric', '{"max":0.5}', null
+      4, expect.any(String), 'metric-3', 'obs-1', 2, 'Ceiling', 'Numeric', '{"max":0.5}', null
     );
     expect(mockRunAsync).toHaveBeenNthCalledWith(
-      5, expect.any(String), 'metric-4', 'obs-1', 'Free', 'Numeric', null, null
+      5, expect.any(String), 'metric-4', 'obs-1', 3, 'Free', 'Numeric', null, null
     );
   });
 
@@ -314,7 +316,9 @@ describe('SQLiteObservationRepository', () => {
       await repository.save(observation);
       const metricRows = mockRunAsync.mock.calls
         .slice(1)
-        .map(([, id, observationId, name, type, constraintJson, description]) =>
+        // The holes are the SQL and the written position, neither of which the
+        // read selects.
+        .map(([, id, observationId, , name, type, constraintJson, description]) =>
           ({id, observationId, name, type, constraintJson, description}));
 
       mockGetAllAsync
@@ -349,7 +353,7 @@ describe('SQLiteObservationRepository', () => {
       const result = await repository.findAll();
 
       expect(mockGetAllAsync).toHaveBeenLastCalledWith(
-        'SELECT id, observationId, name, type, constraintJson, description FROM metrics ORDER BY rowid'
+        'SELECT id, observationId, name, type, constraintJson, description FROM metrics ORDER BY observationId, position'
       );
       expect(result[0].metrics[0].description).toBe('Degrees Celsius, outdoors.');
       expect(result[0].metrics[1].description).toBe('One of:\nclear\nrain\nsnow');

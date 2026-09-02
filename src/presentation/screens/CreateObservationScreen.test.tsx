@@ -138,6 +138,18 @@ async function chooseType(root: any, label: string) {
     });
 }
 
+/** Taps a move arrow on the card the label names, as a user does. */
+async function moveMetric(root: any, label: string) {
+    await act(async () => {
+        root.root.findAllByProps({accessibilityLabel: label})[0].props.onPress();
+    });
+}
+
+/** The name each card is holding, in screen order. */
+function metricNames(root: any): string[] {
+    return fieldsByLabel(root, 'METRIC NAME').map((named: any) => named.props.value);
+}
+
 async function saveObservation(root: any) {
     const button = findTouchableWithText(root.root, 'Create Observation');
     await act(async () => {
@@ -546,6 +558,53 @@ describe('CreateObservationScreen', () => {
             expect(submittedMetrics()).toEqual([
                 expect.objectContaining({type: 'Text', values: ['', '']}),
             ]);
+        });
+    });
+
+    describe('reordering', () => {
+        it('offers no move while the form holds a single card', async () => {
+            const {root} = await renderScreen();
+
+            expect(root.root.findAllByProps({accessibilityLabel: 'Move metric 1 down'})).toHaveLength(0);
+        });
+
+        it('declares the Metrics in the order the form last showed', async () => {
+            const {root} = await renderScreen();
+
+            await nameObservation(root, 'Sleep');
+            await nameMetric(root, 'Hours');
+            await addMetric(root);
+            await nameMetric(root, 'Quality', 1);
+            await moveMetric(root, 'Move metric Quality up');
+            await saveObservation(root);
+
+            expect(submittedMetrics().map((metric: any) => metric.name)).toEqual(['Quality', 'Hours']);
+        });
+
+        it('carries what was typed into a card as it moves', async () => {
+            const {root} = await renderScreen();
+
+            await nameMetric(root, 'Hours');
+            await addMetric(root);
+            await nameMetric(root, 'Quality', 1);
+            await typeInto(root, 'metric-min-1', '1');
+            await moveMetric(root, 'Move metric Quality up');
+
+            expect(metricNames(root)).toEqual(['Quality', 'Hours']);
+            expect(field(root, 'metric-min-0').props.value).toBe('1');
+        });
+
+        it('carries the mark against a card as it moves', async () => {
+            const {root} = await renderScreen();
+
+            await nameObservation(root, 'Sleep');
+            await nameMetric(root, 'Hours');
+            await addMetric(root);
+            await saveObservation(root);
+            await moveMetric(root, 'Move metric 2 up');
+
+            expect(fieldsByLabel(root, 'METRIC NAME')[0].props.error).toBe('Metric name cannot be empty');
+            expect(fieldsByLabel(root, 'METRIC NAME')[1].props.error).toBeUndefined();
         });
     });
 });

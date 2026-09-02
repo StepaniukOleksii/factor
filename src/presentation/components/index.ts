@@ -31,7 +31,7 @@ export {DashedButton} from './DashedButton';
 export {DashedButtonProps} from './DashedButton';
 
 /** Editor for one Metric of an Observation - used by the forms that declare an Observation and that edit one */
-export {MetricEditorCard, EMPTY_METRIC, toMetricDraft} from './MetricEditorCard';
+export {MetricEditorCard, emptyMetricDraft, moveMetricDraft, toMetricDraft} from './MetricEditorCard';
 export {MetricEditorCardProps, MetricDraft} from './MetricEditorCard';
 
 /** Centered modal dialog - use when an action from user is needed */

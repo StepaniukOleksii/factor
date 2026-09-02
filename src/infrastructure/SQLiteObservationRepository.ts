@@ -33,11 +33,12 @@ export class SQLiteObservationRepository implements ObservationRepository {
         observation.createdAt.getTime()
       );
 
-      for (const metric of observation.metrics) {
+      for (const [position, metric] of observation.metrics.entries()) {
         await db.runAsync(
-          'INSERT INTO metrics (id, observationId, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?)',
+          'INSERT INTO metrics (id, observationId, position, name, type, constraintJson, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
           metric.id,
           observation.id,
+          position,
           metric.name,
           metric.type,
           metric.constraint ? JSON.stringify(metric.constraint) : null,
@@ -58,10 +59,8 @@ export class SQLiteObservationRepository implements ObservationRepository {
       return [];
     }
 
-    // Declaration order is what every screen renders in, and `rowid` is the
-    // only record of it: `metrics` carries no position column.
     const metricRows = await db.getAllAsync<MetricRow>(
-      'SELECT id, observationId, name, type, constraintJson, description FROM metrics ORDER BY rowid'
+      'SELECT id, observationId, name, type, constraintJson, description FROM metrics ORDER BY observationId, position'
     );
 
     const metricsByObservation = new Map<string, Metric[]>();
@@ -113,17 +112,19 @@ export class SQLiteObservationRepository implements ObservationRepository {
       // name a user typed.
       await db.runAsync('UPDATE metrics SET name = id WHERE observationId = ?', observation.id);
 
-      for (const metric of observation.metrics) {
+      for (const [position, metric] of observation.metrics.entries()) {
         await db.runAsync(
-          `INSERT INTO metrics (id, observationId, name, type, constraintJson, description)
-           VALUES (?, ?, ?, ?, ?, ?)
+          `INSERT INTO metrics (id, observationId, position, name, type, constraintJson, description)
+           VALUES (?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
+             position = excluded.position,
              name = excluded.name,
              type = excluded.type,
              constraintJson = excluded.constraintJson,
              description = excluded.description`,
           metric.id,
           observation.id,
+          position,
           metric.name,
           metric.type,
           metric.constraint ? JSON.stringify(metric.constraint) : null,

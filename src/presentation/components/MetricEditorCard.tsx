@@ -17,6 +17,13 @@ import {SelectField, type SelectFieldOption} from "./SelectField";
 
 /** One Metric as a form holds it: every field as typed, judged only on save. */
 export interface MetricDraft {
+    /**
+     * Tells this draft from the others while the form holds it - never shown and
+     * never stored. A card keyed by its position on the form instead would leave
+     * a focused input attached to the position, so a card moved while being
+     * typed into would carry the typing to whatever took its place.
+     */
+    key: string;
     /** The stored Metric this stands for, absent on one added to the form. */
     id?: string;
     name: string;
@@ -33,14 +40,39 @@ export interface MetricDraft {
 /** Two rows, the fewest a Choice Metric may declare - so the minimum is visible rather than discovered on save. */
 const EMPTY_METRIC_VALUES: string[] = ['', ''];
 
-export const EMPTY_METRIC: MetricDraft = {
-    name: '',
-    type: 'Numeric',
-    description: '',
-    min: '',
-    max: '',
-    values: EMPTY_METRIC_VALUES,
-};
+let draftsIssued = 0;
+
+function nextDraftKey(): string {
+    return `draft-${draftsIssued++}`;
+}
+
+/** A blank Metric card, freshly keyed so it is never confused with another. */
+export function emptyMetricDraft(): MetricDraft {
+    return {
+        key: nextDraftKey(),
+        name: '',
+        type: 'Numeric',
+        description: '',
+        min: '',
+        max: '',
+        values: EMPTY_METRIC_VALUES,
+    };
+}
+
+/**
+ * Moves one draft to another position, leaving every other draft in its existing
+ * relative order. An index outside the list moves nothing.
+ */
+export function moveMetricDraft(drafts: readonly MetricDraft[], from: number, to: number): MetricDraft[] {
+    const moved = [...drafts];
+    if (from < 0 || from >= moved.length || to < 0 || to >= moved.length) {
+        return moved;
+    }
+
+    const [draft] = moved.splice(from, 1);
+    moved.splice(to, 0, draft);
+    return moved;
+}
 
 const METRIC_TYPE_CHOICES: SelectFieldOption<MetricValueType>[] =
     (['Numeric', 'Text', 'Boolean', 'Enum'] as MetricValueType[])
@@ -51,6 +83,7 @@ export function toMetricDraft(metric: Metric): MetricDraft {
     const allowed = metric.type === 'Enum' ? (metric.constraint as EnumConstraint | null)?.allowedValues : undefined;
 
     return {
+        key: nextDraftKey(),
         id: metric.id,
         name: metric.name,
         type: metric.type,
@@ -69,6 +102,10 @@ export interface MetricEditorCardProps {
     onChange: (metric: MetricDraft) => void;
     /** Omitted where this Metric may not leave the form; no delete affordance renders then. */
     onRemove?: () => void;
+    /** Omitted where this Metric is already first; its arrow renders inert rather than absent. */
+    onMoveUp?: () => void;
+    /** Omitted where this Metric is already last; its arrow renders inert rather than absent. */
+    onMoveDown?: () => void;
     /**
      * A Metric already stored: its type and constraint are stated rather than
      * offered, and its delete affordance is marked destructive.
@@ -85,6 +122,10 @@ export interface MetricEditorCardProps {
  * the icon means - discarding what was just typed, or destroying a year of
  * Records - a stored Text Metric differing from an added one only in stating a
  * type rather than offering it.
+ *
+ * A move arrow the card cannot make is inert rather than absent, so the pair is
+ * either wholly there or wholly gone and the delete affordance beside it sits
+ * the same distance from the card's edge on every card of a form.
  */
 export function MetricEditorCard(
     {
@@ -93,6 +134,8 @@ export function MetricEditorCard(
         errors,
         onChange,
         onRemove,
+        onMoveUp,
+        onMoveDown,
         stored = false,
     }: MetricEditorCardProps) {
 
@@ -126,6 +169,40 @@ export function MetricEditorCard(
 
     const range = formatTypedRange(metric.min, metric.max);
 
+    /** What every affordance on this card calls the Metric it acts on. */
+    const subject = metric.name.trim() || index + 1;
+    const movable = onMoveUp !== undefined || onMoveDown !== undefined;
+
+    const renderMove = (direction: 'up' | 'down', onPress?: () => void) => (
+        <TouchableOpacity
+            onPress={onPress}
+            disabled={onPress === undefined}
+            style={styles.iconButton}
+            accessibilityRole="button"
+            accessibilityState={{disabled: onPress === undefined}}
+            accessibilityLabel={`Move metric ${subject} ${direction}`}>
+            <MaterialIcons
+                name={direction === 'up' ? 'arrow-upward' : 'arrow-downward'}
+                size={20}
+                color={onPress ? COLORS.outline : COLORS.outlineVariant}/>
+        </TouchableOpacity>
+    );
+
+    const labelAccessory = movable || onRemove ? (
+        <View style={styles.cardActions}>
+            {movable ? renderMove('up', onMoveUp) : null}
+            {movable ? renderMove('down', onMoveDown) : null}
+            {onRemove ? (
+                <TouchableOpacity onPress={onRemove} style={styles.deleteButton}
+                                  accessibilityRole="button"
+                                  accessibilityLabel={`Remove metric ${subject}`}>
+                    <MaterialIcons name="delete" size={20}
+                                   color={stored ? COLORS.error : COLORS.outline}/>
+                </TouchableOpacity>
+            ) : null}
+        </View>
+    ) : undefined;
+
     return (
         <View style={styles.metricCard}>
             <View style={styles.metricGrid}>
@@ -133,14 +210,7 @@ export function MetricEditorCard(
                     <LabeledTextField
                         label="METRIC NAME"
                         testID={`metric-name-${index}`}
-                        labelAccessory={onRemove ? (
-                            <TouchableOpacity onPress={onRemove} style={styles.deleteButton}
-                                              accessibilityRole="button"
-                                              accessibilityLabel={`Remove metric ${metric.name.trim() || index + 1}`}>
-                                <MaterialIcons name="delete" size={20}
-                                               color={stored ? COLORS.error : COLORS.outline}/>
-                            </TouchableOpacity>
-                        ) : undefined}
+                        labelAccessory={labelAccessory}
                         value={metric.name}
                         onChangeText={(val) => change('name', val)}
                         placeholder="e.g., Duration"
@@ -277,6 +347,13 @@ const styles = StyleSheet.create({
     },
     valueRows: {
         gap: 12,
+    },
+    cardActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    iconButton: {
+        padding: 4,
     },
     deleteButton: {
         padding: 4,

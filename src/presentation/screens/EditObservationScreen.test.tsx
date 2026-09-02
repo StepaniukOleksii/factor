@@ -164,6 +164,13 @@ async function removeMetric(root: any, label: string) {
     });
 }
 
+/** Taps a move arrow on the card the label names, as a user does. */
+async function moveMetric(root: any, label: string) {
+    await act(async () => {
+        root.root.findAllByProps({accessibilityLabel: label})[0].props.onPress();
+    });
+}
+
 async function pressDialogAction(root: any, label: string) {
     await act(async () => {
         await findTouchableWithText(root.root, label)!.props.onPress();
@@ -558,6 +565,15 @@ describe('EditObservationScreen', () => {
             expect(dialogVisible(root)).toBe(true);
         });
 
+        it('opens the dialog instead of leaving when a Metric was moved', async () => {
+            const {root, listeners} = await renderScreen();
+
+            await moveMetric(root, 'Move metric span up');
+
+            expect(await leaveScreen(listeners)).toBe(true);
+            expect(dialogVisible(root)).toBe(true);
+        });
+
         it('opens the dialog instead of leaving when a Metric was added', async () => {
             const {root, listeners} = await renderScreen();
 
@@ -639,6 +655,40 @@ describe('EditObservationScreen', () => {
 
             expect(await leaveScreen(listeners)).toBe(true);
             expect(dialogVisible(root)).toBe(true);
+        });
+    });
+
+    describe('reordering', () => {
+        it('submits the Metrics in the order the form last showed', async () => {
+            const {root} = await renderScreen();
+
+            await moveMetric(root, 'Move metric span up');
+            await saveObservation(root);
+
+            expect(mockUpdateObservationExecute.mock.calls[0][0].metrics.map((metric: any) => metric.id))
+                .toEqual(['metric-2', 'metric-1', 'metric-3']);
+        });
+
+        // A move destroys nothing, so the confirmation a removal earns has no
+        // business standing in front of one.
+        it('writes a save that only reorders without confirming anything', async () => {
+            const {root} = await renderScreen();
+
+            await moveMetric(root, 'Move metric span up');
+            await saveObservation(root);
+
+            expect(shows(root, 'Delete metric?')).toBe(false);
+            expect(mockCountMetricValues).not.toHaveBeenCalled();
+            expect(mockUpdateObservationExecute).toHaveBeenCalledTimes(1);
+        });
+
+        it('carries the stated type and values of a card with it', async () => {
+            const {root} = await renderScreen();
+
+            await moveMetric(root, 'Move metric mood up');
+
+            expect(metricNames(root)).toEqual(['value', 'mood', 'span']);
+            expect(hasTestID(root, 'metric-values-locked-1')).toBe(true);
         });
     });
 });

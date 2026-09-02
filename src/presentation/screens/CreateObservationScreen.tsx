@@ -25,11 +25,12 @@ import {
 import {MaterialIcons} from '@expo/vector-icons';
 import {
     DashedButton,
-    EMPTY_METRIC,
+    emptyMetricDraft,
     FooterBar,
     LabeledTextField,
     type MetricDraft,
     MetricEditorCard,
+    moveMetricDraft,
     PrimaryActionButton,
     ScreenContainer,
     ScreenHeader,
@@ -49,7 +50,7 @@ const NO_METRIC_ERRORS: MetricErrors = {};
 export function CreateObservationScreen({navigation}: CreateObservationScreenProps) {
     const [observationName, setObservationName] = useState('');
     const [description, setDescription] = useState('');
-    const [metrics, setMetrics] = useState<MetricDraft[]>([EMPTY_METRIC]);
+    const [metrics, setMetrics] = useState<MetricDraft[]>(() => [emptyMetricDraft()]);
     const [takenNames, setTakenNames] = useState<string[]>([]);
     const [attemptedSave, setAttemptedSave] = useState(false);
     const footerClearance = useFooterClearance();
@@ -83,7 +84,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
     const marked = attemptedSave ? errors : NOTHING_MARKED;
 
     const handleAddMetric = () => {
-        setMetrics([...metrics, EMPTY_METRIC]);
+        setMetrics([...metrics, emptyMetricDraft()]);
     };
 
     const handleMetricChange = (index: number, metric: MetricDraft) => {
@@ -92,6 +93,10 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
 
     const handleRemoveMetric = (index: number) => {
         setMetrics(metrics.filter((_, i) => i !== index));
+    };
+
+    const handleMoveMetric = (from: number, to: number) => {
+        setMetrics(moveMetricDraft(metrics, from, to));
     };
 
     const handleSave = async () => {
@@ -157,12 +162,14 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
 
                         {metrics.map((metric, index) => (
                             <MetricEditorCard
-                                key={index}
+                                key={metric.key}
                                 metric={metric}
                                 index={index}
                                 errors={marked.perMetric[index] ?? NO_METRIC_ERRORS}
                                 onChange={(next) => handleMetricChange(index, next)}
                                 onRemove={metrics.length > 1 ? () => handleRemoveMetric(index) : undefined}
+                                onMoveUp={index > 0 ? () => handleMoveMetric(index, index - 1) : undefined}
+                                onMoveDown={index < metrics.length - 1 ? () => handleMoveMetric(index, index + 1) : undefined}
                             />
                         ))}
 

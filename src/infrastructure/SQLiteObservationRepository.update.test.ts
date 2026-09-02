@@ -253,5 +253,49 @@ describe('SQLiteObservationRepository.update', () => {
       expect((await stored('obs-2')).metrics.map(metric => [metric.id, metric.name]))
         .toEqual([['metric-3', 'Level']]);
     });
+
+    describe('Metric order', () => {
+      const order = async (id: string) => (await stored(id)).metrics.map(metric => metric.id);
+
+      it('reads the Metrics back in the order the aggregate declared them', async () => {
+        expect(await order('obs-1')).toEqual(['metric-1', 'metric-2']);
+      });
+
+      it('round-trips a reordered aggregate', async () => {
+        await repository.update(withMetrics([subject.metrics[1], subject.metrics[0]]));
+
+        expect(await order('obs-1')).toEqual(['metric-2', 'metric-1']);
+      });
+
+      it('lands an added Metric where the aggregate puts it rather than last', async () => {
+        await repository.update(withMetrics([
+          subject.metrics[1],
+          new Metric('metric-4', 'Dreams', 'Text'),
+          subject.metrics[0],
+        ]));
+
+        expect(await order('obs-1')).toEqual(['metric-2', 'metric-4', 'metric-1']);
+      });
+
+      // The dense ordinals every write assigns are what makes a position
+      // meaningful without an index enforcing one.
+      it('renumbers from the top, so a removal leaves no gap', async () => {
+        await repository.update(withMetrics([
+          subject.metrics[1],
+          new Metric('metric-4', 'Dreams', 'Text'),
+        ]));
+
+        expect(handle.db.prepare(
+          "SELECT id, position FROM metrics WHERE observationId = 'obs-1' ORDER BY position").all())
+          .toEqual([{id: 'metric-2', position: 0}, {id: 'metric-4', position: 1}]);
+      });
+
+      it('leaves every stored value where it was', async () => {
+        await repository.update(withMetrics([subject.metrics[1], subject.metrics[0]]));
+
+        expect(handle.db.prepare('SELECT recordId, metricId, valueJson FROM record_values').all())
+          .toEqual([{recordId: 'rec-1', metricId: 'metric-1', valueJson: '7'}]);
+      });
+    });
   });
 });

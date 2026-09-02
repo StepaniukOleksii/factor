@@ -23,6 +23,7 @@ export const SCHEMA = `
   CREATE TABLE IF NOT EXISTS metrics (
     id TEXT PRIMARY KEY NOT NULL,
     observationId TEXT NOT NULL,
+    position INTEGER NOT NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL,
     constraintJson TEXT,
