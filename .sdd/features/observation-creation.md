@@ -22,11 +22,11 @@ have shown it coming.
 
 **Descriptions.** Optional, on the Observation and on each Metric. Left blank, there is simply none.
 
-**Types.** The type picker offers all four. Numeric adds a Min and a Max field, either or both of which may be left
-empty; a bound that is not a number, and a minimum above its maximum, are both refused. Choice adds value rows, starting
-at the two it needs, with an **Add Value** button that stops being offered once the Metric holds as many as it may, and
-refuses a set holding two values a user could not tell apart. Text and Yes/No add nothing. Changing a Metric's type
-discards what was typed for the previous one, so nothing is submitted unseen.
+**Types.** The type picker offers all four. Numeric adds a Min, a Max and a Unit field, any of which may be left empty;
+a bound that is not a number, and a minimum above its maximum, are both refused. Choice adds value rows, starting at the
+two it needs, with an **Add Value** button that stops being offered once the Metric holds as many as it may, and refuses
+a set holding two values a user could not tell apart. Text and Yes/No add nothing. Changing a Metric's type discards
+what was typed for the previous one, so nothing is submitted unseen.
 
 **Every length limit is enforced as it is typed** rather than on save: the field stops accepting characters at its limit
 and shows a counter throughout, so the limit is visible before it is met.
@@ -47,7 +47,7 @@ From the [Observation list](observation-listing.md), the + button at the bottom 
 The name field sits at the top and stays in place while the rest scrolls. Below it are the description, then the
 Metrics, then a dashed **Add Metric** button that appends another card.
 
-Each Metric card holds its name, its type, and whatever that type needs. Choosing Numeric adds a Min and a Max field
+Each Metric card holds its name, its type, and whatever that type needs. Choosing Numeric adds Min, Max and Unit fields
 side by side; choosing Choice adds two value rows and a dashed **Add Value** button. A Metric card can be removed once
 there are two, and a value row once there are three — the last of each stays, being the minimum.
 

@@ -56,6 +56,10 @@ A Metric carries an optional description of at most 500 characters: prose explai
 stand for, kept with the line breaks it was written with so a per-value legend reads as a list. It guides whoever is
 entering a value and never constrains one — a value is judged by the Metric's type and constraint alone.
 
+A Numeric Metric may also carry a unit of at most 6 characters: what its numbers count, so a `7` read long after it was
+entered is seven of something. It is kept as written, trimmed of the whitespace around it, and one that trims to
+nothing is no unit.
+
 ### Metric types
 
 A Metric's type is fixed when the Metric is defined, and decides what a value for it may be:

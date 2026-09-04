@@ -28,10 +28,10 @@ spacing alone.
 **Metrics.** Below the description sits the Observation's Metric list in declaration order, a card each, holding a name,
 a type, a description and whatever that type declares.
 
-*A Metric already stored.* Its name and its description are open to overtyping. Its type is stated rather than offered,
-as are the bounds of a Numeric one — `0-100`, `Min 0`, `Max 100`, and nothing at all where it declares none — and the
-values of a Choice one, in the order they were declared. A stated fact carries none of the box a field wears and reads
-in a muted colour.
+*A Metric already stored.* Its name and its description are open to overtyping, and so is a Numeric Metric's unit: none
+of the three can strand a value recorded against it. Its type is stated rather than offered, as are the bounds of a
+Numeric one — `0-100`, `Min 0`, `Max 100`, and nothing at all where it declares none — and the values of a Choice one,
+in the order they were declared. A stated fact carries none of the box a field wears and reads in a muted colour.
 
 *A Metric added.* **Add Metric** appends a card editable in full — its name, its type, its description and whatever the
 chosen type declares — behaving as the creation form's cards do ([Observation Creation](observation-creation.md)).
@@ -59,11 +59,11 @@ says in words what is going.
 *Announcing it.* A screen reader reaching a bin hears the Metric it removes by name, and hears the card's position on
 the form while that name is still blank.
 
-**Saving.** **Save Observation** writes the name, the description, every renamed and redescribed Metric, every added one
-and every removal in a single step: all of it lands or none of it does. It is the same Observation afterwards, changed —
-the time it was created is as it was, and it holds the position it held in [the Observation
+**Saving.** **Save Observation** writes the name, the description, every Metric renamed, redescribed or given a new
+unit, every added one and every removal in a single step: all of it lands or none of it does. It is the same Observation
+afterwards, changed — the time it was created is as it was, and it holds the position it held in [the Observation
 list](observation-listing.md). A description cleared in the form is cleared on what held it, the Observation's and a
-Metric's alike.
+Metric's alike, and so is a cleared unit.
 
 **Confirming a removal.** A save that has dropped a stored Metric asks before anything is written: `Delete metric?`, or
 `Delete metrics?` where several go. The question quotes each Metric by name — user-typed names run to several lowercase
@@ -86,12 +86,12 @@ Entry](record-value-entry.md)) and its column in an expanded Record ([Record Lis
 it.
 
 **Leaving without saving.** A form differing from what it loaded asks `Discard changes?` before it closes, saying that
-the changes made to the Observation will be lost. A Metric renamed or redescribed counts, and so does a card added or
-taken off. **Keep editing** returns to the form with everything still in it; **Discard** leaves, and the Observation is
-as it was, every staged removal abandoned with the rest. Whitespace typed around a value counts as no difference, and a
-form nothing was changed in closes without asking. The question comes whichever way out is taken — the cross in the
-header, the back arrow, the hardware button or the back gesture — and discarding carries on to wherever that way out was
-headed.
+the changes made to the Observation will be lost. A Metric renamed, redescribed or given a different unit counts, and so
+does a card added or taken off. **Keep editing** returns to the form with everything still in it; **Discard** leaves,
+and the Observation is as it was, every staged removal abandoned with the rest. Whitespace typed around a value counts
+as no difference, and a form nothing was changed in closes without asking. The question comes whichever way out is
+taken — the cross in the header, the back arrow, the hardware button or the back gesture — and discarding carries on to
+wherever that way out was headed.
 
 **While it loads, and when there is nothing to load.** The screen is titled `Loading...` and holds a spinner while it
 reads the Observation. One that is gone — deleted from another route — is titled `Not found` and says `Observation not
@@ -105,9 +105,9 @@ The name sits at the top holding what the Observation is called now and stays in
 description first, then **METRICS** and a card per Metric in the order the Observation declares them, then a dashed
 **Add Metric** at the end.
 
-Overtype a name or a description anywhere on the form — the Observation's own, or any Metric's. On a stored Metric's
-card the type, the range and the choice values sit alongside as plain text. **Add Metric** appends a fresh card to fill
-in as you would on the creation form.
+Overtype a name or a description anywhere on the form — the Observation's own, or any Metric's — and a Numeric
+Metric's unit. On a stored Metric's card the type, the range and the choice values sit alongside as plain text. **Add
+Metric** appends a fresh card to fill in as you would on the creation form.
 
 Beside every card's name is a bin, red on the Metrics the Observation already holds and grey on the ones being drafted.
 Tapping it takes that card off the form there and then; the bins are there while more than one card is on the form.

@@ -8,10 +8,11 @@ stored Records into one small chart per Metric, so a month of entries reads as a
 ## Behaviour
 
 **What gets a card.** Every Metric gets one, whatever its type, so the section is on every Observation. A card is titled
-with its Metric's name, and cards come in the order the Observation declares its Metrics, so they interleave by
-declaration rather than grouping by type. Every card in the section is drawn over one shared window, chosen once at the
-top of the section ([Trend Time Range Selection](trend-time-range-selection.md)), and what a tap on a card reaches
-belongs to [Trend Exploration](trend-exploration.md).
+with its Metric's name, followed in parentheses by the unit where the Metric declares one, and cards come in the order
+the Observation declares its Metrics, so they interleave by declaration rather than grouping by type. Every card in the
+section is drawn over one shared window, chosen once at the top of the section ([Trend Time Range
+Selection](trend-time-range-selection.md)), and what a tap on a card reaches belongs to [Trend
+Exploration](trend-exploration.md).
 
 **Aggregation.** Charts plot buckets rather than Records. The window is cut into fixed buckets — an hour each for a
 one-day window, a day for a week or a month, a month for a year, and roughly thirty whole-hour buckets for a window

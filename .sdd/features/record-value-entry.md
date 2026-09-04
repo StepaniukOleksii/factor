@@ -12,7 +12,9 @@ This is that form's behaviour, held once rather than described twice.
 What an empty field enters is silence: the Metric goes unanswered on the Record, where a zero, a blank or a `No` would
 each have been an answer.
 
-**A field per Metric type.** Each Metric renders as the input its own type calls for.
+**A field per Metric type.** Each Metric renders as the input its own type calls for, labelled with the Metric's name
+and, where it declares one, its unit in parentheses after it — what a number is counted in belongs on screen at
+the moment the number is entered.
 
 *Numeric* takes a number, on a numeric keyboard. A Metric declaring bounds states them before anything is typed — `1-5`,
 `Min 0`, `Max 10` — and an unbounded one shows nothing. What is typed stays as typed while the field is open, so `0.`
@@ -33,11 +35,11 @@ Segments and list rows alike report whether they are the chosen one, so which va
 state rather than only as a highlight.
 
 **Metric descriptions.** A Metric defined with a description shows a small info button beside its label, whatever its
-type. Tapping it opens a dialog carrying the Metric's name and the description, with the line breaks it was written
-with, so a per-value legend reads as a list rather than a paragraph. It closes by its own **Close** action, by a tap
-outside it, or by the back gesture, and leaves the form exactly as it was, values entered included — the layout beneath
-it holds still throughout. A screen reader announces the description as the field's hint, reaching it without the dialog
-being opened at all.
+type. Tapping it opens a dialog headed with that label and carrying the description, with the line breaks it was
+written with, so a per-value legend reads as a list rather than a paragraph. It closes by its own **Close** action, by a
+tap outside it, or by the back gesture, and leaves the form exactly as it was, values entered included — the layout
+beneath it holds still throughout. A screen reader announces the description as the field's hint, reaching it without
+the dialog being opened at all.
 
 **The note.** Below every Metric field, past a dividing rule, is the note — capped, with a counter, and taking the line
 breaks it is given. The rule and the position are what keep it from being read as one more Metric field: its caption
