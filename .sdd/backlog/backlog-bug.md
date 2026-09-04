@@ -67,3 +67,19 @@ become a real spec.
 11. When a numeric chart has the only record, all lanes show the same number. The record is displayed as a single dot on
     the chart, so it looks weird that all lanes display same number but the dot is only on one of the lanes. Would be
     better to show neighbor numbers instead.
+12. `observation-editing.yaml` fails at the Metric it adds. `tapOn: "Add Metric"` reports COMPLETED, no card is
+    appended, and the `scrollUntilVisible` for `metric-name-8` that follows reports the element missing. The screenshot
+    at that step shows the foot of the form - the `note` card, then Add Metric, then the footer - with no ninth card
+    between them, and the view hierarchy holds `metric-name-7` and nothing after it. The button itself works: a probe
+    that opens Edit on `mixed metrics`, scrolls to Add Metric, taps it and scrolls to `metric-name-8` finds the card
+    every time. What the flow does differently is rename the first card first - scroll up to `metric-name-0`, erase,
+    type, hide the keyboard - and only then scroll the whole form down. Ruled out: `centerElement: true` on the failing
+    step, which fails uncentred too; the scroll budget, since raising it let the Add Metric scroll finish and the next
+    step still failed; and a tap arriving on the scroll's momentum, since `waitForAnimationToEnd` before the tap changed
+    nothing. Also not the length the unit field adds to a stored Numeric card - stripping the seeded units and re-running
+    against a bundle confirmed unit-free failed identically. It is timing- or order-sensitive rather than deterministic:
+    it passed once in a full-suite run and failed every run after, on identical code. Maestro reports a tap it
+    dispatched rather than one the app received, so the first thing to settle is whether the touch reaches the button at
+    all - a logcat capture across the failing step, or a log inside `handleAddMetric`
+    ([EditObservationScreen](../../src/presentation/screens/EditObservationScreen.tsx)), separates a tap that never
+    landed from a state update that was dropped.
