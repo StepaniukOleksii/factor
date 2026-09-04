@@ -94,9 +94,10 @@ appId: io.github.stepaniukoleksii.factor.dev
 - inputText: "density"
 - hideKeyboard
 
-# Add Metric is the last thing in the form, so this scroll cannot centre it the
-# way the ones above centre what they are after: with nothing below it to scroll
-# past, the container runs to its end and centring never comes.
+# Add Metric is the last thing in the form, so centring never arrives: the
+# container runs to its end first. Asked for all the same, because the swipes
+# spent trying are what carry it clear of the footer bar - see the rule in
+# testing-android-e2e.md.
 #
 # The timeout carries the whole length of the form, eight Metric cards of it -
 # five of them Numeric and so carrying a unit field as well - read afresh after
@@ -105,6 +106,7 @@ appId: io.github.stepaniukoleksii.factor.dev
 - scrollUntilVisible:
     element: "Add Metric"
     direction: DOWN
+    centerElement: true
     timeout: 120000
 - tapOn: "Add Metric"
 

@@ -119,6 +119,12 @@ Conventions this project follows:
   [`chartAxis.tsx`](src/presentation/charts/chartAxis.tsx)), which is within a percentage point of `f` itself at any
   phone width. Take `f` from the fixture's bucket grid and comment each aim with that derivation: the number is
   meaningless alone, and a tap that silently stops landing is the hardest failure in the suite to read.
+* **A `scrollUntilVisible` whose element the flow then taps carries `centerElement: true`.** Android reports bounds
+  already clipped to the screen, so `visibilityPercentage: 100` is met by a sliver at its edge: an uncentred scroll
+  stops the moment the element surfaces, and `tapOn` aims at the middle of that sliver — inside the `FooterBar` every
+  form floats over its content, which swallows the tap and reports it dispatched. Centring costs nothing where it cannot
+  be reached: an element at the end of a form drives the container to its end instead, which is where the padding
+  `useFooterClearance` reserves leaves it in the clear.
 * **Comment why a step exists, not what it does.** `tapOn: "Add Record"` explains itself; the reason a flow waits,
   reseeds, or reaches for a `testID` does not.
 

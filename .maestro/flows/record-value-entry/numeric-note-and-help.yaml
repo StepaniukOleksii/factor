@@ -48,6 +48,7 @@ appId: io.github.stepaniukoleksii.factor.dev
 - scrollUntilVisible:
     element: "About flag"
     direction: DOWN
+    centerElement: true
 - tapOn: "About flag"
 - assertVisible: "Boolean, so it charts as two lanes.*"
 - tapOn: "Close flag description"
@@ -63,6 +64,7 @@ appId: io.github.stepaniukoleksii.factor.dev
 - scrollUntilVisible:
     element: "Note"
     direction: DOWN
+    centerElement: true
 - tapOn: "Note"
 - inputText: "typed here, not on any metric"
 - hideKeyboard
