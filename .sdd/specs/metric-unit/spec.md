@@ -5,7 +5,7 @@
   record-value-entry.md and record-listing.md for where it shows, and in domain-overview.md's Metric section for the
   attribute itself
 * [x] Implemented
-* [ ] E2E tested
+* [x] E2E tested
 
 ## 1. Goal
 
@@ -180,6 +180,10 @@ saved.
 * **Fixture:** `reset`, which the flow already opens with.
 * **Covers:** typing `h` into the unit field while `Hours` is being filled in, then asserting that the details screen's
   trend card reads `Hours (h)` where the flow currently asserts `Hours`.
+* **`trend-charting.yaml` is extended too**, which this brief did not foresee. Giving two seeded Metrics a unit retitles
+  their trend cards, and that flow asserts those titles by name: a selector is matched as a whole, so `hourly` stops
+  matching `hourly (min)` rather than matching it as a prefix. The Metric chips on the Observation list keep their bare
+  names, so `observation-listing.yaml` needs nothing — which is what confirms §3.4's decision to leave them bare.
 * **Handles:** the unit input needs `metric-unit-0`, which §3.4 gives it; nothing else on the path is new. The
   assertion's parentheses have to be escaped — Maestro matches a selector as a regular expression, so an unescaped
   `Hours (h)` matches the text `Hours h` and never the card.

@@ -98,13 +98,14 @@ appId: io.github.stepaniukoleksii.factor.dev
 # way the ones above centre what they are after: with nothing below it to scroll
 # past, the container runs to its end and centring never comes.
 #
-# The timeout carries the whole length of the form, eight Metric cards of it,
-# read afresh after every swipe. The default twenty seconds runs out partway
-# down and reports the button missing rather than slow.
+# The timeout carries the whole length of the form, eight Metric cards of it -
+# five of them Numeric and so carrying a unit field as well - read afresh after
+# every swipe. A budget that runs out partway down reports the button missing
+# rather than slow, which is the hardest failure here to read.
 - scrollUntilVisible:
     element: "Add Metric"
     direction: DOWN
-    timeout: 60000
+    timeout: 120000
 - tapOn: "Add Metric"
 
 # Eight stored Metrics come before it, so the added card is index 8. Centred,

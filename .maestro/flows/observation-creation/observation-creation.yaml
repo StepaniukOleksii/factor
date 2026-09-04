@@ -30,15 +30,30 @@ appId: io.github.stepaniukoleksii.factor.dev
 - tapOn: "e.g., Duration"
 - inputText: "Hours"
 - hideKeyboard
+
+# The unit field carries no placeholder and no text of its own, so its testID is
+# the only handle on it.
+- scrollUntilVisible:
+    element:
+      id: "metric-unit-0"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "metric-unit-0"
+- inputText: "h"
+- hideKeyboard
+
 - tapOn: "Create Observation"
 
 - assertVisible: "Sleep"
 - assertNotVisible: "No observations created yet."
 
 # The Metric renders only on the details screen, so the Observation appearing in
-# the list would not by itself prove the Metric was saved alongside it.
+# the list would not by itself prove the Metric was saved alongside it. Its unit
+# reads there too, in parentheses after the name - escaped, a selector being
+# matched as a regular expression.
 - tapOn: "Sleep"
-- assertVisible: "Hours"
+- assertVisible: 'Hours \(h\)'
 - tapOn: "Back"
 
 # The name just taken, cased differently: names are compared ignoring case.

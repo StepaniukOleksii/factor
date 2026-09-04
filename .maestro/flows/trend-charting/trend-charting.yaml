@@ -12,18 +12,19 @@ appId: io.github.stepaniukoleksii.factor.dev
 
 # --- Every Metric type gets a card -------------------------------------------
 # `mixed metrics` carries five Numeric Metrics beside a Boolean, an Enum and a
-# Text one.
+# Text one. Two of the five declare a unit, which the card title carries after
+# the name - escaped, a selector being matched as a regular expression.
 - tapOn: "mixed metrics"
 - assertVisible: "TRENDS"
 - assertVisible:
     id: "trend-chart"
 - assertVisible: "dense"
 - assertVisible: "sparse"
-- assertVisible: "hourly"
+- assertVisible: 'hourly \(min\)'
 - scrollUntilVisible:
     element: "insufficient"
     direction: DOWN
-- assertVisible: "yearly"
+- assertVisible: 'yearly \(kcal/d\)'
 - scrollUntilVisible:
     element: "category"
     direction: DOWN
