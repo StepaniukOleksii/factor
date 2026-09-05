@@ -1,7 +1,7 @@
 appId: io.github.stepaniukoleksii.factor.dev
 ---
-# Creating an Observation: what the form refuses, what it accepts, and that a
-# name already taken is among the refusals.
+# Creating an Observation: what the form marks as required, what it refuses,
+# what it accepts, and that a name already taken is among the refusals.
 
 # Empty to start, so a re-run doesn't stack a second "Sleep" beside the first.
 - runFlow:
@@ -12,6 +12,10 @@ appId: io.github.stepaniukoleksii.factor.dev
 
 - tapOn: "Create observation"
 - assertVisible: "New Observation"
+
+# Escaped: an unescaped asterisk reads as any number of spaces, and would pass
+# against an unmarked caption.
+- assertVisible: 'OBSERVATION NAME \*'
 
 # Nothing filled in: each rule marked on the field it belongs to.
 - tapOn: "Create Observation"
@@ -115,6 +119,8 @@ appId: io.github.stepaniukoleksii.factor.dev
 - tapOn:
     id: "metric-type-1"
 - tapOn: "Choice"
+
+- assertVisible: 'VALUES \*'
 
 - scrollUntilVisible:
     element:
