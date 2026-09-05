@@ -3,8 +3,7 @@
 This is an informal idea/issue capture list — not a specification. It exists to hold loose documentation notes until
 they're ready to become a real spec.
 
-1. Create git commit conventions. Describe labels and commit content.
-2. How make the skill to read only relevant documents. For example no need reading domain model if implementing UI
+1. How make the skill to read only relevant documents. For example no need reading domain model if implementing UI
    changes
-3. Response summarizer
-4. Create adr-writing skill
+2. Response summarizer
+3. Create adr-writing skill
