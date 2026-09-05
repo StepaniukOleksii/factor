@@ -132,4 +132,35 @@ describe('LabeledTextField', () => {
             expect(StyleSheet.flatten(input(root).props.style).borderColor).toBe(COLORS.error);
         });
     });
+
+    describe('required', () => {
+        it('marks its caption, and leaves it bare without it', () => {
+            expect(renderedText(render({required: true}))).toEqual(['Duration *']);
+            expect(renderedText(render({required: false}))).toEqual(['Duration']);
+            expect(renderedText(render())).toEqual(['Duration']);
+        });
+
+        it.each([true, false, undefined])('leaves the input alone, marked or not (%s)', required => {
+            const field = input(render({
+                required,
+                placeholder: 'e.g., Duration',
+                accessibilityLabel: 'Duration value',
+            })).props;
+
+            expect(field.placeholder).toBe('e.g., Duration');
+            expect(field.accessibilityLabel).toBe('Duration value');
+            expect(field.testID).toBe('field');
+            expect(field.required).toBeUndefined();
+        });
+
+        it('titles its help dialog with the unmarked label', () => {
+            const root = render({required: true, helpText: HELP});
+
+            act(() => {
+                helpButtons(root)[0].props.onPress();
+            });
+
+            expect(renderedText(root)).toContain('Duration');
+        });
+    });
 });

@@ -64,6 +64,7 @@ export function ObservationFormBody(
             <View style={styles.stickySection}>
                 <LabeledTextField
                     label="OBSERVATION NAME"
+                    required
                     value={name}
                     onChangeText={onNameChange}
                     placeholder="e.g., Sleep Quality, Mood"

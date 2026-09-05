@@ -2,6 +2,8 @@ import React from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
 import {emptyMetricDraft, MetricDraft, MetricEditorCard, moveMetricDraft, toMetricDraft} from './MetricEditorCard';
+import {FieldCaption} from './FieldCaption';
+import {LabeledTextField} from './LabeledTextField';
 import {Metric} from '../../domain/Metric';
 import type {MetricErrors} from '../../application/validateCreateObservation';
 import {COLORS} from '@presentation/theme';
@@ -71,7 +73,23 @@ function findAllByText(root: any, text: string) {
 
 const shows = (root: any, text: string) => findAllByText(root, text).length > 0;
 const has = (root: any, testID: string) => root.root.findAllByProps({testID}).length > 0;
-const fieldByLabel = (root: any, label: string) => root.root.findAllByProps({label})[0];
+/** The field captioned `label` - narrowed to the field, its `FieldCaption` carrying the caption prop too. */
+const fieldByLabel = (root: any, label: string) =>
+    root.root.findAllByType(LabeledTextField).filter((field: any) => field.props.label === label)[0];
+
+/**
+ * Every caption the card renders as the user reads it, in card order. TYPE is
+ * not among them: `SelectField` captions itself, and nothing it holds is
+ * required.
+ */
+const captions = (root: any): string[] =>
+    root.root.findAllByType(FieldCaption)
+        .map((caption: any) => caption.props.required ? `${caption.props.label} *` : caption.props.label);
+
+/** Presses a dashed button the way a user does, by the label they read on it. */
+const pressDashed = (root: any, label: string) => act(() => {
+    root.root.findAllByProps({label})[0].props.onPress();
+});
 
 describe('MetricEditorCard', () => {
     describe('added', () => {
@@ -257,6 +275,48 @@ describe('MetricEditorCard', () => {
             const root = renderCard({onRemove: vi.fn()});
 
             expect(bin(root).props.color).toBe(COLORS.outline);
+        });
+    });
+
+    describe('required marks', () => {
+        it('marks the name, and nothing a save accepts empty', () => {
+            expect(captions(renderCard()))
+                .toEqual(['METRIC NAME *', 'MIN', 'MAX', 'UNIT', 'DESCRIPTION']);
+        });
+
+        it('marks a Choice\'s values over the group, leaving every row bare', () => {
+            const root = renderCard({metric: {...NUMERIC, type: 'Enum', values: ['sunny', 'rainy']}});
+
+            expect(captions(root))
+                .toEqual(['METRIC NAME *', 'VALUES *', 'VALUE 1', 'VALUE 2', 'DESCRIPTION']);
+        });
+
+        it('leaves a row added by Add Value bare, like the two before it', () => {
+            const onChange = vi.fn();
+            const root = renderCard({
+                metric: {...NUMERIC, type: 'Enum', values: ['sunny', 'rainy']},
+                onChange,
+            });
+
+            pressDashed(root, 'Add Value');
+            const added = renderCard({metric: onChange.mock.calls[0][0]});
+
+            expect(captions(added))
+                .toEqual(['METRIC NAME *', 'VALUES *', 'VALUE 1', 'VALUE 2', 'VALUE 3', 'DESCRIPTION']);
+        });
+
+        it('marks nothing over a stored Choice\'s stated values', () => {
+            const root = renderCard({metric: {...NUMERIC, type: 'Enum', values: ['a', 'b']}, stored: true});
+
+            expect(captions(root)).toEqual(['METRIC NAME *', 'DESCRIPTION']);
+            expect(shows(root, 'VALUES')).toBe(true);
+        });
+
+        it.each(['Numeric', 'Text', 'Boolean'] as const)('captions no values on a %s Metric', type => {
+            const root = renderCard({metric: {...NUMERIC, type}});
+
+            expect(shows(root, 'VALUES')).toBe(false);
+            expect(shows(root, 'VALUES *')).toBe(false);
         });
     });
 

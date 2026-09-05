@@ -2,7 +2,7 @@
 
 * 2026-09-05
 * Feature: observation-creation.md
-* [ ] Implemented
+* [x] Implemented
 * [ ] E2E tested
 
 ## 1. Goal

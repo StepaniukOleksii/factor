@@ -1,7 +1,7 @@
 import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
-import {Switch} from 'react-native';
+import {Switch, Text} from 'react-native';
 import {RecordFormScreen} from './RecordFormScreen';
 import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
@@ -863,6 +863,42 @@ describe('RecordFormScreen', () => {
 
             expect(await leaveScreen(listeners)).toBe(true);
             expect(dialogVisible(root)).toBe(true);
+        });
+    });
+
+    describe('required marks', () => {
+        const timestamp = new Date('2024-01-15T08:15:00');
+        const storedRecord = new DomainRecord(
+            'record-1',
+            'obs-1',
+            timestamp,
+            new Map<string, any>([['metric-1', 7.2], ['metric-2', true]]),
+        );
+
+        /** Every string on the form carrying the required mark, whatever renders it. */
+        function markedText(root: any): string[] {
+            return root.root.findAllByType(Text)
+                .map((node: any) => node.props.children)
+                .filter((text: any) => typeof text === 'string' && text.endsWith(' *'));
+        }
+
+        // A form saved untouched still creates a Record.
+        it('marks no caption on a new Record, the note included', async () => {
+            const {root} = await renderScreen();
+
+            expect(findAllByText(root.root, 'NOTE')).toHaveLength(1);
+            expect(markedText(root)).toEqual([]);
+        });
+
+        // Date and Time are pre-filled from the Record and changed only through
+        // a picker, so neither is ever empty either.
+        it('marks nothing on a Record being edited', async () => {
+            mockGetRecordByIdExecute.mockResolvedValue(storedRecord);
+
+            const {root} = await renderScreen({recordId: 'record-1'});
+
+            expect(findAllByText(root.root, 'Date')).toHaveLength(1);
+            expect(markedText(root)).toEqual([]);
         });
     });
 

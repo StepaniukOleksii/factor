@@ -3,6 +3,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
 import {Alert} from 'react-native';
 import {CreateObservationScreen} from './CreateObservationScreen';
+import {FieldCaption, LabeledTextField} from '@presentation/components';
 import {Observation} from '../../domain/Observation';
 import {METRIC_ENUM_VALUE_MAX_LENGTH} from '../../domain/validationLimits';
 
@@ -104,9 +105,16 @@ async function nameObservation(root: any, name: string) {
     });
 }
 
-/** The form fields captioned `label`, which only `LabeledTextField` carries, in screen order. */
+/** The form fields captioned `label`, in screen order - a field's own `FieldCaption` carries the caption too. */
 function fieldsByLabel(root: any, label: string) {
-    return root.root.findAllByProps({label});
+    return root.root.findAllByType(LabeledTextField).filter((field: any) => field.props.label === label);
+}
+
+/** Every caption on the form carrying the required mark, in screen order. */
+function markedCaptions(root: any): string[] {
+    return root.root.findAllByType(FieldCaption)
+        .filter((caption: any) => caption.props.required)
+        .map((caption: any) => caption.props.label);
 }
 
 function fieldByLabel(root: any, label: string) {
@@ -186,6 +194,33 @@ describe('CreateObservationScreen', () => {
         mockCreateObservationExecute.mockResolvedValue(undefined);
         mockFindAll.mockResolvedValue([]);
         alerted = vi.spyOn(Alert, 'alert').mockImplementation(() => {
+        });
+    });
+
+    describe('required marks', () => {
+        it('marks the name and every Metric name, before anything is typed or saved', async () => {
+            const {root} = await renderScreen();
+            await addMetric(root);
+
+            expect(markedCaptions(root)).toEqual(['OBSERVATION NAME', 'METRIC NAME', 'METRIC NAME']);
+        });
+
+        // The form is never without a Metric: the last card has no bin to take
+        // it off with.
+        it('leaves the METRICS caption bare', async () => {
+            const {root} = await renderScreen();
+
+            expect(shows(root, 'METRICS')).toBe(true);
+            expect(shows(root, 'METRICS *')).toBe(false);
+        });
+
+        it('leaves every mark where it was through a refused save', async () => {
+            const {root} = await renderScreen();
+            const opened = markedCaptions(root);
+
+            await saveObservation(root);
+
+            expect(markedCaptions(root)).toEqual(opened);
         });
     });
 

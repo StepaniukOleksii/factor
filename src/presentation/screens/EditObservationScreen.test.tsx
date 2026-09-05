@@ -3,6 +3,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
 import {Alert} from 'react-native';
 import {EditObservationScreen} from './EditObservationScreen';
+import {FieldCaption, LabeledTextField} from '@presentation/components';
 import {Observation} from '../../domain/Observation';
 import {Metric} from '../../domain/Metric';
 import {OBSERVATION_DESCRIPTION_MAX_LENGTH} from '../../domain/validationLimits';
@@ -126,9 +127,16 @@ async function leaveScreen(listeners: Record<string, (event: any) => void>, acti
     return event.preventDefault.mock.calls.length > 0;
 }
 
-/** The form fields captioned `label`, in screen order. */
+/** The form fields captioned `label`, in screen order - a field's own `FieldCaption` carries the caption too. */
 function fieldsByLabel(root: any, label: string) {
-    return root.root.findAllByProps({label});
+    return root.root.findAllByType(LabeledTextField).filter((field: any) => field.props.label === label);
+}
+
+/** Every caption on the form carrying the required mark, in screen order. */
+function markedCaptions(root: any): string[] {
+    return root.root.findAllByType(FieldCaption)
+        .filter((caption: any) => caption.props.required)
+        .map((caption: any) => caption.props.label);
 }
 
 function fieldByLabel(root: any, label: string) {
@@ -480,6 +488,26 @@ describe('EditObservationScreen', () => {
             expect(fieldByLabel(root, 'DESCRIPTION').props.error)
                 .toBe('Observation description cannot exceed 150 characters');
             expect(mockUpdateObservationExecute).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('required marks', () => {
+        // The Choice among the stored Metrics states its values rather than
+        // offering fields for them.
+        it('marks the name and every Metric name, and nothing a stored card states', async () => {
+            const {root} = await renderScreen();
+
+            expect(markedCaptions(root))
+                .toEqual(['OBSERVATION NAME', 'METRIC NAME', 'METRIC NAME', 'METRIC NAME']);
+            expect(shows(root, 'VALUES')).toBe(true);
+        });
+
+        it('marks a Metric added to the form like the stored ones', async () => {
+            const {root} = await renderScreen();
+
+            await addMetric(root);
+
+            expect(markedCaptions(root)).toHaveLength(5);
         });
     });
 

@@ -42,6 +42,10 @@ export {ObservationFormBodyProps} from './ObservationFormBody';
 export {Dialog} from './Dialog';
 export {DialogProps, DialogAction} from './Dialog';
 
+/** Caption above a form field, marked where a save would refuse what it captions for being empty - used by form fields and above a group of them */
+export {FieldCaption} from './FieldCaption';
+export {FieldCaptionProps} from './FieldCaption';
+
 /** Info button opening a dialog that explains the field it sits in - used inside a form field's label row */
 export {FieldHelpButton} from './FieldHelpButton';
 export {FieldHelpButtonProps} from './FieldHelpButton';

@@ -13,6 +13,7 @@ import {
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
 import {formatMetricType, formatTypedRange} from "@presentation/metricDisplay";
 import {DashedButton} from "./DashedButton";
+import {FieldCaption} from "./FieldCaption";
 import {LabeledTextField} from "./LabeledTextField";
 import {SelectField, type SelectFieldOption} from "./SelectField";
 
@@ -227,6 +228,7 @@ export function MetricEditorCard(
                 <View style={styles.metricField}>
                     <LabeledTextField
                         label="METRIC NAME"
+                        required
                         testID={`metric-name-${index}`}
                         labelAccessory={labelAccessory}
                         value={metric.name}
@@ -296,6 +298,9 @@ export function MetricEditorCard(
                     renderStated('VALUES', metric.values.join(', '), `metric-values-locked-${index}`)
                 ) : (
                     <View>
+                        <View style={styles.groupLabel}>
+                            <FieldCaption label="VALUES" required/>
+                        </View>
                         <View style={styles.valueRows}>
                             {metric.values.map((value, valueIndex) => (
                                 <LabeledTextField
@@ -373,6 +378,11 @@ const styles = StyleSheet.create({
     },
     valueRows: {
         gap: 12,
+    },
+    // `statedLabel`'s spacing, so a Choice's values read alike whether they are
+    // being declared or stated.
+    groupLabel: {
+        marginBottom: 6,
     },
     cardActions: {
         flexDirection: 'row',

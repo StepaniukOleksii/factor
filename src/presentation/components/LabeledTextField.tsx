@@ -1,11 +1,14 @@
 import React, {ReactNode} from "react";
 import {StyleSheet, Text, TextInput, TextInputProps, View} from "react-native";
 import {COLORS, RADIUS, TYPOGRAPHY} from "@presentation/theme";
+import {FieldCaption} from "./FieldCaption";
 import {FieldHelpButton} from "./FieldHelpButton";
 
 export interface LabeledTextFieldProps extends Omit<TextInputProps, "style"> {
     /** Caption shown above the input. */
     label: string;
+    /** Marks the caption, where a save refuses this field for being empty. */
+    required?: boolean;
     value: string;
     onChangeText: (text: string) => void;
     /** Error message; when set, shows an error border and the message below the input. */
@@ -34,6 +37,7 @@ export interface LabeledTextFieldProps extends Omit<TextInputProps, "style"> {
 export function LabeledTextField(
     {
         label,
+        required,
         value,
         onChangeText,
         error,
@@ -53,7 +57,7 @@ export function LabeledTextField(
                 `space-between` keeps pinning the label and `labelAccessory` apart. */}
             <View style={styles.labelRow}>
                 <View style={styles.labelGroup}>
-                    <Text style={styles.label}>{label}</Text>
+                    <FieldCaption label={label} required={required}/>
                     {help ? (
                         <FieldHelpButton
                             title={label}
@@ -102,7 +106,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 6,
     },
-    label: TYPOGRAPHY.fieldLabel,
     input: {
         backgroundColor: COLORS.surfaceContainerLowest,
         borderWidth: 1,
