@@ -1,14 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
-} from 'react-native';
+import {Alert, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity} from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
 import type {NavigationAction} from '@react-navigation/native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -19,29 +10,22 @@ import {UpdateObservationInput, UpdateObservationUseCase} from '../../applicatio
 import {
     CreateObservationErrors,
     hasErrors,
-    MetricErrors,
     validateUpdateObservation,
 } from '../../application/validateCreateObservation';
 import {Metric} from '../../domain/Metric';
 import {Observation} from '../../domain/Observation';
-import {OBSERVATION_DESCRIPTION_MAX_LENGTH, OBSERVATION_NAME_MAX_LENGTH} from '../../domain/validationLimits';
 import {
     CenteredState,
-    DashedButton,
     Dialog,
-    emptyMetricDraft,
     FooterBar,
-    LabeledTextField,
     type MetricDraft,
-    MetricEditorCard,
-    moveMetricDraft,
+    ObservationFormBody,
     PrimaryActionButton,
     ScreenContainer,
     ScreenHeader,
     toMetricDraft,
-    useFooterClearance,
 } from "@presentation/components";
-import {COLORS, TYPOGRAPHY} from "@presentation/theme";
+import {COLORS} from "@presentation/theme";
 import {type MetricRemovalPrompt, metricRemovalPrompt} from '@shared/metricRemovalPrompt';
 import type {RootStackParamList} from '../navigation/routes';
 
@@ -52,7 +36,6 @@ const countMetricValuesUseCase = new CountMetricValuesUseCase(new SQLiteRecordRe
 export type EditObservationScreenProps = NativeStackScreenProps<RootStackParamList, 'EditObservation'>;
 
 const NOTHING_MARKED: CreateObservationErrors = {perMetric: []};
-const NO_METRIC_ERRORS: MetricErrors = {};
 
 /**
  * Only a Metric's name, description and unit can differ, its type and
@@ -81,7 +64,6 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
     const [loading, setLoading] = useState(true);
     const [pendingExit, setPendingExit] = useState<NavigationAction | null>(null);
     const [removalPrompt, setRemovalPrompt] = useState<MetricRemovalPrompt | null>(null);
-    const footerClearance = useFooterClearance();
     /**
      * Saving removes this route too, and the form is still dirty against the
      * Observation it loaded at that moment, so that one removal has to pass. A
@@ -164,20 +146,6 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
         }
     };
 
-    const handleAddMetric = () => setMetrics([...metrics, emptyMetricDraft()]);
-
-    const handleMetricChange = (index: number, metric: MetricDraft) => {
-        setMetrics(metrics.map((existing, i) => i === index ? metric : existing));
-    };
-
-    const handleRemoveMetric = (index: number) => {
-        setMetrics(metrics.filter((_, i) => i !== index));
-    };
-
-    const handleMoveMetric = (from: number, to: number) => {
-        setMetrics(moveMetricDraft(metrics, from, to));
-    };
-
     // The last resort, for what no field is holding: the write failing, the
     // count failing, or the Observation having been deleted meanwhile.
     const reportFailure = (error: any) =>
@@ -257,54 +225,15 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
             />
 
             <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <View style={styles.stickySection}>
-                    <LabeledTextField
-                        label="OBSERVATION NAME"
-                        value={name}
-                        onChangeText={setName}
-                        placeholder="e.g., Sleep Quality, Mood"
-                        maxLength={OBSERVATION_NAME_MAX_LENGTH}
-                        showCounter
-                        error={marked.name}
-                    />
-                </View>
-
-                <ScrollView style={styles.scrollView}
-                            contentContainerStyle={[styles.scrollContent, {paddingBottom: footerClearance}]}>
-                    <View style={styles.descriptionSection}>
-                        <LabeledTextField
-                            label="DESCRIPTION"
-                            value={description}
-                            onChangeText={setDescription}
-                            placeholder="Optional — what does this observation track?"
-                            multiline
-                            numberOfLines={3}
-                            maxLength={OBSERVATION_DESCRIPTION_MAX_LENGTH}
-                            showCounter
-                            error={marked.description}
-                        />
-                    </View>
-                    <View style={styles.divider}/>
-                    <View style={styles.metricsContainer}>
-                        <Text style={styles.label}>METRICS</Text>
-
-                        {metrics.map((metric, index) => (
-                            <MetricEditorCard
-                                key={metric.key}
-                                metric={metric}
-                                index={index}
-                                errors={marked.perMetric[index] ?? NO_METRIC_ERRORS}
-                                onChange={(next) => handleMetricChange(index, next)}
-                                onRemove={metrics.length > 1 ? () => handleRemoveMetric(index) : undefined}
-                                onMoveUp={index > 0 ? () => handleMoveMetric(index, index - 1) : undefined}
-                                onMoveDown={index < metrics.length - 1 ? () => handleMoveMetric(index, index + 1) : undefined}
-                                stored={metric.id !== undefined}
-                            />
-                        ))}
-
-                        <DashedButton label="Add Metric" onPress={handleAddMetric}/>
-                    </View>
-                </ScrollView>
+                <ObservationFormBody
+                    name={name}
+                    onNameChange={setName}
+                    description={description}
+                    onDescriptionChange={setDescription}
+                    metrics={metrics}
+                    onMetricsChange={setMetrics}
+                    errors={marked}
+                />
 
                 <FooterBar>
                     <PrimaryActionButton label="Save Observation" onPress={handleSave} loading={saving}/>
@@ -361,30 +290,5 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    stickySection: {
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.outlineVariant,
-        backgroundColor: COLORS.background,
-        zIndex: 10,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        paddingHorizontal: 16,
-    },
-    label: {...TYPOGRAPHY.sectionCaption, marginBottom: 8},
-    descriptionSection: {
-        marginTop: 16,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: COLORS.outlineVariant,
-        marginVertical: 16,
-    },
-    metricsContainer: {
-        gap: 16,
     },
 });

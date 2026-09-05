@@ -34,6 +34,10 @@ export {DashedButtonProps} from './DashedButton';
 export {MetricEditorCard, emptyMetricDraft, moveMetricDraft, toMetricDraft} from './MetricEditorCard';
 export {MetricEditorCardProps, MetricDraft} from './MetricEditorCard';
 
+/** The Observation form's shared body - the sticky name field above the scrolling description and Metric cards */
+export {ObservationFormBody} from './ObservationFormBody';
+export {ObservationFormBodyProps} from './ObservationFormBody';
+
 /** Centered modal dialog - use when an action from user is needed */
 export {Dialog} from './Dialog';
 export {DialogProps, DialogAction} from './Dialog';
