@@ -34,6 +34,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
     const [metrics, setMetrics] = useState<MetricDraft[]>(() => [emptyMetricDraft()]);
     const [takenNames, setTakenNames] = useState<string[]>([]);
     const [attemptedSave, setAttemptedSave] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     // On mount rather than on focus: nothing that can create an Observation
     // opens above this screen, so the names cannot go stale underneath it
@@ -70,9 +71,14 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
             return;
         }
         try {
+            setSaving(true);
             await useCase.execute(input);
             navigation.goBack();
         } catch (error: any) {
+            // Handed back here rather than on the way out: the screen stays
+            // tappable while it pops, and a live button there takes a second
+            // save that no field can refuse.
+            setSaving(false);
             // The last resort, for what no field is holding: the save failing,
             // or a name the use case refused before the existing names arrived.
             Alert.alert('Error', error.message || 'An error occurred while saving.');
@@ -104,7 +110,7 @@ export function CreateObservationScreen({navigation}: CreateObservationScreenPro
                 />
 
                 <FooterBar>
-                    <PrimaryActionButton label="Create Observation" onPress={handleSave}/>
+                    <PrimaryActionButton label="Create Observation" onPress={handleSave} loading={saving}/>
                 </FooterBar>
 
             </KeyboardAvoidingView>

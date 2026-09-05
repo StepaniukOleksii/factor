@@ -157,6 +157,22 @@ async function saveObservation(root: any) {
     });
 }
 
+/**
+ * Presses the save without waiting on the write, for a case that holds one in
+ * flight: the handler's promise settles only once the write does.
+ */
+async function startSave(root: any) {
+    const button = findTouchableWithText(root.root, 'Create Observation');
+    await act(async () => {
+        button!.props.onPress();
+    });
+}
+
+/** The footer action, whose label a save in flight replaces with a spinner. */
+function saveButton(root: any) {
+    return root.root.findAllByProps({label: 'Create Observation'})[0];
+}
+
 /** The metrics of the single call the screen made to the use case. */
 function submittedMetrics() {
     return mockCreateObservationExecute.mock.calls[0][0].metrics;
@@ -605,6 +621,73 @@ describe('CreateObservationScreen', () => {
 
             expect(fieldsByLabel(root, 'METRIC NAME')[0].props.error).toBe('Metric name cannot be empty');
             expect(fieldsByLabel(root, 'METRIC NAME')[1].props.error).toBeUndefined();
+        });
+    });
+
+    describe('saving', () => {
+        /** Holds the write in flight; the returned call lets it finish. */
+        function heldWrite() {
+            let finish: () => void = () => {
+            };
+            mockCreateObservationExecute.mockReturnValueOnce(new Promise<void>(resolve => {
+                finish = resolve;
+            }));
+            return async () => {
+                await act(async () => {
+                    finish();
+                });
+            };
+        }
+
+        async function fillInAValidForm(root: any) {
+            await nameObservation(root, 'Sleep');
+            await nameMetric(root, 'Hours');
+        }
+
+        it('turns the button busy while the write is in flight, so a second tap has nothing to press', async () => {
+            const finishWrite = heldWrite();
+            const {root} = await renderScreen();
+            await fillInAValidForm(root);
+
+            await startSave(root);
+
+            expect(saveButton(root).props.loading).toBe(true);
+            expect(shows(root, 'Create Observation')).toBe(false);
+
+            await finishWrite();
+
+            expect(mockCreateObservationExecute).toHaveBeenCalledTimes(1);
+        });
+
+        it('leaves the button busy once the write has gone through, the screen being tappable as it pops', async () => {
+            const {root, goBack} = await renderScreen();
+            await fillInAValidForm(root);
+
+            await saveObservation(root);
+
+            expect(goBack).toHaveBeenCalled();
+            expect(saveButton(root).props.loading).toBe(true);
+        });
+
+        it('hands the button back when the write fails', async () => {
+            mockCreateObservationExecute.mockRejectedValue(new Error('Database is locked'));
+            const {root, goBack} = await renderScreen();
+            await fillInAValidForm(root);
+
+            await saveObservation(root);
+
+            expect(alerted).toHaveBeenCalledWith('Error', 'Database is locked');
+            expect(goBack).not.toHaveBeenCalled();
+            expect(saveButton(root).props.loading).toBe(false);
+        });
+
+        it('leaves the button alone when the form is refused', async () => {
+            const {root} = await renderScreen();
+
+            await saveObservation(root);
+
+            expect(mockCreateObservationExecute).not.toHaveBeenCalled();
+            expect(saveButton(root).props.loading).toBe(false);
         });
     });
 });

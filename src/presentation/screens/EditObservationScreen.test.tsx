@@ -187,6 +187,22 @@ async function saveObservation(root: any) {
     });
 }
 
+/**
+ * Presses the save without waiting on the write, for a case that holds one in
+ * flight: the handler's promise settles only once the write does.
+ */
+async function startSave(root: any) {
+    const button = findTouchableWithText(root.root, 'Save Observation');
+    await act(async () => {
+        button!.props.onPress();
+    });
+}
+
+/** The footer action, whose label a save in flight replaces with a spinner. */
+function saveButton(root: any) {
+    return root.root.findAllByProps({label: 'Save Observation'})[0];
+}
+
 function shows(root: any, message: string) {
     return findAllByText(root.root, message).length > 0;
 }
@@ -502,6 +518,38 @@ describe('EditObservationScreen', () => {
 
             expect(Alert.alert).toHaveBeenCalledWith('Error', 'Observation not found');
             expect(goBack).not.toHaveBeenCalled();
+            expect(saveButton(root).props.loading).toBe(false);
+        });
+
+        it('turns the button busy while the write is in flight, so a second tap has nothing to press', async () => {
+            let finishWrite: () => void = () => {
+            };
+            mockUpdateObservationExecute.mockReturnValueOnce(new Promise<void>(resolve => {
+                finishWrite = resolve;
+            }));
+            const {root} = await renderScreen();
+            await typeInto(root, 'OBSERVATION NAME', 'renamed');
+
+            await startSave(root);
+
+            expect(saveButton(root).props.loading).toBe(true);
+            expect(shows(root, 'Save Observation')).toBe(false);
+
+            await act(async () => {
+                finishWrite();
+            });
+
+            expect(mockUpdateObservationExecute).toHaveBeenCalledTimes(1);
+        });
+
+        it('leaves the button busy once the write has gone through, the screen being tappable as it pops', async () => {
+            const {root, goBack} = await renderScreen();
+
+            await typeInto(root, 'OBSERVATION NAME', 'renamed');
+            await saveObservation(root);
+
+            expect(goBack).toHaveBeenCalled();
+            expect(saveButton(root).props.loading).toBe(true);
         });
     });
 

@@ -161,9 +161,10 @@ export function EditObservationScreen({route, navigation}: EditObservationScreen
             setRemovalPrompt(null);
             navigation.goBack();
         } catch (error: any) {
-            reportFailure(error);
-        } finally {
+            // Handed back here rather than on the way out: the screen stays
+            // tappable while it pops, and a live button there takes a second save.
             setSaving(false);
+            reportFailure(error);
         }
     };
 

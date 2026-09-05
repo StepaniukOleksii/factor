@@ -113,7 +113,8 @@ Beside every card's name is a bin, red on the Metrics the Observation already ho
 Tapping it takes that card off the form there and then; the bins are there while more than one card is on the form.
 
 **Save Observation**, fixed at the bottom, writes the lot and lands you back on the Observation, its header reading the
-new name and its Metrics the ones you left on the form. Where a stored Metric has gone from the form, `Delete metric?`
-comes first, naming what goes and how much was recorded against it — **Cancel** hands the form back as you left it,
-**Delete** goes through with the save. The cross at the top right or the back arrow leaves without saving, asking first
-if anything was changed.
+new name and its Metrics the ones you left on the form. While the write is under way the button holds a spinner in
+place of its label and takes no further tap; it stays that way as the screen closes, and only a write that fails hands
+it back. Where a stored Metric has gone from the form, `Delete metric?` comes first, naming what goes and how much was
+recorded against it — **Cancel** hands the form back as you left it, **Delete** goes through with the save. The cross
+at the top right or the back arrow leaves without saving, asking first if anything was changed.

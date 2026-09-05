@@ -52,4 +52,6 @@ side by side; choosing Choice adds two value rows and a dashed **Add Value** but
 there are two, and a value row once there are three — the last of each stays, being the minimum.
 
 **Create Observation**, fixed at the bottom, saves. On success the screen closes and the user is back on the Observation
-list, the new Observation among them. Anything wrong is marked in place and the screen stays open.
+list, the new Observation among them. Anything wrong is marked in place and the screen stays open. While the write is
+under way the button holds a spinner in place of its label and takes no further tap; it stays that way as the screen
+closes, and only a write that fails hands it back.
