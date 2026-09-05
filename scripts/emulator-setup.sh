@@ -20,7 +20,7 @@ LAUNCH_ACTIVITY="$PACKAGE/io.github.stepaniukoleksii.factor.MainActivity"
 PORT=8081
 BOOT_TIMEOUT=180
 BUILD_TIMEOUT=900
-DISPLAY_TIMEOUT=60
+DISPLAY_TIMEOUT=180
 JS_TIMEOUT=150
 # How long a stalled bundle fetch is given before the launch is re-issued.
 JS_RETRY_INTERVAL=30
@@ -122,9 +122,11 @@ done
 
 log "Metro serving — waiting for the app to actually display"
 
-# The dev server coming up isn't the same as the app being on screen: there's
-# a further couple seconds of Android activity-launch lag in between. Wait
-# for the system's own "first frame drawn" signal instead of guessing a
+# The dev server coming up isn't the same as the app being on screen. Metro
+# listens before `expo run:android` has installed anything, so this window
+# covers the APK install and a cold-booted emulator's first frame as well as
+# the activity launch - together around 90s here, most of it the first frame.
+# Wait for the system's own "first frame drawn" signal instead of guessing a
 # fixed delay. logcat was cleared before the build started, so any match
 # here is necessarily from this run, not a stale one.
 waited=0
