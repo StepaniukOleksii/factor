@@ -10,8 +10,8 @@ metadata:
 Every stage of a slice ends in a commit, and so does work that is no slice at all. `development-process.md` describes
 the one-commit-per-stage record master keeps; this skill writes the commits that record is folded from.
 
-Two things carry all the judgment: which tag the change takes, and whether its message means anything to someone who
-was not here.
+Two things carry all the judgment: which tag the change takes, and whether its message means anything to someone who was
+not here.
 
 ## 1. See What Is There
 
@@ -33,28 +33,28 @@ committing.
 
 One tag per commit, and on a `feat/` branch it is the stage's rather than a judgment call.
 
-| Tag      | Carries                                                                    |
-|----------|----------------------------------------------------------------------------|
-| `[SPEC]` | a spec, its mockups, and any ADR written alongside it                      |
-| `[IMPL]` | code and its unit tests                                                    |
-| `[E2E]`  | Maestro flows, and the accessibility handles they need                     |
-| `[FEAT]` | a feature file, and `domain-overview.md` where the slice changed a concept |
-| `[FIX]`  | a defect fixed off-slice                                                   |
-| `[REF]`  | a change that leaves behaviour exactly as it was                           |
-| `[DOC]`  | project documents, skills, ADRs, the root testing documents                |
-| `[TODO]` | backlog entries                                                            |
+| Tag      | Carries                                                                      |
+|----------|------------------------------------------------------------------------------|
+| `[SPEC]` | a spec, its mockups, any ADR alongside it, and the backlog entry it promotes |
+| `[IMPL]` | code and its unit tests                                                      |
+| `[E2E]`  | Maestro flows, and the accessibility handles they need                       |
+| `[FEAT]` | a feature file, and `domain-overview.md` where the slice changed a concept   |
+| `[FIX]`  | a defect fixed off-slice                                                     |
+| `[REF]`  | a change that leaves behaviour exactly as it was                             |
+| `[DOC]`  | project documents, skills, ADRs, the root testing documents                  |
+| `[TODO]` | a backlog entry changed on its own                                           |
 
 **A tree holding two kinds is two commits.** Landing folds each run of same-tag commits into one, so an implementation
-committed together with a backlog edit vanishes into the `[IMPL]` fold and master never shows the backlog changed.
-Stage one set of paths, commit, then stage the next.
+committed together with a backlog edit vanishes into the `[IMPL]` fold and master never shows the backlog changed. Stage
+one set of paths, commit, then stage the next.
 
 ## 3. Write the Subject
 
 `[TAG] Sentence case`, no full stop, short enough to read at a glance — about 70 characters.
 
 On a slice branch the slice's own name serves every stage: `[SPEC] Metric Editing`, `[IMPL] Metric Editing`. Where a
-stage did something that name does not cover, say that instead — `[E2E] Metric editing steps on the
-observation-editing flow`. Off a branch, the subject says what the change does: `[DOC] Pin line endings to LF`.
+stage did something that name does not cover, say that instead — `[E2E] Metric editing steps on the observation-editing
+flow`. Off a branch, the subject says what the change does: `[DOC] Pin line endings to LF`.
 
 ## 4. Write the Body
 
