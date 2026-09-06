@@ -57,8 +57,8 @@ stand for, kept with the line breaks it was written with so a per-value legend r
 entering a value and never constrains one — a value is judged by the Metric's type and constraint alone.
 
 A Numeric Metric may also carry a unit of at most 6 characters: what its numbers count, so a `7` read long after it was
-entered is seven of something. It is kept as written, trimmed of the whitespace around it, and one that trims to
-nothing is no unit.
+entered is seven of something. It is kept as written, trimmed of the whitespace around it, and one that trims to nothing
+is no unit.
 
 ### Metric types
 
@@ -130,11 +130,13 @@ Modelled but unreachable: nothing creates a Group or shows one.
 
 ## Event
 
-An Event represents a meaningful occurrence that may influence Observations.
+An Event represents a meaningful occurrence that may have influenced Observations.
 
-Events are independent from Observations and may occur multiple times.
+An Event carries:
 
-Each Event maintains the timestamps at which it occurred.
+* A name of at most 30 characters — a short summary of what happened.
+* An optional description of at most 150 characters, for what a short name has no room to say.
+* The single moment it occurred, which is what a user can state while the thing is still going on.
 
 Examples:
 
@@ -143,7 +145,9 @@ Examples:
 * New Job
 * Emotional Upsurge
 
-Like Groups, Events are modelled and unreachable — a Record carrying a timestamp and no values is the closest thing a
-user can express today.
+Each Event is one happening: two bouts of the same illness are two Events, and two Events may carry the same name.
+
+An Event is owned by nothing. It belongs to no Observation and is removed with none, which is what lets one stand behind
+several Observations at once.
 
 ---
