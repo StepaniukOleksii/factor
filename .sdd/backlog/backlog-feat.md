@@ -30,3 +30,30 @@ ready to become a real spec.
    Record stores the value's text, not its position, so `Low` → `Lo` strands it just as deleting it would, while
    renaming a Metric costs nothing. Before deciding, check what a stranded value already does on the Record form and in
    the charts: Numeric and Choice differ there today, and neither behaviour was designed.
+4. Events, beyond the model and the screens that first reach it. Each of these needs Events to exist before it can be
+   specified.
+    - Spans. An Event carries a single moment, because at the time of noting one the end usually hasn't happened yet. A
+      Vacation or an Illness is a stretch though, and reads better as a band than as a rule at its start. Storage-wise
+      the upgrade is a nullable end column and invalidates nothing already stored; the cost is that the chart overlay
+      learns a second shape.
+    - Tags, one per Event or several. A tag groups Events so the name doesn't have to, which stops a typo or a synonym
+      splitting a group. Several are more expressive — `Vacation` and `Abroad` ask different things — but a colour
+      has to pick one of them, and converting related Events has to decide which tag makes them related. Decide against
+      a real form rather than in the abstract.
+    - Colour. Every marker is drawn alike today. Whether Events should be told apart visually at all is open, and hangs
+      on tags: a per-Event colour is decoration, a per-tag one carries information.
+    - What was going on around this Record. A Record says what was entered and nothing about the circumstances. The
+      Events falling near its timestamp are that context, and the Record view is where it is missed.
+    - Tapping a marker narrows onto the Event. [Trend Exploration](../features/trend-exploration.md) already has a zoom
+      ladder that back retraces; a marker would be another way onto it, producing the Event's own stretch of time
+      rather than a bucket's.
+    - During versus outside. The first thing here that would state something rather than draw it: a Metric's values
+      while a tag was in effect, against its values the rest of the time. Needs tags, and enough Events under one tag
+      for the comparison to mean anything.
+    - Converting related Events into an Observation. An Event noted often enough under one tag is something the user
+      turns out to be tracking, and tracking is what an Observation is for. What the Metrics would be, and what becomes
+      of the Events afterwards, is wide open.
+5. Groups as configurable views. [domain-overview.md](../project/domain-overview.md) models a Group as a collection of
+   Observations for analysis, and nothing creates or shows one. The idea is still vague — closer to a saved, temporary
+   view over a subset of Observations than a permanent structure. Worth leaving alone until cross-Observation
+   comparison exists for a Group to scope.
