@@ -37,16 +37,16 @@ ready to become a real spec.
       the upgrade is a nullable end column and invalidates nothing already stored; the cost is that the chart overlay
       learns a second shape.
     - Tags, one per Event or several. A tag groups Events so the name doesn't have to, which stops a typo or a synonym
-      splitting a group. Several are more expressive — `Vacation` and `Abroad` ask different things — but a colour
-      has to pick one of them, and converting related Events has to decide which tag makes them related. Decide against
-      a real form rather than in the abstract.
+      splitting a group. Several are more expressive — `Vacation` and `Abroad` ask different things — but a colour has
+      to pick one of them, and converting related Events has to decide which tag makes them related. Decide against a
+      real form rather than in the abstract.
     - Colour. Every marker is drawn alike today. Whether Events should be told apart visually at all is open, and hangs
       on tags: a per-Event colour is decoration, a per-tag one carries information.
     - What was going on around this Record. A Record says what was entered and nothing about the circumstances. The
       Events falling near its timestamp are that context, and the Record view is where it is missed.
     - Tapping a marker narrows onto the Event. [Trend Exploration](../features/trend-exploration.md) already has a zoom
-      ladder that back retraces; a marker would be another way onto it, producing the Event's own stretch of time
-      rather than a bucket's.
+      ladder that back retraces; a marker would be another way onto it, producing the Event's own stretch of time rather
+      than a bucket's.
     - During versus outside. The first thing here that would state something rather than draw it: a Metric's values
       while a tag was in effect, against its values the rest of the time. Needs tags, and enough Events under one tag
       for the comparison to mean anything.
@@ -55,5 +55,5 @@ ready to become a real spec.
       of the Events afterwards, is wide open.
 5. Groups as configurable views. [domain-overview.md](../project/domain-overview.md) models a Group as a collection of
    Observations for analysis, and nothing creates or shows one. The idea is still vague — closer to a saved, temporary
-   view over a subset of Observations than a permanent structure. Worth leaving alone until cross-Observation
-   comparison exists for a Group to scope.
+   view over a subset of Observations than a permanent structure. Worth leaving alone until cross-Observation comparison
+   exists for a Group to scope.
