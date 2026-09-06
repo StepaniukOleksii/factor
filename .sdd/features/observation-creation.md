@@ -31,11 +31,19 @@ what was typed for the previous one, so nothing is submitted unseen.
 **Every length limit is enforced as it is typed** rather than on save: the field stops accepting characters at its limit
 and shows a counter throughout, so the limit is visible before it is met.
 
-**When refusals appear.** The first attempt to save is what marks the form, and it marks every field that is wrong at
-once — until then the form stays clean, since one that opens marked faults the user for what they have not done yet.
-From that first attempt on, each mark answers to what is currently on screen, so a field clears as it is corrected
-rather than at the next attempt. A refusal belonging to no single field sits under the pair or the group it is about: a
-minimum exceeding its maximum belongs to neither bound alone, and a Choice short of values belongs to no one row.
+**The required mark.** A caption carries an asterisk where a save would refuse what sits under it for being empty: the
+Observation's name, each Metric's name, and a Choice Metric's values. The marks are on the form from the moment it
+opens, so what it insists on can be read before anything is typed, and an unmarked caption is one the user need do
+nothing about. Each takes its caption's own colour and keeps it through a refusal: the mark says what the form asks for,
+and red is left to say what is wrong with an answer. A Choice's mark sits on the caption over its value rows rather than
+on any one row, the values being asked of the set.
+
+**When refusals appear.** The first attempt to save is what puts a refusal on the form, and it puts one on every field
+that is wrong at once — until then the form carries none, since one that opens in red faults the user for what they have
+not done yet. From that first attempt on, each refusal answers to what is currently on screen, so a field clears as it
+is corrected rather than at the next attempt. A refusal belonging to no single field sits under the pair or the group it
+is about: a minimum exceeding its maximum belongs to neither bound alone, and a Choice short of values belongs to no one
+row.
 
 **Metrics are this Observation's own.** Each is declared here from scratch, in an order the form itself sets ([Metric
 Ordering](metric-ordering.md)), so two Observations both measuring hours each define one of their own.

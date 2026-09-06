@@ -18,8 +18,8 @@ Choosing it closes the menu and opens the form.
 
 **The fields.** Every one of them behaves as the creation form's do, and what each accepts belongs there ([Observation
 Creation](observation-creation.md)): each stops accepting characters at its limit and carries a counter throughout. The
-form stays unmarked until the first attempt to save, and from then on every mark answers to what is currently on screen,
-a field clearing as it is corrected.
+form carries no refusal until the first attempt to save, and from then on every refusal answers to what is currently on
+screen, a field clearing as it is corrected.
 
 **The Observation's name.** Required, and one another Observation holds is refused — matched without regard to casing or
 the whitespace around it. Its own stored name is accepted, saved untouched or corrected in its capitalisation or its
