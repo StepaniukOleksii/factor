@@ -2,7 +2,7 @@
 
 * 2026-09-06
 * Feature: none — this slice adds no user action, so its feature stage rewrites `domain-overview.md` instead (see 3.6)
-* [ ] Implemented
+* [x] Implemented
 * [n/a] E2E tested
 
 ## 1. Goal

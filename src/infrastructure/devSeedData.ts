@@ -1,4 +1,5 @@
 import * as Crypto from 'expo-crypto';
+import {Event} from '../domain/Event';
 import {Observation} from '../domain/Observation';
 import {Metric} from '../domain/Metric';
 import {Record} from '../domain/Record';
@@ -308,4 +309,20 @@ export function buildSeedData(): SeedEntry[] {
   }
 
   return entries;
+}
+
+/**
+ * The four cover both description states, one name held by two Events so
+ * nothing downstream can take a name for an identity, and an Event inside every
+ * preset chart window - the oldest reaching only 1Y.
+ */
+export function buildEventSeedData(): Event[] {
+  return [
+    new Event(Crypto.randomUUID(), 'today', hoursAgo(3),
+      'The one seeded Event carrying a long description, written close to the limit so the longest body an Event can ' +
+      'hold is on screen after every reseed.'),
+    new Event(Crypto.randomUUID(), 'this week', daysAgo(3)),
+    new Event(Crypto.randomUUID(), 'repeated', daysAgo(21)),
+    new Event(Crypto.randomUUID(), 'repeated', daysAgo(240), 'The older of the two Events sharing a name.'),
+  ];
 }

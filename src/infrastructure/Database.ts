@@ -51,6 +51,13 @@ export const SCHEMA = `
     FOREIGN KEY (recordId) REFERENCES records (id) ON DELETE CASCADE,
     FOREIGN KEY (metricId) REFERENCES metrics (id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS events (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    occurredAt INTEGER NOT NULL
+  );
 `;
 
 export async function initDatabase(): Promise<void> {

@@ -1,5 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {buildSeedData} from './devSeedData';
+import {buildEventSeedData, buildSeedData} from './devSeedData';
 import {
   type AggregationStrategy,
   GetMetricSeriesUseCase,
@@ -17,6 +17,8 @@ import {
   type TimeRangePreset,
 } from '../presentation/charts/chartDefaults';
 import {
+  EVENT_DESCRIPTION_MAX_LENGTH,
+  EVENT_NAME_MAX_LENGTH,
   METRIC_DESCRIPTION_MAX_LENGTH,
   METRIC_ENUM_VALUE_MAX_LENGTH,
   METRIC_NAME_MAX_LENGTH,
@@ -603,6 +605,75 @@ describe('seeded Record notes', () => {
   it('keeps every seeded note within the length limit', () => {
     for (const note of seededNotes()) {
       expect(note.length, note).toBeLessThanOrEqual(RECORD_NOTE_MAX_LENGTH);
+    }
+  });
+});
+
+describe('seeded Events', () => {
+  const HOURS: [string, Date][] = [
+    ['before nine', new Date(2026, 7, 4, 3, 20)],
+    ['past nine', new Date(2026, 7, 4, 14, 20)],
+  ];
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function inWindow(preset: TimeRangePreset) {
+    const {start, end} = getTimeRangeForPreset(preset);
+    return buildEventSeedData().filter(
+      event => event.occurredAt.getTime() >= start.getTime() && event.occurredAt.getTime() < end.getTime(),
+    );
+  }
+
+  it.each(HOURS)('dates no Event in the future seeded at %s', (_hour, now) => {
+    vi.setSystemTime(now);
+
+    for (const event of buildEventSeedData()) {
+      expect(event.occurredAt.getTime(), event.name).toBeLessThanOrEqual(now.getTime());
+    }
+  });
+
+  it.each(HOURS)('puts an Event inside every preset window seeded at %s', (_hour, now) => {
+    vi.setSystemTime(now);
+
+    for (const preset of PRESETS) {
+      expect(inWindow(preset).length, preset).toBeGreaterThan(0);
+    }
+  });
+
+  // Without one, the widest window draws exactly what 1M already does.
+  it('leaves an Event reachable only at the widest window', () => {
+    vi.setSystemTime(HOURS[1][1]);
+
+    expect(inWindow('1Y').length).toBeGreaterThan(inWindow('1M').length);
+  });
+
+  it('gives two Events one name, so nothing downstream can take a name for an identity', () => {
+    vi.setSystemTime(HOURS[1][1]);
+    const names = buildEventSeedData().map(event => event.name);
+
+    expect(names.length - new Set(names).size).toBe(1);
+  });
+
+  it('describes two of the four, so both states are on screen at once', () => {
+    vi.setSystemTime(HOURS[1][1]);
+    const events = buildEventSeedData();
+
+    expect(events).toHaveLength(4);
+    expect(events.filter(event => event.description !== null)).toHaveLength(2);
+  });
+
+  it('keeps every Event name and description within its limit', () => {
+    vi.setSystemTime(HOURS[1][1]);
+
+    for (const event of buildEventSeedData()) {
+      expect(event.name.length, event.name).toBeLessThanOrEqual(EVENT_NAME_MAX_LENGTH);
+      expect(event.description?.length ?? 0, event.name).toBeLessThanOrEqual(EVENT_DESCRIPTION_MAX_LENGTH);
     }
   });
 });
