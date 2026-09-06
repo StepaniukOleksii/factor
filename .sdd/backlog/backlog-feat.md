@@ -57,3 +57,11 @@ ready to become a real spec.
    Observations for analysis, and nothing creates or shows one. The idea is still vague — closer to a saved, temporary
    view over a subset of Observations than a permanent structure. Worth leaving alone until cross-Observation comparison
    exists for a Group to scope.
+6. Events, the slices that follow the model. Roughly this order, each small enough to spec on its own:
+    - Listing. Where Events live in the navigation stack is undecided, and this is the slice that has to settle it.
+    - Creation. The form and the use case, which is where the name and description limits the model declares first get
+      enforced.
+    - Deletion. Before editing, so a mistyped Event can be removed before it is drawn across every chart.
+    - The chart overlay. Markers over an Observation's trend cards, sharing the window the section already has, with a
+      single on/off for the lot. The payoff the rest of these exist to reach.
+    - Editing.
