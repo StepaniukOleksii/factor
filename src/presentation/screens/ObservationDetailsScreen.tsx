@@ -100,8 +100,9 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
     const onEditRecord = (recordId: string) => navigation.navigate('EditRecord', {observationId, recordId});
     const onEditObservation = () => navigation.navigate('EditObservation', {observationId});
     // The Observation this journey was about no longer exists, so the whole
-    // journey goes with it rather than leaving a screen for it behind.
-    const onDeleted = () => navigation.popToTop();
+    // journey goes with it rather than leaving a screen for it behind. The list
+    // is named rather than popped to as the top, which is Home.
+    const onDeleted = () => navigation.popTo('ObservationList');
 
     // The Trends windows this visit has been through, the last one active. One
     // array rather than a current-plus-previous pair, so there is exactly one

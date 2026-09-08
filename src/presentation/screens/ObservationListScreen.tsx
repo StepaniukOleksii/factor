@@ -25,10 +25,10 @@ export function ObservationListScreen({navigation}: ObservationListScreenProps) 
     const [loading, setLoading] = useState(true);
     const fabBottom = useBottomInset() + GUTTER;
 
-    // As the stack's root this screen stays mounted for the whole session, so a
-    // mount effect would only ever fire once. Reloading on focus is what keeps
-    // an Observation created, deleted, or recorded against above it from
-    // leaving the list showing what it showed on launch (ADR-2).
+    // A screen pushed on top of this one leaves it mounted, so a mount effect
+    // would not fire on the way back. Reloading on focus is what keeps an
+    // Observation created, deleted, or recorded against above it from leaving
+    // the list showing what it showed on arrival (ADR-2).
     useFocusEffect(
         useCallback(() => {
             loadObservations();

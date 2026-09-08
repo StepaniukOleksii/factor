@@ -5,6 +5,7 @@
  * screen means adding it here first.
  */
 export type RootStackParamList = {
+    Home: undefined;
     ObservationList: undefined;
     CreateObservation: undefined;
     ObservationDetails: {observationId: string};

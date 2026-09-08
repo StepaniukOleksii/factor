@@ -2,7 +2,7 @@
 
 * 2026-09-06
 * Feature: home-navigation.md (new)
-* [ ] Implemented
+* [x] Implemented
 * [ ] E2E tested
 
 ## 1. Goal

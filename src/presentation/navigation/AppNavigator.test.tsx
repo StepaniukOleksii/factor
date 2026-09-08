@@ -44,6 +44,7 @@ function makeScreen(name: string) {
 /** A host element, so its props are readable from the rendered tree. */
 const ScreenProbe = 'ScreenProbe' as unknown as React.ComponentType<any>;
 
+vi.mock('../screens/HomeScreen', () => ({HomeScreen: makeScreen('Home')}));
 vi.mock('../screens/ObservationListScreen', () => ({ObservationListScreen: makeScreen('ObservationList')}));
 vi.mock('../screens/CreateObservationScreen', () => ({CreateObservationScreen: makeScreen('CreateObservation')}));
 vi.mock('../screens/ObservationDetailsScreen', () => ({ObservationDetailsScreen: makeScreen('ObservationDetails')}));
@@ -68,6 +69,13 @@ function renderNavigator() {
 /** Every mounted screen, topmost last - the stack as the user would read it. */
 function stack(root: any): string[] {
     return root.root.findAllByType(ScreenProbe).map((probe: any) => probe.props.testID);
+}
+
+/** The list is a push from Home, so a case that starts there makes that push first. */
+function renderAtList() {
+    const root = renderNavigator();
+    navigate(root, 'Home', 'ObservationList');
+    return root;
 }
 
 function screen(root: any, name: string) {
@@ -105,94 +113,105 @@ describe('AppNavigator', () => {
         }
     });
 
-    it('starts on the Observation list', () => {
+    it('starts on Home', () => {
         const root = renderNavigator();
 
-        expect(stack(root)).toEqual(['ObservationList']);
+        expect(stack(root)).toEqual(['Home']);
+    });
+
+    it('pushes the Observation list from Home, and pops back off it', () => {
+        const root = renderNavigator();
+
+        navigate(root, 'Home', 'ObservationList');
+        expect(stack(root)).toEqual(['Home', 'ObservationList']);
+
+        goBack(root, 'ObservationList');
+
+        expect(stack(root)).toEqual(['Home']);
     });
 
     it('pushes an Observation onto the list rather than replacing it', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
 
         navigate(root, 'ObservationList', 'ObservationDetails', {observationId: 'obs-1'});
 
-        expect(stack(root)).toEqual(['ObservationList', 'ObservationDetails']);
+        expect(stack(root)).toEqual(['Home', 'ObservationList', 'ObservationDetails']);
         expect(screen(root, 'ObservationDetails').props.params).toEqual({observationId: 'obs-1'});
     });
 
     it('opens Record creation from the list', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
 
         navigate(root, 'ObservationList', 'CreateRecord', {observationId: 'obs-1'});
 
-        expect(stack(root)).toEqual(['ObservationList', 'CreateRecord']);
+        expect(stack(root)).toEqual(['Home', 'ObservationList', 'CreateRecord']);
     });
 
     it('opens Observation creation from the list, and pops back off it', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
 
         navigate(root, 'ObservationList', 'CreateObservation');
-        expect(stack(root)).toEqual(['ObservationList', 'CreateObservation']);
+        expect(stack(root)).toEqual(['Home', 'ObservationList', 'CreateObservation']);
 
         goBack(root, 'CreateObservation');
 
-        expect(stack(root)).toEqual(['ObservationList']);
+        expect(stack(root)).toEqual(['Home', 'ObservationList']);
     });
 
     // The property the whole slice rests on, and the direct regression test for
     // the bug that prompted it.
     it('returns to the same Observation screen instance after a Record is opened on top of it', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
         navigate(root, 'ObservationList', 'ObservationDetails', {observationId: 'obs-1'});
         leaveNote(root, 'ObservationDetails', 'a chosen window');
 
         navigate(root, 'ObservationDetails', 'EditRecord', {observationId: 'obs-1', recordId: 'rec-1'});
         goBack(root, 'EditRecord');
 
-        expect(stack(root)).toEqual(['ObservationList', 'ObservationDetails']);
+        expect(stack(root)).toEqual(['Home', 'ObservationList', 'ObservationDetails']);
         expect(noteOn(root, 'ObservationDetails')).toBe('a chosen window');
         // Not a fresh screen that happens to look the same.
         expect(mounts.ObservationDetails).toBe(1);
     });
 
     it('keeps the Observation screen mounted underneath while a Record sits on top', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
         navigate(root, 'ObservationList', 'ObservationDetails', {observationId: 'obs-1'});
 
         navigate(root, 'ObservationDetails', 'CreateRecord', {observationId: 'obs-1'});
 
-        expect(stack(root)).toEqual(['ObservationList', 'ObservationDetails', 'CreateRecord']);
+        expect(stack(root)).toEqual(['Home', 'ObservationList', 'ObservationDetails', 'CreateRecord']);
     });
 
     it('returns a cancelled Record form to the screen it was opened from', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
         navigate(root, 'ObservationList', 'ObservationDetails', {observationId: 'obs-1'});
         navigate(root, 'ObservationDetails', 'CreateRecord', {observationId: 'obs-1'});
 
         goBack(root, 'CreateRecord');
 
         // Not the list: a form opened from an Observation returns to that Observation.
-        expect(stack(root)).toEqual(['ObservationList', 'ObservationDetails']);
+        expect(stack(root)).toEqual(['Home', 'ObservationList', 'ObservationDetails']);
     });
 
     it('lands a Record saved from the list on that Observation, with the form off the stack', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
         navigate(root, 'ObservationList', 'CreateRecord', {observationId: 'obs-1'});
 
         act(() => {
             screen(root, 'CreateRecord').props.navigation.popTo('ObservationDetails', {observationId: 'obs-1'});
         });
 
-        expect(stack(root)).toEqual(['ObservationList', 'ObservationDetails']);
+        expect(stack(root)).toEqual(['Home', 'ObservationList', 'ObservationDetails']);
         expect(screen(root, 'ObservationDetails').props.params).toEqual({observationId: 'obs-1'});
 
         // Pressing back from there reaches the list, never the submitted form.
         goBack(root, 'ObservationDetails');
-        expect(stack(root)).toEqual(['ObservationList']);
+        expect(stack(root)).toEqual(['Home', 'ObservationList']);
     });
 
     it('pops a Record saved from an Observation back onto that same screen', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
         navigate(root, 'ObservationList', 'ObservationDetails', {observationId: 'obs-1'});
         leaveNote(root, 'ObservationDetails', 'a chosen window');
         navigate(root, 'ObservationDetails', 'CreateRecord', {observationId: 'obs-1'});
@@ -201,20 +220,20 @@ describe('AppNavigator', () => {
             screen(root, 'CreateRecord').props.navigation.popTo('ObservationDetails', {observationId: 'obs-1'});
         });
 
-        expect(stack(root)).toEqual(['ObservationList', 'ObservationDetails']);
+        expect(stack(root)).toEqual(['Home', 'ObservationList', 'ObservationDetails']);
         expect(noteOn(root, 'ObservationDetails')).toBe('a chosen window');
         expect(mounts.ObservationDetails).toBe(1);
     });
 
-    it('returns to the list root when an Observation is deleted, leaving nothing to go back to', () => {
-        const root = renderNavigator();
+    it('returns to the list when an Observation is deleted, dropping the journey above it', () => {
+        const root = renderAtList();
         navigate(root, 'ObservationList', 'ObservationDetails', {observationId: 'obs-1'});
 
         act(() => {
-            screen(root, 'ObservationDetails').props.navigation.popToTop();
+            screen(root, 'ObservationDetails').props.navigation.popTo('ObservationList');
         });
 
-        expect(stack(root)).toEqual(['ObservationList']);
+        expect(stack(root)).toEqual(['Home', 'ObservationList']);
     });
 });
 
@@ -231,7 +250,7 @@ describe('AppNavigator trend window lifetime', () => {
     });
 
     it('survives a push and pop through a Record screen', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
         navigate(root, 'ObservationList', 'ObservationDetails', {observationId: 'obs-1'});
         leaveNote(root, 'ObservationDetails', 'custom range');
 
@@ -242,7 +261,7 @@ describe('AppNavigator trend window lifetime', () => {
     });
 
     it('is gone after popping out to the list, even reopening the same Observation', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
         navigate(root, 'ObservationList', 'ObservationDetails', {observationId: 'obs-1'});
         leaveNote(root, 'ObservationDetails', 'custom range');
 
@@ -256,12 +275,12 @@ describe('AppNavigator trend window lifetime', () => {
     });
 
     it('is gone after the Observation is deleted and reopened', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
         navigate(root, 'ObservationList', 'ObservationDetails', {observationId: 'obs-1'});
         leaveNote(root, 'ObservationDetails', 'custom range');
 
         act(() => {
-            screen(root, 'ObservationDetails').props.navigation.popToTop();
+            screen(root, 'ObservationDetails').props.navigation.popTo('ObservationList');
         });
         navigate(root, 'ObservationList', 'ObservationDetails', {observationId: 'obs-1'});
 
@@ -269,7 +288,7 @@ describe('AppNavigator trend window lifetime', () => {
     });
 
     it('does not carry over to a different Observation', () => {
-        const root = renderNavigator();
+        const root = renderAtList();
         navigate(root, 'ObservationList', 'ObservationDetails', {observationId: 'obs-1'});
         leaveNote(root, 'ObservationDetails', 'custom range');
         goBack(root, 'ObservationDetails');
