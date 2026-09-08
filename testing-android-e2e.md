@@ -27,6 +27,11 @@ do.
 * **Whether a slice needs coverage is decided when its spec is written**, and recorded in that spec's Verification
   section — as a flow to extend as often as one to write. That spec is deleted once the slice retires, so a reason that
   generalises past the one slice is written here as a rule instead — as the Skia one below was.
+* **A screen every flow already passes through gets no folder of its own.** The launch subflow walks Home twice per dev
+  link, so the app opening there, and its entries reaching what they name, are asserted in every run the suite makes.
+  What is left is the edge back from a destination, and that belongs to the destination — covered where that screen's
+  own flow already runs. Such a screen's missing folder is coverage by construction rather than a gap, and a hub added
+  later is read the same way.
 * **What a chart draws is out of reach.** `NumericTrendChart` renders inside a Skia canvas, and Skia's own text and
   marks never enter the Android view hierarchy Maestro reads. A flow can assert a chart is present, tap it, and read the
   platform elements around it — never what it drew. A feature living entirely inside the canvas is a `None`, left to
