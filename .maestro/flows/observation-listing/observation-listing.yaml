@@ -19,8 +19,13 @@ appId: io.github.stepaniukoleksii.factor.dev
 
 # The fixture arrives mid-flow because the empty state above and the populated
 # list below both belong to this screen, and one launch can only start from one
-# of them.
+# of them. The seed remounts the navigator onto Home, so the list has to be
+# reopened before it can be read again.
 - openLink: exp+factor://dev/seed
+- extendedWaitUntil:
+    visible: "Factor"
+    timeout: 30000
+- tapOn: "Observations"
 - extendedWaitUntil:
     visible: "mixed metrics"
     timeout: 30000
@@ -38,3 +43,7 @@ appId: io.github.stepaniukoleksii.factor.dev
 
 - assertVisible: "Last record: .*"
 - assertVisible: "No records yet"
+
+# The list is reached from Home, so back leaves it rather than the app.
+- back
+- assertVisible: "Factor"

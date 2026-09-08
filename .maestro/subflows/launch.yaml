@@ -1,25 +1,40 @@
 appId: io.github.stepaniukoleksii.factor.dev
 ---
-# The opening every flow shares: start the app against Metro, then put the
-# database into a known state. See testing-android-e2e.md for why the launch
-# passes Metro's address explicitly, and for the rules dev links follow.
+# The opening every flow shares: start the app against Metro, walk to the
+# Observation list, and put the database into a known state. See
+# testing-android-e2e.md for why the launch passes Metro's address explicitly,
+# and for the rules dev links follow.
 #
 #   DEV_COMMAND — `reset` for an empty database, `seed` for the testing-data.md set
 #   READY_TEXT  — text the list shows only once that command has landed
 - stopApp
 - openLink: exp+factor://expo-development-client/?url=http://10.0.2.2:8081
 - extendedWaitUntil:
-    visible: "Observations"
+    visible: "Factor"
     timeout: 90000
+- tapOn: "Observations"
 
 # Empty the database first, whatever the flow went on to ask for, so READY_TEXT
 # below cannot already be on screen from the previous flow's fixture.
+#
+# A finished dev command remounts the navigator, landing the app back on Home,
+# so each command is followed by a walk to the list rather than a wait in place.
+# Nothing may tap before Home's own header is on screen: a tap that lands while
+# the command is still writing is discarded by the remount behind it.
 - openLink: exp+factor://dev/reset
+- extendedWaitUntil:
+    visible: "Factor"
+    timeout: 30000
+- tapOn: "Observations"
 - extendedWaitUntil:
     visible: "No observations created yet."
     timeout: 30000
 
 - openLink: exp+factor://dev/${DEV_COMMAND}
+- extendedWaitUntil:
+    visible: "Factor"
+    timeout: 30000
+- tapOn: "Observations"
 - extendedWaitUntil:
     visible: "${READY_TEXT}"
     timeout: 30000

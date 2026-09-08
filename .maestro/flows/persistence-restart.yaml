@@ -32,9 +32,15 @@ appId: io.github.stepaniukoleksii.factor.dev
 # thing this flow needs left alone.
 - stopApp
 - openLink: exp+factor://expo-development-client/?url=http://10.0.2.2:8081
+# A restart opens on Home, so what survived is a screen further in than the
+# launch lands.
+- extendedWaitUntil:
+    visible: "Factor"
+    timeout: 90000
+- tapOn: "Observations"
 - extendedWaitUntil:
     visible: "Sleep"
-    timeout: 90000
+    timeout: 30000
 
 - tapOn: "Sleep"
 - assertVisible: "Hours"

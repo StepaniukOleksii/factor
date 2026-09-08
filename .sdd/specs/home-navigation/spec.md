@@ -3,7 +3,7 @@
 * 2026-09-06
 * Feature: home-navigation.md (new)
 * [x] Implemented
-* [ ] E2E tested
+* [x] E2E tested
 
 ## 1. Goal
 
@@ -108,8 +108,7 @@ Two pieces of work, and the subflow is the one that gates the suite.
 navigator remounts when a dev-link command finishes, which returns the app to the stack's root — now Home rather than
 the Observation list. So the subflow has to walk to the list itself, and it must never tap while a command is in flight:
 a tap that lands first is thrown away by the remount behind it, and the wait that follows then fails on a screen the
-flow was already carried off. The revised opening, with `DEV_COMMAND` and `READY_TEXT` unchanged so no flow file needs
-touching:
+flow was already carried off. The revised opening, with `DEV_COMMAND` and `READY_TEXT` unchanged:
 
 1. `stopApp` and the Metro launch link, as now.
 2. Wait for `Factor` instead of `Observations`. It names what the root actually shows, and `Observations` now appears on
@@ -123,7 +122,13 @@ touching:
 6. Fire `dev/${DEV_COMMAND}`, wait for `Factor`, tap `Observations`, wait for `${READY_TEXT}`.
 
 Step 6 runs for a `reset` flow too, and needs no special case: the wait on `Factor` is a real transition either way,
-because the flow is standing on the list when the command fires.
+because the flow is standing on the list when the command fires. Home stays mounted under the list, but its header does
+not read as visible from up there, so the wait is real rather than passing on the screen underneath.
+
+The same walk is needed wherever a flow drives the app itself rather than leaving that to the subflow, and two do.
+`observation-listing.yaml` reseeds mid-pass, which remounts onto Home exactly as the subflow's own commands do.
+`persistence-restart.yaml` relaunches the app by hand — the subflow would empty the database it exists to check — and a
+relaunch opens on Home like any other. Both reopen the list before reading it, and no other flow drives its own.
 
 **No flow of its own, and none for a destination screen added later.** Every flow opens through that subflow, so the
 suite walks Home on every run already: the app landing there, the `Observations` entry, and that entry opening the list.
@@ -141,8 +146,9 @@ same way — so the E2E stage writes it into [testing-android-e2e.md](../../../t
 of Home this slice changes.
 
 * **Fixture:** unchanged.
-* **Covers:** the subflow leaves the app on the Observation list, so the flow presses back and asserts `Factor`, then
-  taps `Observations` and asserts the seeded list is back. Two steps, at the end of the pass that flow already makes.
+* **Covers:** the subflow leaves the app on the Observation list, so the flow presses back and asserts `Factor` at the
+  end of the pass it already makes. Its mid-pass reseed reopens the list, which covers the entry a second time, so the
+  back edge is all the tail has to add.
 * **Handles:** none new. `Factor` and `Observations` are both visible text.
 
 Back out of Home exiting the app is left to manual step 3: Maestro asserting an app it has just closed is a check on the
