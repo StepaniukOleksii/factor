@@ -2,8 +2,8 @@
 
 ## Goal
 
-The list of Observations is where the app opens and where every other capability is reached from. It is built for
-scanning: enough of each Observation to recognise it and to tell whether it has been kept up, and nothing more.
+The list of Observations is where every Observation is reached from. It is built for scanning: enough of each
+Observation to recognise it and to tell whether it has been kept up, and nothing more.
 
 ## Behaviour
 
@@ -25,11 +25,11 @@ With no Observations at all, the list is replaced by `No observations created ye
 The list is re-read every time it is returned to, so an Observation created, deleted, or recorded against above it is
 reflected on arrival rather than on the next launch. While it is reading, a spinner holds the screen.
 
-The list is the root of the app: pressing back from it leaves, as standard.
+The list is opened from [Home](home-navigation.md), and pressing back from it returns there.
 
 ## Usage
 
-Launching the app lands here.
+Tap **Observations** on [Home](home-navigation.md) to get here.
 
 Tap an Observation's card body to open that Observation, or the **+** at the card's right to record against it without
 opening it. Tap the round **+** at the bottom right to create a new Observation.
