@@ -3,7 +3,7 @@
 * 2026-09-09
 * Feature: event-listing.md (new), [home-navigation.md](../../features/home-navigation.md)
 * [x] Implemented
-* [ ] E2E tested
+* [x] E2E tested
 
 ## 1. Goal
 
@@ -181,6 +181,9 @@ exist yet.
   `repeated` rows present; opening `today` to read its description and closing it again; `last year`'s year-carrying
   date; no `Load more` on a list shorter than a page; back returning to Home.
 * **Handles:** the tile toggles on the card itself, which matches on the Event's name, so nothing new needs an
-  `accessibilityLabel`. Two notes for whoever writes it: the launch subflow ends on the Observation list, so the flow
-  presses back to Home before tapping `Events`; and the seeded moments are relative to the reseed, so the dates are
-  matched by regex — a four-digit year for the oldest Event, `Today, .*` for the newest — rather than by literal text.
+  `accessibilityLabel`. The launch subflow ends on the Observation list, so the flow presses back to Home before tapping
+  `Events`.
+* **The newest Event's `Today, HH:MM` wording is not asserted.** It was briefed and dropped: that fixture is seeded
+  three hours back, so a suite run between midnight and 03:00 renders it as `Yesterday, 22:00` and fails on the clock.
+  The relative wording is `formatRelativeTime`'s own unit tests' to cover. The oldest Event's date is still asserted, by
+  the shape of the year it carries rather than by literal text, which holds at any hour.

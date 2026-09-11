@@ -1,0 +1,53 @@
+appId: io.github.stepaniukoleksii.factor.dev
+---
+# The Events destination: its empty state, what a tile carries once Events
+# exist, and the description an Event with one opens to show.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: reset
+      READY_TEXT: "No observations created yet."
+
+# The launch subflow leaves the app on the Observation list, which is Home's
+# other row.
+- back
+- tapOn: "Events"
+- assertVisible: "No events yet."
+
+# The fixture arrives mid-flow because the empty state above and the populated
+# list below both belong to this screen, and one launch can only start from one
+# of them. The seed remounts the navigator onto Home, so the list has to be
+# reopened before it can be read again.
+- openLink: exp+factor://dev/seed
+- extendedWaitUntil:
+    visible: "Factor"
+    timeout: 30000
+- tapOn: "Events"
+- extendedWaitUntil:
+    visible: "last year"
+    timeout: 30000
+
+- assertVisible: "today"
+- assertVisible: "this week"
+# Two seeded Events share a name, so the older one is a second match rather
+# than the tile already asserted.
+- assertVisible:
+    text: "repeated"
+    index: 1
+
+# Moments are written relative to the reseed, so the year the oldest Event
+# carries is matched by shape rather than by literal text.
+- assertVisible: '.*, \d{4}, .*'
+
+# A page is twenty, which five Events do not reach.
+- assertNotVisible: "Load more"
+
+- tapOn: "today"
+- assertVisible: "The one seeded Event carrying a long description.*"
+- tapOn: "today"
+- assertNotVisible: "The one seeded Event carrying a long description.*"
+
+# The list is reached from Home, so back leaves it rather than the app.
+- back
+- assertVisible: "Factor"

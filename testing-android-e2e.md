@@ -148,6 +148,12 @@ Neither is visible from reading the YAML, and both cost a failed run to find:
 
 * **Emulator + Metro only.** Besides the `10.0.2.2` dependency above, the dev links are `__DEV__`-only commands. A
   release-build target would need both replaced.
+* **The emulator's Wi-Fi can take `10.0.2.2` away from the host.** With wlan0 up on `10.0.2.0/24` it outranks eth0's
+  `10.0.0.0/8`, so packets for the host alias leave over Wi-Fi, where nothing answers: the dev client shows "There was a
+  problem loading the project" over a `java.net.ConnectException ... ENETUNREACH`, and `emulator-setup.sh` reports the
+  bundle fetch stalling and relaunches until it gives up. `adb shell svc wifi disable` restores the NAT route; the
+  setting lives in the AVD's userdata, so it holds across boots and comes back only with a wiped or a new AVD. `adb
+  shell ip route` tells the two apart — a working emulator lists `10.0.0.0/8 dev eth0` and nothing on wlan0.
 * **A plain `launchApp` hangs rather than fails.** Left to itself the dev client reconnects to the host's LAN IP, which
   the emulator cannot reach, then sits on its bundling banner indefinitely — waiting never recovers it. Hence
   `subflows/launch.yaml` passing Metro's address explicitly, as [`scripts/emulator-setup.sh`](scripts/emulator-setup.sh)
