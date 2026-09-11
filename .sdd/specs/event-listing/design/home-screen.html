@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home — Event Listing</title>
+<style>
+  :root {
+    --background: #131313;
+    --surface: #131313;
+    --on-surface: #e5e2e1;
+    --on-surface-variant: #c2c9b9;
+    --container-low: #1c1b1b;
+    --container-high: #2a2a2a;
+    --outline-variant: #42493d;
+    --outline: #8c9385;
+    --primary: #f9fff0;
+    --primary-container: #b6f09c;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 32px 16px;
+    background: #0a0a0a;
+    font-family: Roboto, "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .caption {
+    color: var(--outline);
+    font-size: 13px;
+    line-height: 1.5;
+    letter-spacing: 0.5px;
+    text-align: center;
+    max-width: 412px;
+  }
+
+  .phone {
+    width: 412px;
+    min-height: 880px;
+    background: var(--background);
+    border: 1px solid var(--outline-variant);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ScreenHeader — no back control, no right action: this is the stack's root. */
+  .header {
+    height: 64px;
+    flex: 0 0 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--outline-variant);
+    background: var(--surface);
+  }
+  .header .slot { width: 48px; }
+  .header .title {
+    flex: 1;
+    text-align: center;
+    color: var(--primary);
+    font-size: 24px;
+    font-weight: 500;
+  }
+
+  .body {
+    flex: 1;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Two destinations, carrying the Observation list's own card tokens so a row
+     here and a card there read as the same kind of object. */
+  .destination {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+  }
+  .destination .glyph {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--container-high);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-container);
+  }
+  .destination .label {
+    flex: 1;
+    color: var(--primary);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .destination .chevron {
+    flex: 0 0 auto;
+    color: var(--outline);
+    display: flex;
+  }
+</style>
+</head>
+<body>
+
+<p class="caption">
+  Home as it ships with this slice: a second destination below the first, drawn identically. No data is read here, and
+  neither row shows anything about what lies down it.
+</p>
+
+<div class="phone">
+  <div class="header">
+    <div class="slot"></div>
+    <div class="title">Factor</div>
+    <div class="slot"></div>
+  </div>
+
+  <div class="body">
+    <div class="destination">
+      <!-- MaterialIcons `show-chart` -->
+      <div class="glyph">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="3 17 9 11 13 15 21 6"/>
+        </svg>
+      </div>
+      <div class="label">Observations</div>
+      <!-- MaterialIcons `chevron-right` -->
+      <div class="chevron">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="destination">
+      <!-- MaterialIcons `flag` — the mark an Event will later carry over a chart. -->
+      <div class="glyph">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 21V4"/>
+          <path d="M6 4.5h11l-2.4 4 2.4 4H6"/>
+        </svg>
+      </div>
+      <div class="label">Events</div>
+      <!-- MaterialIcons `chevron-right` -->
+      <div class="chevron">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

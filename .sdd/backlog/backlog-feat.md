@@ -58,8 +58,6 @@ ready to become a real spec.
    view over a subset of Observations than a permanent structure. Worth leaving alone until cross-Observation comparison
    exists for a Group to scope.
 6. Events, the slices that follow the model. Roughly this order, each small enough to spec on its own:
-    - Listing. A screen of its own, reached from a second row on the Home screen. Where Events live is settled; what the
-      screen shows is not.
     - Creation. The form and the use case, which is where the name and description limits the model declares first get
       enforced.
     - Deletion. Before editing, so a mistyped Event can be removed before it is drawn across every chart.
