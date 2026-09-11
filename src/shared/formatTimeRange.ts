@@ -2,8 +2,10 @@ import type {TimeRange} from '../application/GetMetricSeriesUseCase';
 
 /**
  * A calendar day as a short, year-less label (e.g. "Jul 15"), mirroring how
- * `formatRelativeTime` renders dates outside the last week. The exact wording
- * follows the device locale, so the same day may read as "15 Jul" elsewhere.
+ * `formatRelativeTime` renders a date of the current year outside the last
+ * week - axis labels stay year-less whatever year they fall in. The exact
+ * wording follows the device locale, so the same day may read as "15 Jul"
+ * elsewhere.
  */
 export function formatShortDate(date: Date): string {
   return date.toLocaleDateString([], {month: 'short', day: 'numeric'});

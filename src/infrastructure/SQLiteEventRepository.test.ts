@@ -63,6 +63,22 @@ describe('SQLiteEventRepository', () => {
     expect(await repository.findAll()).toEqual([]);
   });
 
+  it('should read the newest events up to a limit', async () => {
+    const newest = new Date('2026-06-01T12:00:00Z');
+    mockGetAllAsync.mockResolvedValue([
+      {id: 'event-2', name: 'Illness', description: null, occurredAt: newest.getTime()},
+    ]);
+
+    const events = await repository.findRecent(1);
+
+    const [sql, params] = mockGetAllAsync.mock.calls[0];
+    expect(sql).toContain('ORDER BY occurredAt DESC');
+    expect(sql).toContain('LIMIT ?');
+    expect(params).toEqual([1]);
+    expect(events.map(event => event.id)).toEqual(['event-2']);
+    expect(events[0].occurredAt).toEqual(newest);
+  });
+
   it('should delete an event by id', async () => {
     await repository.delete('event-1');
 

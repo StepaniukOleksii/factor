@@ -8,7 +8,7 @@ export const OBSERVATION_NAME_MAX_LENGTH = 30;
 export const METRIC_NAME_MAX_LENGTH = 15;
 export const OBSERVATION_DESCRIPTION_MAX_LENGTH = 150;
 export const METRIC_DESCRIPTION_MAX_LENGTH = 500;
-// Nothing enforces the two Event limits: no form or use case reads an Event yet.
+// Nothing enforces the two Event limits: no form writes an Event yet.
 export const EVENT_NAME_MAX_LENGTH = 30;
 export const EVENT_DESCRIPTION_MAX_LENGTH = 150;
 export const METRIC_UNIT_MAX_LENGTH = 6;

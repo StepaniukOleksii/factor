@@ -2,7 +2,7 @@
 
 * 2026-09-09
 * Feature: event-listing.md (new), [home-navigation.md](../../features/home-navigation.md)
-* [ ] Implemented
+* [x] Implemented
 * [ ] E2E tested
 
 ## 1. Goal

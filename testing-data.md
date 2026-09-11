@@ -21,8 +21,7 @@ The dataset is deterministic: the same metric values and the same offsets from "
 `SEED` constant in `devSeedData.ts`). Absolute timestamps still shift with "now" each time you reseed — that's required,
 since the whole point is for records to land inside whichever rolling trend-chart window is selected whenever you run
 it. Every daily record is anchored to **09:00**, or to the current hour when you reseed before nine — an anchor past the
-current instant would date today's records into the future, outside every window, and cost each chart its newest
-bucket.
+current instant would date today's records into the future, outside every window, and cost each chart its newest bucket.
 
 **Naming.** Observation and metric names are short, all-lowercase descriptions of the scenario they cover (e.g. `mixed
 metrics`, `dense`) rather than realistic tracker names (e.g. "Sleep", "Hours") — so seeded data is instantly
@@ -128,8 +127,24 @@ share records on the same schedule and draw 5 marks at `1M` and 2 columns at `1Y
 `hourly`'s extra day-3 Records share a day with one it already had, so they change none of these counts — they only show
 up once a chart is zoomed down to that day, where the two inside the anchor hour stay folded into one aggregated point
 while the third gives the chart a second point beside it. That is the shape zoom comes to rest on, reached here by
-picking the day out by hand — `stale records` is where it can be reached by tapping, and the two differ in what the resting day
-still has left to draw.
+picking the day out by hand — `stale records` is where it can be reached by tapping, and the two differ in what the
+resting day still has left to draw.
+
+### Events
+
+Five Events are seeded beside the observations and belong to none of them — an Event is owned by nothing. Their names
+say when each one falls, the way an observation's says what it covers.
+
+| Event       | Occurred     | Description                 | What it's for                                                                            |
+|-------------|--------------|-----------------------------|------------------------------------------------------------------------------------------|
+| `today`     | 3 hours ago  | close to the 150-char limit | The longest body an Event can hold, and a moment reading `Today, HH:MM`                  |
+| `this week` | 3 days ago   | none                        | A moment written as a weekday, and the no-description state                               |
+| `repeated`  | 21 days ago  | none                        | One of two Events sharing a name, so nothing downstream takes a name for an identity      |
+| `repeated`  | 240 days ago | one line                    | The older of that pair, and the only Event inside the `1Y` chart window but outside `1M`  |
+| `last year` | 400 days ago | none                        | A date written with its year, whatever day the fixtures are reseeded on                   |
+
+No Event is dated in the future, and every preset chart window holds at least one — both asserted by
+`devSeedData.test.ts`, as is the pair of names and the Event in an earlier calendar year.
 
 ## Manual verification checklist
 

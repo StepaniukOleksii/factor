@@ -37,11 +37,12 @@ function findTouchableWithText(root: any, text: string) {
 }
 
 describe('HomeScreen', () => {
-    it('shows the app name and the Observations entry', () => {
+    it('shows the app name and both destinations', () => {
         const {root} = renderHome();
 
         expect(findAllByText(root.root, 'Factor')).toHaveLength(1);
         expect(findAllByText(root.root, 'Observations')).toHaveLength(1);
+        expect(findAllByText(root.root, 'Events')).toHaveLength(1);
     });
 
     it('opens the Observation list from the entry', () => {
@@ -52,6 +53,16 @@ describe('HomeScreen', () => {
         });
 
         expect(navigation.navigate).toHaveBeenCalledWith('ObservationList');
+    });
+
+    it('opens the Event list from the entry', () => {
+        const {root, navigation} = renderHome();
+
+        act(() => {
+            findTouchableWithText(root.root, 'Events')!.props.onPress();
+        });
+
+        expect(navigation.navigate).toHaveBeenCalledWith('EventList');
     });
 
     it('offers no way back, being the stack root', () => {

@@ -3,6 +3,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {HomeScreen} from '../screens/HomeScreen';
 import {ObservationListScreen} from '../screens/ObservationListScreen';
+import {EventListScreen} from '../screens/EventListScreen';
 import {CreateObservationScreen} from '../screens/CreateObservationScreen';
 import {EditObservationScreen} from '../screens/EditObservationScreen';
 import {RecordFormScreen} from '../screens/RecordFormScreen';
@@ -32,6 +33,7 @@ export function AppNavigator() {
             >
                 <Stack.Screen name="Home" component={HomeScreen}/>
                 <Stack.Screen name="ObservationList" component={ObservationListScreen}/>
+                <Stack.Screen name="EventList" component={EventListScreen}/>
                 <Stack.Screen name="CreateObservation" component={CreateObservationScreen}/>
                 <Stack.Screen name="ObservationDetails" component={ObservationDetailsScreen}/>
                 <Stack.Screen name="EditObservation" component={EditObservationScreen}/>

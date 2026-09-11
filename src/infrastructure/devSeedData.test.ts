@@ -660,12 +660,24 @@ describe('seeded Events', () => {
     expect(names.length - new Set(names).size).toBe(1);
   });
 
-  it('describes two of the four, so both states are on screen at once', () => {
+  it('describes two of the five, so both states are on screen at once', () => {
     vi.setSystemTime(HOURS[1][1]);
     const events = buildEventSeedData();
 
-    expect(events).toHaveLength(4);
+    expect(events).toHaveLength(5);
     expect(events.filter(event => event.description !== null)).toHaveLength(2);
+  });
+
+  // Without one, a date written with its year is only on screen for part of the
+  // year, since the next oldest Event crosses into the previous one by season.
+  it.each(HOURS)('keeps an Event in an earlier calendar year seeded at %s', (_hour, now) => {
+    vi.setSystemTime(now);
+
+    const earlier = buildEventSeedData().filter(
+      event => event.occurredAt.getFullYear() < now.getFullYear(),
+    );
+
+    expect(earlier.length).toBeGreaterThan(0);
   });
 
   it('keeps every Event name and description within its limit', () => {

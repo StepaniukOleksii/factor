@@ -312,9 +312,11 @@ export function buildSeedData(): SeedEntry[] {
 }
 
 /**
- * The four cover both description states, one name held by two Events so
- * nothing downstream can take a name for an identity, and an Event inside every
- * preset chart window - the oldest reaching only 1Y.
+ * The five cover both description states, one name held by two Events so
+ * nothing downstream can take a name for an identity, an Event inside every
+ * preset chart window - the 240-day one reaching only 1Y - and one further back
+ * than a year, which is the only date written with its year whatever day the
+ * fixtures are reseeded on.
  */
 export function buildEventSeedData(): Event[] {
   return [
@@ -324,5 +326,6 @@ export function buildEventSeedData(): Event[] {
     new Event(Crypto.randomUUID(), 'this week', daysAgo(3)),
     new Event(Crypto.randomUUID(), 'repeated', daysAgo(21)),
     new Event(Crypto.randomUUID(), 'repeated', daysAgo(240), 'The older of the two Events sharing a name.'),
+    new Event(Crypto.randomUUID(), 'last year', daysAgo(400)),
   ];
 }

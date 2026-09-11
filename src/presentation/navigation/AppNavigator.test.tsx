@@ -46,6 +46,7 @@ const ScreenProbe = 'ScreenProbe' as unknown as React.ComponentType<any>;
 
 vi.mock('../screens/HomeScreen', () => ({HomeScreen: makeScreen('Home')}));
 vi.mock('../screens/ObservationListScreen', () => ({ObservationListScreen: makeScreen('ObservationList')}));
+vi.mock('../screens/EventListScreen', () => ({EventListScreen: makeScreen('EventList')}));
 vi.mock('../screens/CreateObservationScreen', () => ({CreateObservationScreen: makeScreen('CreateObservation')}));
 vi.mock('../screens/ObservationDetailsScreen', () => ({ObservationDetailsScreen: makeScreen('ObservationDetails')}));
 vi.mock('../screens/EditObservationScreen', () => ({EditObservationScreen: makeScreen('EditObservation')}));

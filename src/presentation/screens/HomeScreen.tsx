@@ -12,23 +12,40 @@ const GUTTER = 16;
 
 const GLYPH_SIZE = 40;
 
+interface DestinationProps {
+    iconName: keyof typeof MaterialIcons.glyphMap;
+    label: string;
+    onPress: () => void;
+}
+
+function Destination({iconName, label, onPress}: DestinationProps) {
+    return (
+        <TouchableOpacity style={styles.destination} onPress={onPress} activeOpacity={0.8}>
+            <View style={styles.glyph}>
+                <MaterialIcons name={iconName} size={24} color={COLORS.primaryContainer}/>
+            </View>
+            <Text style={styles.destinationLabel}>{label}</Text>
+            <MaterialIcons name="chevron-right" size={24} color={COLORS.outline}/>
+        </TouchableOpacity>
+    );
+}
+
 export function HomeScreen({navigation}: HomeScreenProps) {
     return (
         <ScreenContainer>
             <ScreenHeader title="Factor"/>
 
             <View style={styles.destinations}>
-                <TouchableOpacity
-                    style={styles.destination}
+                <Destination
+                    iconName="show-chart"
+                    label="Observations"
                     onPress={() => navigation.navigate('ObservationList')}
-                    activeOpacity={0.8}
-                >
-                    <View style={styles.glyph}>
-                        <MaterialIcons name="show-chart" size={24} color={COLORS.primaryContainer}/>
-                    </View>
-                    <Text style={styles.destinationLabel}>Observations</Text>
-                    <MaterialIcons name="chevron-right" size={24} color={COLORS.outline}/>
-                </TouchableOpacity>
+                />
+                <Destination
+                    iconName="flag"
+                    label="Events"
+                    onPress={() => navigation.navigate('EventList')}
+                />
             </View>
         </ScreenContainer>
     );
