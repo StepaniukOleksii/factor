@@ -61,6 +61,8 @@ ready to become a real spec.
     - Creation. The form and the use case, which is where the name and description limits the model declares first get
       enforced.
     - Deletion. Before editing, so a mistyped Event can be removed before it is drawn across every chart.
-    - The chart overlay. Markers over an Observation's trend cards, sharing the window the section already has, with a
-      single on/off for the lot. The payoff the rest of these exist to reach.
     - Editing.
+    - Turning the markers off. They are drawn whenever the window holds an Event, and a card grows a band to carry them,
+      so somebody reading a chart on its own has no way to get either back. A single on/off over the section is the
+      obvious shape, though what it is worth depends on how crowded a real user's Events turn out to be, and where it
+      would be remembered — per Observation, or once for the app — is the part to settle first.

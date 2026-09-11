@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Observation details with Event markers — Trend Event Overlay</title>
+<style>
+  :root {
+    --background: #131313;
+    --on-surface: #e5e2e1;
+    --on-surface-variant: #c2c9b9;
+    --container-low: #1c1b1b;
+    --container-high: #2a2a2a;
+    --outline-variant: #42493d;
+    --outline: #8c9385;
+    --primary: #f9fff0;
+    --primary-container: #b6f09c;
+    --on-primary: #0b3900;
+    --radius-lg: 12px;
+    --radius-pill: 24px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 32px 16px;
+    background: #0a0a0a;
+    font-family: Roboto, "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .caption {
+    color: var(--outline);
+    font-size: 13px;
+    line-height: 1.5;
+    letter-spacing: 0.5px;
+    max-width: 412px;
+  }
+
+  .phone {
+    width: 412px;
+    background: var(--background);
+    border: 1px solid var(--outline-variant);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .header {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--outline-variant);
+  }
+  .header .back { width: 48px; text-align: center; color: var(--on-surface); font-size: 22px; }
+  .header .title { flex: 1; color: var(--primary); font-size: 24px; font-weight: 500; }
+  .header .menu { width: 48px; text-align: center; color: var(--on-surface); font-size: 20px; }
+
+  /* ScreenContainer's scroll padding. Every horizontal measure below is taken
+     from it: a card's own 16px padding and 1px border sit inside this, which is
+     what puts a chart's plot where the markers have to line up with it. */
+  .scroll { padding: 24px; }
+
+  .description { color: var(--on-surface-variant); font-size: 14px; line-height: 20px; margin-bottom: 8px; }
+  .metadata { color: var(--on-surface-variant); font-size: 12px; opacity: 0.7; margin-bottom: 24px; }
+
+  .section-head { margin-bottom: 16px; }
+  .section-title {
+    color: var(--on-surface-variant);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .selector { display: flex; gap: 8px; margin-bottom: 16px; }
+  .segment {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+    background: var(--container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-lg);
+    color: var(--on-surface-variant);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .segment.selected { background: var(--primary-container); border-color: var(--primary-container); color: var(--on-primary); }
+  .segment.custom { flex: 2; }
+
+  .cards { display: flex; flex-direction: column; gap: 12px; }
+  .card {
+    background: var(--container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+  }
+  /* In the app the band is the canvas's: the canvas is 20px taller and
+     `toPlotRect` starts the plot that much lower. Faked here with margin, since
+     this mockup's canvas is a fixed-size SVG that cannot grow. Same picture. */
+  .card-title { color: var(--primary); font-size: 14px; font-weight: 600; margin-bottom: 20px; }
+
+  /* The chart's box: 330px wide here, and the positioning context the marker
+     handles are laid into. The canvas beneath them is the same box. */
+  .chart { position: relative; width: 330px; }
+  .chart svg { display: block; position: relative; z-index: 1; }
+  /* Behind the canvas, which paints no ground of its own, so a rule still passes
+     under the fill and the marks. In the app one Skia line inside the canvas
+     draws the whole of this, band included; here it has to sit outside the SVG
+     to reach above it. Three rules, two marks: the right-hand pair are grouped
+     under one pill that covers both of their rules. */
+  .rule {
+    position: absolute;
+    width: 1px;
+    z-index: 0;
+    opacity: 0.75;
+    background-image: repeating-linear-gradient(to bottom, #8c9385 0 3px, transparent 3px 6px);
+  }
+
+  /* A handle: the only part of a marker that is a real element. It sits in the
+     20px band between the Metric's name and the plot, at the top of the rules it
+     answers for, and carries a tap target that is not drawn (ADR-8). That target
+     is biased upward rather than centred - 32px above the mark, 16px below -
+     because above it is the name, which takes no taps, and below it is the
+     chart, which is what the band buys back.
+
+     A mark spans its group: 7px square for a lone Event, and for a group a pill
+     reaching from its first rule to its last, so every rule has a mark over it
+     and the handle's reach is its width. */
+  .handle {
+    position: absolute;
+    z-index: 2;
+    top: -20.0px;
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--outline);
+  }
+
+  /* Opened by a handle, in a Modal so it paints above the cards below it. The
+     header overflow menu's own surface and rounding, holding the tile the app
+     shows an Event in everywhere else: name over moment, description behind the
+     chevron. Shown as it opens: folded, and sized to the name it carries rather
+     than to a fixed width — `event-marker-popover.html` has the rest. */
+  .popover {
+    position: absolute;
+    width: fit-content;
+    max-width: 380px;
+    background: var(--container-high);
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  /* Entries are told apart by the gap between them, never by a rule: this floats
+     over a drawing, and a line ruled across it is one more mark over that. */
+  .popover .entry + .entry { margin-top: 14px; }
+  .popover .name { color: var(--primary); font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .popover .moment-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  /* On the face, not behind the chevron: two Events may share a name, so this is
+     what tells one entry from another under a handle standing for several. */
+  .popover .moment { color: var(--on-surface-variant); font-size: 12px; opacity: 0.7; }
+  .popover .chevron { flex: 0 0 auto; color: var(--on-surface-variant); font-size: 12px; }
+
+  /* The section below, drawn only so far as the popover has to cover something:
+     an absolute child of the `note` card would paint under these rows, which is
+     the reason the popover is a Modal. */
+  .records-title { color: var(--on-surface-variant); font-size: 13px; font-weight: 600; letter-spacing: 1px; margin: 40px 0 16px; }
+  .record {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    border-bottom: 1px solid #353534;
+    margin-bottom: 4px;
+  }
+  .record .time { color: var(--on-surface); font-size: 14px; font-weight: 500; }
+  .record .chevron { color: var(--on-surface-variant); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<p class="caption">
+  <code>mixed metrics</code> at the default <code>1M</code>, with the right-hand marker's popover open — as it arrives,
+  folded. The marks sit in a 20px band between the Metric's name and the plot, so no tap target reaches a chart and the
+  charts keep every tap they had; a card reserves that band only where its window holds an Event to mark. Three
+  seeded Events fall in a 30-day window — <code>repeated</code> 21 days back, <code>this week</code> 3 days back and
+  <code>today</code> 3 hours back — so three rules stand at the same place on every card and read straight down the
+  column. Only two marks stand above them: the right-hand pair fall about 28px apart, inside one target's width, so they
+  share a handle, and its mark is a pill spanning both their rules rather than a square on one of them. Every rule runs
+  up through the band to the mark that answers for it. Four of
+  the observation's eight cards are shown: <code>sparse</code>, <code>hourly</code>, <code>yearly</code> and
+  <code>flag</code> are omitted for length and carry the same three rules. The popover's own layouts are in
+  <code>event-marker-popover.html</code> beside this file.
+</p>
+
+<div class="phone">
+  <div class="header">
+    <div class="back">&#8592;</div>
+    <div class="title">mixed metrics</div>
+    <div class="menu">&#8942;</div>
+  </div>
+
+  <div class="scroll">
+    <div class="description">Every metric type at once, so one observation covers the chart states the details screen can draw.</div>
+    <div class="metadata">Created 11/09/2025 &middot; 82 records</div>
+
+    <div class="section-head">
+      <div class="section-title">TRENDS</div>
+    </div>
+
+    <div class="selector">
+      <div class="segment">1D</div>
+      <div class="segment">1W</div>
+      <div class="segment selected">1M</div>
+      <div class="segment">1Y</div>
+      <div class="segment custom">Custom</div>
+    </div>
+
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-title">dense</div>
+        <div class="chart">
+          <div class="rule" style="left: 119.7px; top: -16.5px; height: 110.5px;"></div>
+          <div class="rule" style="left: 296.1px; top: -16.5px; height: 110.5px;"></div>
+          <div class="rule" style="left: 324.3px; top: -16.5px; height: 110.5px;"></div>
+          <svg width="330" height="108" viewBox="0 0 330 108">
+            <g stroke="#42493d" stroke-width="1" opacity="0.6">
+              <line x1="32" y1="6" x2="326" y2="6"/>
+              <line x1="32" y1="28" x2="326" y2="28"/>
+              <line x1="32" y1="50" x2="326" y2="50"/>
+              <line x1="32" y1="72" x2="326" y2="72"/>
+              <line x1="32" y1="94" x2="326" y2="94"/>
+            </g>
+            <g fill="#c2c9b9" font-size="9" font-family="Roboto, sans-serif" text-anchor="end">
+              <text x="27" y="9">100</text><text x="27" y="31">75</text><text x="27" y="53">50</text>
+              <text x="27" y="75">25</text><text x="27" y="97">0</text>
+            </g>
+            <defs>
+              <linearGradient id="dense-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#b6f09c" stop-opacity="0.22"/>
+                <stop offset="1" stop-color="#b6f09c" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M32 70 C 52 46, 72 82, 92 60 S 132 34, 152 64 S 192 44, 212 30 S 252 72, 272 52 S 312 38, 326 58 L 326 94 L 32 94 Z" fill="url(#dense-fill)"/>
+            <path d="M32 70 C 52 46, 72 82, 92 60 S 132 34, 152 64 S 192 44, 212 30 S 252 72, 272 52 S 312 38, 326 58" fill="none" stroke="#b6f09c" stroke-width="2.5"/>
+            <g fill="#b6f09c">
+              <circle cx="32" cy="70" r="2.5"/><circle cx="92" cy="60" r="2.5"/><circle cx="152" cy="64" r="2.5"/>
+              <circle cx="212" cy="30" r="2.5"/><circle cx="272" cy="52" r="2.5"/><circle cx="326" cy="58" r="2.5"/>
+            </g>
+            <g fill="#c2c9b9" font-size="9" font-family="Roboto, sans-serif">
+              <text x="32" y="106">12 Aug</text><text x="98" y="106">19 Aug</text><text x="164" y="106">26 Aug</text>
+              <text x="230" y="106">3 Sep</text><text x="292" y="106">11 Sep</text>
+            </g>
+          </svg>
+          <div class="handle" style="left: 116.7px;"></div>
+          <div class="handle" style="left: 293.1px; width: 35.2px;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">insufficient</div>
+        <div class="chart">
+          <div class="rule" style="left: 119.7px; top: -16.5px; height: 110.5px;"></div>
+          <div class="rule" style="left: 296.1px; top: -16.5px; height: 110.5px;"></div>
+          <div class="rule" style="left: 324.3px; top: -16.5px; height: 110.5px;"></div>
+          <svg width="330" height="108" viewBox="0 0 330 108">
+            <g stroke="#42493d" stroke-width="1" opacity="0.6">
+              <line x1="32" y1="6" x2="326" y2="6"/>
+              <line x1="32" y1="28" x2="326" y2="28"/>
+              <line x1="32" y1="50" x2="326" y2="50"/>
+              <line x1="32" y1="72" x2="326" y2="72"/>
+              <line x1="32" y1="94" x2="326" y2="94"/>
+            </g>
+            <!-- One point, so every gridline reads its one value and the dot sits mid-height. -->
+            <g fill="#c2c9b9" font-size="9" font-family="Roboto, sans-serif" text-anchor="end">
+              <text x="27" y="9">42</text><text x="27" y="31">42</text><text x="27" y="53">42</text>
+              <text x="27" y="75">42</text><text x="27" y="97">42</text>
+            </g>
+            <circle cx="277" cy="50" r="4" fill="#1c1b1b"/>
+            <circle cx="277" cy="50" r="2.5" fill="#b6f09c"/>
+            <g fill="#c2c9b9" font-size="9" font-family="Roboto, sans-serif">
+              <text x="32" y="106">12 Aug</text><text x="98" y="106">19 Aug</text><text x="164" y="106">26 Aug</text>
+              <text x="230" y="106">3 Sep</text><text x="292" y="106">11 Sep</text>
+            </g>
+          </svg>
+          <div class="handle" style="left: 116.7px;"></div>
+          <div class="handle" style="left: 293.1px; width: 35.2px;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">category</div>
+        <div class="chart">
+          <div class="rule" style="left: 119.7px; top: -16.5px; height: 150.5px;"></div>
+          <div class="rule" style="left: 296.1px; top: -16.5px; height: 150.5px;"></div>
+          <div class="rule" style="left: 324.3px; top: -16.5px; height: 150.5px;"></div>
+          <svg width="330" height="148" viewBox="0 0 330 148">
+            <g stroke="#42493d" stroke-width="1" opacity="0.6">
+              <line x1="32" y1="6" x2="326" y2="6"/>
+              <line x1="32" y1="38" x2="326" y2="38"/>
+              <line x1="32" y1="70" x2="326" y2="70"/>
+              <line x1="32" y1="102" x2="326" y2="102"/>
+              <line x1="32" y1="134" x2="326" y2="134"/>
+            </g>
+            <g fill="#c2c9b9" font-size="9" font-family="Roboto, sans-serif">
+              <text x="0" y="25">a</text><text x="0" y="57">b</text><text x="0" y="89">c</text><text x="0" y="121">d</text>
+            </g>
+            <g>
+              <rect x="130" y="9" width="7.8" height="26" rx="3.9" fill="#5a8a45"/>
+              <rect x="149.6" y="73" width="7.8" height="26" rx="3.9" fill="#95ce79"/>
+              <rect x="169.3" y="41" width="7.8" height="26" rx="3.9" fill="#75a85b"/>
+              <rect x="188.7" y="105" width="7.8" height="26" rx="3.9" fill="#b6f09c"/>
+              <rect x="208.4" y="9" width="7.8" height="26" rx="3.9" fill="#5a8a45"/>
+              <rect x="228.1" y="41" width="7.8" height="26" rx="3.9" fill="#75a85b"/>
+              <rect x="247.5" y="73" width="7.8" height="26" rx="3.9" fill="#95ce79"/>
+              <rect x="267.2" y="9" width="7.8" height="26" rx="3.9" fill="#5a8a45"/>
+              <rect x="286.9" y="105" width="7.8" height="26" rx="3.9" fill="#b6f09c"/>
+              <rect x="306.3" y="41" width="7.8" height="26" rx="3.9" fill="#75a85b"/>
+            </g>
+            <g fill="#c2c9b9" font-size="9" font-family="Roboto, sans-serif">
+              <text x="32" y="146">12 Aug</text><text x="98" y="146">19 Aug</text><text x="164" y="146">26 Aug</text>
+              <text x="230" y="146">3 Sep</text><text x="292" y="146">11 Sep</text>
+            </g>
+          </svg>
+          <div class="handle" style="left: 116.7px;"></div>
+          <div class="handle" style="left: 293.1px; width: 35.2px;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">note</div>
+        <div class="chart">
+          <div class="rule" style="left: 119.7px; top: -16.5px; height: 42.5px;"></div>
+          <div class="rule" style="left: 296.1px; top: -16.5px; height: 42.5px;"></div>
+          <div class="rule" style="left: 324.3px; top: -16.5px; height: 42.5px;"></div>
+          <svg width="330" height="40" viewBox="0 0 330 40">
+            <line x1="32" y1="16" x2="326" y2="16" stroke="#42493d" stroke-width="1" opacity="0.6"/>
+            <g>
+              <circle cx="133.9" cy="16" r="4" fill="#1c1b1b"/><circle cx="133.9" cy="16" r="2.5" fill="#b6f09c"/>
+              <circle cx="153.5" cy="16" r="4" fill="#1c1b1b"/><circle cx="153.5" cy="16" r="2.5" fill="#b6f09c"/>
+              <circle cx="173.2" cy="16" r="4" fill="#1c1b1b"/><circle cx="173.2" cy="16" r="2.5" fill="#b6f09c"/>
+              <circle cx="192.6" cy="16" r="4" fill="#1c1b1b"/><circle cx="192.6" cy="16" r="2.5" fill="#b6f09c"/>
+              <circle cx="212.3" cy="16" r="4" fill="#1c1b1b"/><circle cx="212.3" cy="16" r="2.5" fill="#b6f09c"/>
+              <circle cx="232" cy="16" r="4" fill="#1c1b1b"/><circle cx="232" cy="16" r="2.5" fill="#b6f09c"/>
+              <circle cx="251.4" cy="16" r="4" fill="#1c1b1b"/><circle cx="251.4" cy="16" r="2.5" fill="#b6f09c"/>
+              <circle cx="271.1" cy="16" r="4" fill="#1c1b1b"/><circle cx="271.1" cy="16" r="2.5" fill="#b6f09c"/>
+              <circle cx="290.8" cy="16" r="4" fill="#1c1b1b"/><circle cx="290.8" cy="16" r="2.5" fill="#b6f09c"/>
+              <circle cx="310.2" cy="16" r="4" fill="#1c1b1b"/><circle cx="310.2" cy="16" r="2.5" fill="#b6f09c"/>
+            </g>
+            <g fill="#c2c9b9" font-size="9" font-family="Roboto, sans-serif">
+              <text x="32" y="38">12 Aug</text><text x="98" y="38">19 Aug</text><text x="164" y="38">26 Aug</text>
+              <text x="230" y="38">3 Sep</text><text x="292" y="38">11 Sep</text>
+            </g>
+          </svg>
+          <div class="handle" style="left: 116.7px;"></div>
+          <div class="handle" style="left: 293.1px; width: 35.2px;"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="records-title">RECENT RECORDS</div>
+    <div class="record"><span class="time">&#128337;&nbsp; Today, 09:00</span><span class="chevron">&#9662;</span></div>
+    <div class="record"><span class="time">&#128337;&nbsp; Sat, 09:00</span><span class="chevron">&#9662;</span></div>
+    <div class="record"><span class="time">&#128337;&nbsp; 7 Sep, 09:00</span><span class="chevron">&#9662;</span></div>
+  </div>
+
+  <!-- Opened from the `note` card's right-hand handle, which stands for two
+       Events at this window. Anchored under the handle and pulled left so its
+       right edge clears the screen, which is what a marker near the window's end
+       needs. Oldest entry first, both folded, as it arrives. -->
+  <div class="popover" style="left: 284px; top: 924px;">
+    <div class="entry">
+      <div class="name">this week</div>
+      <div class="moment-row">
+        <div class="moment">Mon, 09:00</div>
+      </div>
+    </div>
+    <div class="entry">
+      <div class="name">today</div>
+      <div class="moment-row">
+        <div class="moment">Today, 06:00</div>
+        <div class="chevron">&#9662;</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event marker popover — Trend Event Overlay</title>
+<style>
+  :root {
+    --background: #131313;
+    --on-surface: #e5e2e1;
+    --on-surface-variant: #c2c9b9;
+    --container-high: #2a2a2a;
+    --outline-variant: #42493d;
+    --outline: #8c9385;
+    --primary: #f9fff0;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 32px 16px;
+    background: #0a0a0a;
+    font-family: Roboto, "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .caption {
+    color: var(--outline);
+    font-size: 13px;
+    line-height: 1.5;
+    letter-spacing: 0.5px;
+    max-width: 412px;
+  }
+
+  /* The ground the popover floats over, at the width it floats over it. Only
+     the popover is drawn: what sits under it is the Observation details screen,
+     which `observation-details-event-markers.html` carries. */
+  .ground {
+    width: 412px;
+    background: var(--background);
+    border: 1px solid var(--outline-variant);
+    border-radius: 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .label {
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 1.4;
+    margin-bottom: 10px;
+  }
+
+  /* The Modal's card: the header overflow menu's surface and rounding, sized to
+     what it holds rather than to a fixed width. Folded it is barely wider than
+     the Event's name; the description is what pushes it out to the cap, which
+     is the screen less a margin either side — wide enough that the longest name
+     an Event may carry still sits on one line. */
+  .popover {
+    width: fit-content;
+    max-width: 380px;
+    background: var(--container-high);
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  /* One entry per Event, and the whole entry is what opens it — so an Event with
+     nothing to open carries no chevron and does not respond. */
+  .name {
+    color: var(--primary);
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* The chevron rides the moment's line rather than the whole entry's middle.
+     With the card sized to its contents there is no right edge to align it to,
+     and beside the moment it reads as belonging to the entry rather than
+     floating in the card. */
+  .moment-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  /* On the face rather than behind the chevron: two Events may carry the same
+     name, so under a merged handle this is the only thing telling them apart. */
+  .moment { color: var(--on-surface-variant); font-size: 12px; opacity: 0.7; }
+  .chevron { flex: 0 0 auto; color: var(--on-surface-variant); font-size: 12px; }
+  .description { color: var(--on-surface-variant); font-size: 14px; line-height: 19px; margin-top: 10px; }
+
+  /* Entries under one handle are told apart by the gap between them. No rule is
+     drawn: the popover floats over a chart, and every line on it is one more
+     mark over the drawing underneath. */
+  .entry + .entry { margin-top: 14px; }
+
+  /* Past the cap the entries scroll and the card stops growing. Two fifths of a
+     915dp screen. Below it the card hugs what it holds and nothing scrolls.
+     Styled thin and muted to stand in for Android's own overlay indicator — a
+     desktop scrollbar is not what this looks like on a phone. */
+  .entries {
+    max-height: 366px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(140, 147, 133, 0.45) transparent;
+  }
+  .entries::-webkit-scrollbar { width: 3px; }
+  .entries::-webkit-scrollbar-track { background: transparent; }
+  .entries::-webkit-scrollbar-thumb { background: rgba(140, 147, 133, 0.45); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<p class="caption">
+  The five shapes the marker popover takes — the first four on the seeded Events, the last on Events no fixture holds.
+  It is sized to what it holds rather than to a fixed width, so folded it is barely wider than the Event's own name. It
+  always arrives folded; the second is what the first becomes once its entry is tapped.
+</p>
+
+<div class="ground">
+
+  <div>
+    <div class="label">One Event, as it opens. <code>today</code> has a description, so its entry carries a chevron and opens to a tap.</div>
+    <div class="popover">
+      <div class="entry">
+        <div class="name">today</div>
+        <div class="moment-row">
+          <div class="moment">Today, 06:00</div>
+          <div class="chevron">&#9662;</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="label">The same entry, opened. The longest description an Event can hold is what takes the card out to its widest, wrapping rather than clipping.</div>
+    <div class="popover">
+      <div class="entry">
+        <div class="name">today</div>
+        <div class="moment-row">
+          <div class="moment">Today, 06:00</div>
+          <div class="chevron">&#9652;</div>
+        </div>
+      </div>
+      <div class="description">The one seeded Event carrying a long description, written close to the limit so the longest body an Event can hold is on screen after every reseed.</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="label">An Event with no description — no chevron, and the entry does not open. This is the popover at its smallest.</div>
+    <div class="popover">
+      <div class="entry">
+        <div class="name">repeated</div>
+        <div class="moment-row">
+          <div class="moment">21 Aug, 09:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="label">A handle standing for several, at the default <code>1M</code>, where <code>this week</code> and <code>today</code> fall about 28px apart — inside one target's width, so they share a handle. Oldest first, each folded, and told apart by their moments.</div>
+    <div class="popover">
+      <div class="entry">
+        <div class="name">this week</div>
+        <div class="moment-row">
+          <div class="moment">Mon, 09:00</div>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="name">today</div>
+        <div class="moment-row">
+          <div class="moment">Today, 06:00</div>
+          <div class="chevron">&#9662;</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="label">More than fit. Grouping runs on the target's width, which is about two months at <code>1Y</code>, so a season of Events arrives under one handle. The entries scroll and the card stops growing. These are not seeded; the fixtures put at most three under a handle.</div>
+    <div class="popover">
+      <div class="entries">
+        <div class="entry">
+          <div class="name">flight out</div>
+          <div class="moment-row"><div class="moment">2 Mar, 07:15</div></div>
+        </div>
+        <div class="entry">
+          <div class="name">conference</div>
+          <div class="moment-row"><div class="moment">3 Mar, 09:00</div><div class="chevron">&#9662;</div></div>
+        </div>
+        <div class="entry">
+          <div class="name">bad night</div>
+          <div class="moment-row"><div class="moment">4 Mar, 23:40</div></div>
+        </div>
+        <div class="entry">
+          <div class="name">talk</div>
+          <div class="moment-row"><div class="moment">5 Mar, 14:00</div><div class="chevron">&#9662;</div></div>
+        </div>
+        <div class="entry">
+          <div class="name">flight back</div>
+          <div class="moment-row"><div class="moment">7 Mar, 18:30</div></div>
+        </div>
+        <div class="entry">
+          <div class="name">jet lag</div>
+          <div class="moment-row"><div class="moment">8 Mar, 09:00</div></div>
+        </div>
+        <div class="entry">
+          <div class="name">caught a cold</div>
+          <div class="moment-row"><div class="moment">9 Mar, 20:00</div><div class="chevron">&#9662;</div></div>
+        </div>
+        <div class="entry">
+          <div class="name">back at work</div>
+          <div class="moment-row"><div class="moment">10 Mar, 08:30</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
