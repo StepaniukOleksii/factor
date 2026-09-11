@@ -10,9 +10,9 @@ floor every journey starts from and returns to.
 
 Launching the app lands on Home, headed `Factor`.
 
-Home lists the app's destinations. It holds one, **Observations**, drawn as a row carrying a line-chart mark, the
-destination's name, and a chevron pointing into it. Tapping anywhere along the row opens it ([Observation
-Listing](observation-listing.md)).
+Home lists the app's destinations, each drawn as a row carrying a mark, the destination's name, and a chevron pointing
+into it. Tapping anywhere along a row opens it. It holds two: **Observations**, under a line-chart mark ([Observation
+Listing](observation-listing.md)), and **Events** below it, under a flag ([Event Listing](event-listing.md)).
 
 **What Home stands for.** The screen describes where the app can go rather than what it holds, so it reads the same on
 every visit; what lies down each road is that destination's own to show.
@@ -24,6 +24,7 @@ back from Home leaves, as standard.
 
 Launching the app lands here.
 
-Tap **Observations** to go there ([Observation Listing](observation-listing.md)).
+Tap **Observations** to go there ([Observation Listing](observation-listing.md)), or **Events** for what has been noted
+alongside them ([Event Listing](event-listing.md)).
 
-Press back from that destination and you are on Home again. Press back from Home and you leave the app.
+Press back from either destination and you are on Home again. Press back from Home and you leave the app.
