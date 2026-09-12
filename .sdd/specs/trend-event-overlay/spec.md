@@ -2,7 +2,7 @@
 
 * 2026-09-11
 * Feature: trend-event-overlay.md (new)
-* [ ] Implemented
+* [x] Implemented
 * [ ] E2E tested
 
 ## 1. Goal
@@ -219,9 +219,10 @@ elements, and only the rules are drawn inside a canvas
 * **Covers:** open `mixed metrics` at the default `1M`, tap the handle standing for `this week` and `today`, expand the
   `today` entry, assert the popover carries that Event's description, and dismiss it. The grouped handle rather than a
   lone one: it is the only one at this window carrying a description, and grouping is the ordinary case now.
-* **Handles:** each marker handle needs an `accessibilityLabel` — the Event's name and moment where it stands for one,
-  and the count where it stands for several, which is what this flow taps. A count is the one part of a marker that
+* **Handles:** each marker handle carries an `accessibilityLabel` — `Event <name>, <moment>` where it stands for one,
+  and `<n> events` where it stands for several, which is what this flow taps. A count is the one part of a marker that
   survives a reseed unchanged, where the seeded moments all shift, so the flow matches on that and asserts on the
   `today` Event's description, unique in the fixture set and reachable only once its entry is open. The popover's entry,
   whose whole row is what expands it, needs a label of its own, so tapping it cannot be confused with tapping the handle
-  carrying the same Event's name. Nothing else on the path is new.
+  carrying the same Event's name, and reads `<name>, show description` while it is closed. Nothing else on the path is
+  new.

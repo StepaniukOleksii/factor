@@ -72,6 +72,7 @@ function render(points: MetricSeriesPoint[], onPointPress = vi.fn(), height = CH
         aggregation={AGGREGATION}
         width={CHART_WIDTH}
         height={height}
+        events={[]}
         onPointPress={onPointPress}
       />,
     );
@@ -273,6 +274,7 @@ describe('TextMarkerChart', () => {
           aggregation={AGGREGATION}
           width={CHART_WIDTH}
           height={PLOT_CHART_HEIGHT}
+          events={[]}
           onPointPress={vi.fn()}
         />,
       );

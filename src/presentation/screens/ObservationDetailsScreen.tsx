@@ -20,6 +20,9 @@ import {CountRecordsUseCase} from '../../application/CountRecordsUseCase';
 import {GetObservationByIdUseCase} from '../../application/GetObservationByIdUseCase';
 import {GetRecentRecordsUseCase} from '../../application/GetRecentRecordsUseCase';
 import {GetRecordsByTimeRangeUseCase} from '../../application/GetRecordsByTimeRangeUseCase';
+import {GetEventsByTimeRangeUseCase} from '../../application/GetEventsByTimeRangeUseCase';
+import {SQLiteEventRepository} from '../../infrastructure/SQLiteEventRepository';
+import type {Event} from '../../domain/Event';
 import {DeleteObservationUseCase} from '../../application/DeleteObservationUseCase';
 import {DeleteRecordUseCase} from '../../application/DeleteRecordUseCase';
 import {
@@ -53,6 +56,11 @@ import {
     TREND_INSUFFICIENT_MESSAGE,
 } from '../charts/chartDefaults';
 import {TimeRangeSelector} from '../charts/TimeRangeSelector';
+import {EventMarkers, type EventMarkerAnchor} from '../charts/EventMarkers';
+import {EventMarkerPopover} from '../charts/EventMarkerPopover';
+import type {EventMarkerGroup} from '../charts/eventMarkerGeometry';
+import {EVENT_MARKER_OVERHANG, eventBandHeight} from '../charts/eventMarkerGeometry';
+import {toPlotRect} from '../charts/chartAxis';
 import {CustomTimeRangeModal} from '../charts/CustomTimeRangeModal';
 import type {RootStackParamList} from '../navigation/routes';
 
@@ -62,6 +70,8 @@ const getObservationByIdUseCase = new GetObservationByIdUseCase(observationRepos
 const getRecentRecordsUseCase = new GetRecentRecordsUseCase(recordRepository);
 const countRecordsUseCase = new CountRecordsUseCase(recordRepository);
 const getRecordsByTimeRangeUseCase = new GetRecordsByTimeRangeUseCase(recordRepository);
+const eventRepository = new SQLiteEventRepository();
+const getEventsByTimeRangeUseCase = new GetEventsByTimeRangeUseCase(eventRepository);
 const getMetricSeriesUseCase = new GetMetricSeriesUseCase();
 const deleteObservationUseCase = new DeleteObservationUseCase(observationRepository, recordRepository);
 const deleteRecordUseCase = new DeleteRecordUseCase(recordRepository);
@@ -118,6 +128,9 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
     const [recordCount, setRecordCount] = useState(0);
     const [chartRecords, setChartRecords] = useState<DomainRecord[]>([]);
     const [chartWindow, setChartWindow] = useState<ChartWindow | null>(null);
+    const [chartEvents, setChartEvents] = useState<Event[]>([]);
+    const [markerPopover, setMarkerPopover] =
+        useState<{events: Event[], anchor: EventMarkerAnchor} | null>(null);
     const [customModalVisible, setCustomModalVisible] = useState(false);
     const [trendChartWidth, setTrendChartWidth] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -197,8 +210,10 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
             setLoadingTrends(true);
             const range = getTimeRangeForSelection(selection);
             const rangeRecords = await getRecordsByTimeRangeUseCase.execute(observationId, range);
+            const rangeEvents = await getEventsByTimeRangeUseCase.execute(range);
             setChartWindow({range, aggregation: getAggregationForSelection(selection)});
             setChartRecords(rangeRecords);
+            setChartEvents(rangeEvents);
         } catch (error) {
             console.error('Failed to load trend data', error);
         } finally {
@@ -456,6 +471,14 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                     setCustomModalVisible(false);
                                 }}
                             />
+                            {markerPopover && (
+                                <EventMarkerPopover
+                                    events={markerPopover.events}
+                                    anchorX={markerPopover.anchor.centreX}
+                                    anchorY={markerPopover.anchor.bottomY}
+                                    onDismiss={() => setMarkerPopover(null)}
+                                />
+                            )}
                             <View style={styles.trendsList}>
                                 {chartedMetrics.map(metric => {
                                     // Filtered on `has` just above, so every one of these has a registration.
@@ -470,26 +493,54 @@ export function ObservationDetailsScreen({route, navigation}: ObservationDetails
                                         )
                                         : [];
                                     const hasEnoughData = points.length >= 1;
+                                    // A placeholder card marks nothing.
+                                    const cardEvents = hasEnoughData ? chartEvents : [];
+                                    const bandHeight = eventBandHeight(cardEvents);
+                                    const canvasHeight = cardHeight + bandHeight;
                                     return (
                                         <View key={metric.id} style={styles.trendCard}>
                                             <Text style={styles.trendCardTitle}>
                                                 {formatMetricLabel(metric.name, metric.unit)}
                                             </Text>
                                             {hasEnoughData ? (
+                                                // Android clips a child to its parent, and the
+                                                // handles reach above the canvas, so the box is
+                                                // grown upwards by that overhang and the canvas
+                                                // put back with padding.
                                                 <View
-                                                    testID="trend-chart"
-                                                    style={[styles.trendChart, {height: cardHeight}]}
-                                                    onLayout={(e) => setTrendChartWidth(e.nativeEvent.layout.width)}
+                                                    style={bandHeight > 0 ? {
+                                                        marginTop: -EVENT_MARKER_OVERHANG,
+                                                        paddingTop: EVENT_MARKER_OVERHANG,
+                                                    } : undefined}
                                                 >
-                                                    <Renderer
-                                                        metric={metric}
-                                                        points={points}
-                                                        timeRange={chartWindow!.range}
-                                                        aggregation={chartWindow!.aggregation}
-                                                        width={trendChartWidth}
-                                                        height={cardHeight}
-                                                        onPointPress={handleChartPointPress}
-                                                    />
+                                                    <View
+                                                        testID="trend-chart"
+                                                        style={[styles.trendChart, {height: canvasHeight}]}
+                                                        onLayout={(e) => setTrendChartWidth(e.nativeEvent.layout.width)}
+                                                    >
+                                                        <Renderer
+                                                            metric={metric}
+                                                            points={points}
+                                                            timeRange={chartWindow!.range}
+                                                            aggregation={chartWindow!.aggregation}
+                                                            width={trendChartWidth}
+                                                            height={canvasHeight}
+                                                            events={cardEvents}
+                                                            onPointPress={handleChartPointPress}
+                                                        />
+                                                    </View>
+                                                    {bandHeight > 0 && trendChartWidth > 0 && (
+                                                        <EventMarkers
+                                                            events={cardEvents}
+                                                            timeRange={chartWindow!.range}
+                                                            plot={toPlotRect(trendChartWidth, canvasHeight, bandHeight)}
+                                                            bandHeight={bandHeight}
+                                                            offsetX={0}
+                                                            offsetY={EVENT_MARKER_OVERHANG}
+                                                            onPress={(group: EventMarkerGroup, anchor) =>
+                                                                setMarkerPopover({events: group.events, anchor})}
+                                                        />
+                                                    )}
                                                 </View>
                                             ) : (
                                                 // Its own chart's height, so a card keeps its size as its

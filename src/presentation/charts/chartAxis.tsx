@@ -59,16 +59,21 @@ export interface PlotRect {
 }
 
 /**
- * Carves the label gutters out of the chart's box. Clamped so a box too small to
- * hold them - a chart whose width hasn't been measured yet - collapses to an
- * empty rectangle rather than an inside-out one.
+ * Carves the label gutters out of the chart's box, and `topBand` off the top
+ * above them. Clamped so a box too small to hold them - a chart whose width
+ * hasn't been measured yet - collapses to an empty rectangle rather than an
+ * inside-out one.
+ *
+ * @param topBand Depth of a strip reserved above the plot for something that is
+ *   not the chart's own drawing, which today is the Event marker band (ADR-8).
  */
-export function toPlotRect(width: number, height: number): PlotRect {
+export function toPlotRect(width: number, height: number, topBand = 0): PlotRect {
+  const top = PLOT_TOP_PADDING + topBand;
   return {
     left: LABEL_GUTTER,
-    top: PLOT_TOP_PADDING,
+    top,
     right: Math.max(width - PLOT_RIGHT_INSET, LABEL_GUTTER),
-    bottom: Math.max(height - TIME_AXIS_HEIGHT, PLOT_TOP_PADDING),
+    bottom: Math.max(height - TIME_AXIS_HEIGHT, top),
   };
 }
 

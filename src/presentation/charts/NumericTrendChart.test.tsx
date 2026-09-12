@@ -127,6 +127,7 @@ function render(
         aggregation={AGGREGATION}
         width={CHART_WIDTH}
         height={CHART_HEIGHT}
+        events={[]}
         onPointPress={onPointPress}
       />,
     );
@@ -652,6 +653,7 @@ describe('NumericTrendChart axes', () => {
           aggregation={AGGREGATION}
           width={CHART_WIDTH}
           height={CHART_HEIGHT}
+          events={[]}
           onPointPress={vi.fn()}
         />,
       );
@@ -667,6 +669,7 @@ describe('NumericTrendChart axes', () => {
           aggregation={AGGREGATION}
           width={CHART_WIDTH}
           height={CHART_HEIGHT}
+          events={[]}
           onPointPress={vi.fn()}
         />,
       );

@@ -1,5 +1,6 @@
 import type React from 'react';
 import type {Metric, MetricValueType} from '../../domain/Metric';
+import type {Event} from '../../domain/Event';
 import type {AggregationStrategy, MetricSeriesPoint, TimeRange,} from '../../application/GetMetricSeriesUseCase';
 import {NumericTrendChart} from './NumericTrendChart';
 import {CategorySwimlaneChart} from './CategorySwimlaneChart';
@@ -23,6 +24,13 @@ export interface ChartRendererProps {
   aggregation: AggregationStrategy;
   width: number;
   height: number;
+  /**
+   * The Events falling in `timeRange`, which a renderer draws as rules behind
+   * its own marks - drawn by the renderer rather than handed to it drawn, since
+   * only a draw inside the same canvas gets underneath a mark. Empty where the
+   * window holds none, and the card then reserves no band for them.
+   */
+  events: readonly Event[];
   /**
    * Reports which point was hit and nothing more - what the tap *means* is the
    * screen's decision. Renderers with no tappable state never call it.

@@ -26,6 +26,7 @@ export const Rect = createStubComponent('Rect');
 export const RoundedRect = createStubComponent('RoundedRect');
 export const Text = createStubComponent('Text');
 export const LinearGradient = createStubComponent('LinearGradient');
+export const DashPathEffect = createStubComponent('DashPathEffect');
 
 export const vec = (x = 0, y = 0): {x: number; y: number} => ({x, y});
 

@@ -86,6 +86,7 @@ function render(
         aggregation={aggregation}
         width={CHART_WIDTH}
         height={swimlaneCardHeight(metric)}
+        events={[]}
         onPointPress={onPointPress}
       />,
     );

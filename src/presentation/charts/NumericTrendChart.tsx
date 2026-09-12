@@ -29,6 +29,8 @@ import {
   useAxisFont,
 } from './chartAxis';
 import {nearestPointIndex, TAP_TOLERANCE} from './chartHitTest';
+import {EventRules} from './EventRules';
+import {eventBandHeight} from './eventMarkerGeometry';
 import {InsufficientData} from './InsufficientData';
 import type {ChartRendererProps} from './rendererRegistry';
 import {COLORS, withAlpha} from '@presentation/theme';
@@ -62,7 +64,7 @@ const VALUE_AXIS_TICK_COUNT = 5;
  * What a tap *means* - opening a Record, or zooming into the bucket a point
  * aggregates - is the screen's decision; this reports the point and no more.
  */
-export const NumericTrendChart = ({points, timeRange, width, height, onPointPress}: ChartRendererProps) => {
+export const NumericTrendChart = ({points, timeRange, width, height, events, onPointPress}: ChartRendererProps) => {
   // Ahead of the insufficient-data return so the hook order never varies. The
   // typeface resolves asynchronously, leaving this `null` for the first render
   // or two - the axis elements below wait for it while the curve does not, so a
@@ -77,7 +79,8 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
     return <InsufficientData height={height} />;
   }
 
-  const plot = toPlotRect(width, height);
+  const bandHeight = eventBandHeight(events);
+  const plot = toPlotRect(width, height, bandHeight);
   const ys = numericPoints.map(point => point.y);
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
@@ -106,6 +109,8 @@ export const NumericTrendChart = ({points, timeRange, width, height, onPointPres
   return (
     <Pressable testID="numeric-trend-chart-pressable" style={{width, height}} onPress={handlePress}>
       <Canvas style={{width, height}}>
+        {/* First, so the rules pass behind everything this card draws. */}
+        <EventRules events={events} timeRange={timeRange} plot={plot} bandHeight={bandHeight} />
         {font &&
           valueTicks.map(tick => {
             const y = valueRatioToY(tick.ratio, plot);

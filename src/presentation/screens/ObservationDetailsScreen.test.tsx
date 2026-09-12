@@ -1,10 +1,12 @@
 import React from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import renderer, {act} from 'react-test-renderer';
-import {StyleSheet, Text} from 'react-native';
+import {StyleSheet, Text, TouchableOpacity} from 'react-native';
 import {ObservationDetailsScreen} from './ObservationDetailsScreen';
 import {Observation} from '../../domain/Observation';
 import {Record as DomainRecord} from '../../domain/Record';
+import {Event} from '../../domain/Event';
+import {EVENT_BAND_HEIGHT} from '../charts/eventMarkerGeometry';
 import {Circle, type SkFont, Text as SkiaText, useFont} from '@shopify/react-native-skia';
 import {type TimeRangePreset, TREND_INSUFFICIENT_MESSAGE,} from '../charts/chartDefaults';
 import {rendererRegistry} from '../charts/rendererRegistry';
@@ -30,6 +32,7 @@ const {
     mockGetObservationByIdExecute,
     mockGetRecentRecordsExecute,
     mockGetRecordsByTimeRangeExecute,
+    mockGetEventsByTimeRangeExecute,
     mockCountRecordsExecute,
     mockDeleteRecordExecute,
 } = vi.hoisted(() => {
@@ -37,6 +40,10 @@ const {
         mockGetObservationByIdExecute: vi.fn(),
         mockGetRecentRecordsExecute: vi.fn(),
         mockGetRecordsByTimeRangeExecute: vi.fn(),
+        // Every describe that is not about markers leans on this without
+        // setting it up: a window with no Event in it is the state the rest of
+        // the screen's tests were written against.
+        mockGetEventsByTimeRangeExecute: vi.fn().mockResolvedValue([]),
         // The one use case every describe leans on without setting up: the
         // metadata line is on the screen whatever else a test is about.
         mockCountRecordsExecute: vi.fn().mockResolvedValue(0),
@@ -111,6 +118,9 @@ vi.mock('../../infrastructure/SQLiteObservationRepository', () => ({
 vi.mock('../../infrastructure/SQLiteRecordRepository', () => ({
     SQLiteRecordRepository: vi.fn(),
 }));
+vi.mock('../../infrastructure/SQLiteEventRepository', () => ({
+    SQLiteEventRepository: vi.fn(),
+}));
 
 vi.mock('../../application/GetObservationByIdUseCase', () => ({
     GetObservationByIdUseCase: vi.fn().mockImplementation(() => ({
@@ -127,6 +137,12 @@ vi.mock('../../application/GetRecentRecordsUseCase', () => ({
 vi.mock('../../application/GetRecordsByTimeRangeUseCase', () => ({
     GetRecordsByTimeRangeUseCase: vi.fn().mockImplementation(() => ({
         execute: mockGetRecordsByTimeRangeExecute,
+    })),
+}));
+
+vi.mock('../../application/GetEventsByTimeRangeUseCase', () => ({
+    GetEventsByTimeRangeUseCase: vi.fn().mockImplementation(() => ({
+        execute: mockGetEventsByTimeRangeExecute,
     })),
 }));
 
@@ -147,6 +163,10 @@ vi.mock('../../application/DeleteRecordUseCase', () => ({
         execute: mockDeleteRecordExecute,
     })),
 }));
+
+beforeEach(() => {
+    mockGetEventsByTimeRangeExecute.mockResolvedValue([]);
+});
 
 const initialRecord = {
     id: 'rec-1',
@@ -356,6 +376,12 @@ function heightsOf(root: any, testID: string): number[] {
 
 function chartBoxHeights(root: any): number[] {
     return heightsOf(root, 'trend-chart');
+}
+
+function rendererEventNames(root: any): string[][] {
+    return root.root
+        .findAll((node: any) => node.props?.metric && node.props?.points)
+        .map((node: any) => node.props.events.map((event: Event) => event.name));
 }
 
 function rendererHeights(root: any): number[] {
@@ -956,6 +982,140 @@ describe('ObservationDetailsScreen Metadata Line', () => {
         });
 
         expect(findAllByText(root.root, metadataLine(CREATED_AT, '1 record')).length).toBe(1);
+    });
+});
+
+describe('ObservationDetailsScreen Event markers', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockGetObservationByIdExecute.mockResolvedValue(
+            observationOf(
+                {id: 'm1', name: 'Duration', type: 'Numeric'},
+                {id: 't1', name: 'Notes', type: 'Text'},
+            ),
+        );
+        mockGetRecentRecordsExecute.mockResolvedValue([]);
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([
+            chartRecord('a', 3, [['m1', 5], ['t1', 'slept badly']]),
+            chartRecord('b', 1, [['m1', 7], ['t1', 'slept well']]),
+        ]);
+        mockGetEventsByTimeRangeExecute.mockResolvedValue([]);
+        vi.stubGlobal('alert', vi.fn());
+    });
+
+    function eventDaysAgo(id: string, daysAgo: number, description: string | null = null): Event {
+        return new Event(id, id, new Date(Date.now() - daysAgo * DAY_MS), description);
+    }
+
+    /**
+     * Reports a measured width to the chart boxes, which nothing does under
+     * react-test-renderer - and the marker layer is not drawn until a card has
+     * a width to place handles across.
+     */
+    async function layoutCharts(root: any, width = 330) {
+        await act(async () => {
+            root.root.findAllByProps({testID: 'trend-chart'}).forEach((box: any) =>
+                box.props.onLayout({nativeEvent: {layout: {width, height: 0, x: 0, y: 0}}}));
+        });
+    }
+
+    function handles(root: any) {
+        // By type, because `findAll` counts a composite and the host elements it
+        // renders separately, and one handle would answer three times.
+        return root.root
+            .findAllByType(TouchableOpacity)
+            .filter((node: any) => /^(Event |\d+ events$)/.test(node.props.accessibilityLabel ?? ''));
+    }
+
+    it('passes the events in its window to every charting card', async () => {
+        mockGetEventsByTimeRangeExecute.mockResolvedValue([eventDaysAgo('vacation', 2)]);
+
+        const root = await renderScreen();
+
+        expect(rendererEventNames(root)).toEqual([['vacation'], ['vacation']]);
+    });
+
+    it('passes no event to a card whose window holds none', async () => {
+        const root = await renderScreen();
+
+        expect(rendererEventNames(root)).toEqual([[], []]);
+    });
+
+    it('reserves the band on a charting card only where there is an event to mark', async () => {
+        const withoutEvents = chartBoxHeights(await renderScreen());
+
+        mockGetEventsByTimeRangeExecute.mockResolvedValue([eventDaysAgo('vacation', 2)]);
+        const withEvents = chartBoxHeights(await renderScreen());
+
+        expect(withEvents).toEqual(withoutEvents.map(height => height + EVENT_BAND_HEIGHT));
+    });
+
+    it('passes no event to a renderer showing the placeholder, and reserves it no band', async () => {
+        mockGetRecordsByTimeRangeExecute.mockResolvedValue([]);
+        mockGetEventsByTimeRangeExecute.mockResolvedValue([eventDaysAgo('vacation', 2)]);
+
+        const root = await renderScreen();
+
+        expect(root.root.findAllByProps({testID: 'trend-chart'}).length).toBe(0);
+        expect(heightsOf(root, 'trend-empty')).toEqual([NUMERIC_CARD_HEIGHT, TEXT_CARD_HEIGHT]);
+    });
+
+    it('re-reads its events when the window changes', async () => {
+        const root = await renderScreen();
+        const firstRange = mockGetEventsByTimeRangeExecute.mock.calls[0][0];
+
+        await act(async () => {
+            root.root.findByProps({testID: 'time-range-preset-1Y'}).props.onPress();
+        });
+
+        const calls = mockGetEventsByTimeRangeExecute.mock.calls;
+        expect(calls.length).toBeGreaterThan(1);
+        const laterRange = calls[calls.length - 1][0];
+        expect(laterRange.start.getTime()).toBeLessThan(firstRange.start.getTime());
+    });
+
+    it('reads its events over the same window as its records', async () => {
+        await renderScreen();
+
+        const [, recordRange] = mockGetRecordsByTimeRangeExecute.mock.calls[0];
+        const [eventRange] = mockGetEventsByTimeRangeExecute.mock.calls[0];
+        expect(eventRange).toEqual(recordRange);
+    });
+
+    it('opens the popover for the events a handle stands for', async () => {
+        mockGetEventsByTimeRangeExecute.mockResolvedValue([
+            eventDaysAgo('this week', 3, 'Older note.'),
+            eventDaysAgo('today', 3),
+        ]);
+
+        const root = await renderScreen();
+        await layoutCharts(root);
+        const [handle] = handles(root);
+
+        expect(handle.props.accessibilityLabel).toBe('2 events');
+        await act(async () => {
+            handle.props.onPress({nativeEvent: {pageX: 200, pageY: 300, locationX: 10, locationY: 20}});
+        });
+
+        expect(root.root.findAllByProps({testID: 'event-marker-popover'}).length).toBeGreaterThan(0);
+        expect(findAllByText(root.root, 'this week').length).toBeGreaterThan(0);
+        expect(findAllByText(root.root, 'today').length).toBeGreaterThan(0);
+    });
+
+    it('draws no handle when the window holds no event', async () => {
+        const root = await renderScreen();
+        await layoutCharts(root);
+
+        expect(handles(root)).toEqual([]);
+    });
+
+    it('draws a handle on every charting card once they have a width', async () => {
+        mockGetEventsByTimeRangeExecute.mockResolvedValue([eventDaysAgo('vacation', 2)]);
+
+        const root = await renderScreen();
+        await layoutCharts(root);
+
+        expect(handles(root)).toHaveLength(2);
     });
 });
 

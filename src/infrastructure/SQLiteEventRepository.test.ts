@@ -87,4 +87,35 @@ describe('SQLiteEventRepository', () => {
       ['event-1']
     );
   });
+
+  describe('findByTimeRange', () => {
+    const range = {
+      start: new Date('2026-03-01T00:00:00Z'),
+      end: new Date('2026-03-31T00:00:00Z'),
+    };
+
+    it('queries the half-open window ascending', async () => {
+      await repository.findByTimeRange(range);
+
+      const [sql, params] = mockGetAllAsync.mock.calls[0];
+      expect(sql).toContain('occurredAt >= ? AND occurredAt < ?');
+      expect(sql).toContain('ORDER BY occurredAt ASC');
+      expect(params).toEqual([range.start.getTime(), range.end.getTime()]);
+    });
+
+    it('maps the rows it finds to events', async () => {
+      const occurredAt = new Date('2026-03-14T09:00:00Z');
+      mockGetAllAsync.mockResolvedValue([
+        {id: 'event-1', name: 'Vacation', description: 'Two weeks away.', occurredAt: occurredAt.getTime()},
+      ]);
+
+      const events = await repository.findByTimeRange(range);
+
+      expect(events).toEqual([new Event('event-1', 'Vacation', occurredAt, 'Two weeks away.')]);
+    });
+
+    it('returns nothing for a window holding no event', async () => {
+      expect(await repository.findByTimeRange(range)).toEqual([]);
+    });
+  });
 });

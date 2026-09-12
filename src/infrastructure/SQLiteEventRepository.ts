@@ -1,4 +1,5 @@
 import {EventRepository} from '../application/EventRepository';
+import {TimeRange} from '../application/GetMetricSeriesUseCase';
 import {Event} from '../domain/Event';
 import {getDatabase} from './Database';
 
@@ -37,6 +38,17 @@ export class SQLiteEventRepository implements EventRepository {
     const db = await getDatabase();
 
     const rows = await db.getAllAsync<EventRow>(`${SELECT_EVENTS} LIMIT ?`, [limit]);
+
+    return rows.map(toEvent);
+  }
+
+  async findByTimeRange(range: TimeRange): Promise<Event[]> {
+    const db = await getDatabase();
+
+    const rows = await db.getAllAsync<EventRow>(
+      'SELECT id, name, description, occurredAt FROM events WHERE occurredAt >= ? AND occurredAt < ? ORDER BY occurredAt ASC',
+      [range.start.getTime(), range.end.getTime()]
+    );
 
     return rows.map(toEvent);
   }

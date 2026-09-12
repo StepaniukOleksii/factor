@@ -14,6 +14,8 @@ import {
   useAxisFont,
 } from './chartAxis';
 import {nearestPointIndex, TAP_TOLERANCE} from './chartHitTest';
+import {EventRules} from './EventRules';
+import {eventBandHeight} from './eventMarkerGeometry';
 import {InsufficientData} from './InsufficientData';
 import type {ChartRendererProps} from './rendererRegistry';
 import {COLORS} from '@presentation/theme';
@@ -45,7 +47,7 @@ const COUNT_LABEL_OFFSET = 7;
  * text to tell one Record from another, narrowing is the only way this card
  * separates the Records it folds.
  */
-export const TextMarkerChart = ({points, timeRange, width, height, onPointPress}: ChartRendererProps) => {
+export const TextMarkerChart = ({points, timeRange, width, height, events, onPointPress}: ChartRendererProps) => {
   // Ahead of the insufficient-data return so the hook order never varies.
   const font = useAxisFont();
 
@@ -60,7 +62,8 @@ export const TextMarkerChart = ({points, timeRange, width, height, onPointPress}
   // The gutter comes with the plot, so this card starts on the same left edge as
   // the rest of the column - and goes unlabelled, there being neither a value
   // axis here nor lanes to name.
-  const plot = toPlotRect(width, height);
+  const bandHeight = eventBandHeight(events);
+  const plot = toPlotRect(width, height, bandHeight);
   const markY = (plot.top + plot.bottom) / 2;
   // Where every mark is drawn, taken once so the drawing and the hit test cannot
   // read the series through two derivations of the same scale.
@@ -82,6 +85,8 @@ export const TextMarkerChart = ({points, timeRange, width, height, onPointPress}
   return (
     <Pressable testID="text-marker-chart-pressable" style={{width, height}} onPress={handlePress}>
       <Canvas style={{width, height}}>
+        {/* First, so the rules pass behind everything this card draws. */}
+        <EventRules events={events} timeRange={timeRange} plot={plot} bandHeight={bandHeight} />
         <Line
           p1={vec(plot.left, markY)}
           p2={vec(plot.right, markY)}

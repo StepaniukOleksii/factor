@@ -25,6 +25,8 @@ import {
 import {type ChartLane, getChartLanes} from './chartLanes';
 import {nearestPointIndex, TAP_TOLERANCE} from './chartHitTest';
 import {getLaneColors} from './laneColors';
+import {EventRules} from './EventRules';
+import {eventBandHeight} from './eventMarkerGeometry';
 import {InsufficientData} from './InsufficientData';
 import type {ChartRendererProps} from './rendererRegistry';
 
@@ -71,6 +73,7 @@ export const CategorySwimlaneChart = ({
   aggregation,
   width,
   height,
+  events,
   onPointPress,
 }: ChartRendererProps) => {
   const font = useAxisFont();
@@ -81,7 +84,8 @@ export const CategorySwimlaneChart = ({
     return <InsufficientData height={height} />;
   }
 
-  const plot = toPlotRect(width, height);
+  const bandHeight = eventBandHeight(events);
+  const plot = toPlotRect(width, height, bandHeight);
   const laneHeight = (plot.bottom - plot.top) / lanes.length;
   const laneColors = getLaneColors(lanes.length);
   const drawable = drawableCounts(buckets, lanes);
@@ -107,6 +111,8 @@ export const CategorySwimlaneChart = ({
   return (
     <Pressable testID="category-swimlane-chart-pressable" style={{width, height}} onPress={handlePress}>
       <Canvas style={{width, height}}>
+        {/* First, so the rules pass behind everything this card draws. */}
+        <EventRules events={events} timeRange={timeRange} plot={plot} bandHeight={bandHeight} />
         {laneBoundaries(lanes.length, plot, laneHeight).map(y => (
           <Line
             key={`separator-${y}`}

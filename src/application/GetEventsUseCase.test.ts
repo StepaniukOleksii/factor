@@ -13,6 +13,7 @@ function repositoryHolding(events: Event[]): EventRepository {
     save: vi.fn(),
     findAll: vi.fn().mockResolvedValue(events),
     findRecent: vi.fn((limit: number) => Promise.resolve(events.slice(0, limit))),
+    findByTimeRange: vi.fn(),
     delete: vi.fn(),
   };
 }
