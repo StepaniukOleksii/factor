@@ -2,7 +2,7 @@
 name: change-committing
 description: Commits work that is already done — picks the tag, stages by path, and writes a message a stranger can read. Use when the user asks for something to be committed. Not for landing a slice (see slice-landing).
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Change Committing
@@ -47,6 +47,10 @@ One tag per commit, and on a `feat/` branch it is the stage's rather than a judg
 **A tree holding two kinds is two commits.** Landing folds each run of same-tag commits into one, so an implementation
 committed together with a backlog edit vanishes into the `[IMPL]` fold and master never shows the backlog changed. Stage
 one set of paths, commit, then stage the next.
+
+**A ticked stage box is not a second kind.** `development-process.md` has each stage tick its own box as it commits, so
+the spec edit goes in that stage's commit — the `Implemented` box with `[IMPL]`, the `E2E tested` box with `[E2E]` —
+along with whatever else that stage owed the spec.
 
 ## 3. Write the Subject
 
