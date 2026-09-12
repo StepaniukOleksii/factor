@@ -64,3 +64,22 @@ become a real spec.
 10. When a numeric chart has the only record, all lanes show the same number. The record is displayed as a single dot on
     the chart, so it looks weird that all lanes display same number but the dot is only on one of the lanes. Would be
     better to show neighbor numbers instead.
+11. The Event marker popover keeps itself on screen sideways but not vertically, so one opened from a marker low in the
+    Trends scroll runs off the bottom edge, and the entries past it cannot be reached.
+    [EventMarkerPopover](../../src/presentation/charts/EventMarkerPopover.tsx) reads `Dimensions.get('window').width`
+    and nothing else: `left` is clamped between `SCREEN_MARGIN` and `screenWidth - cardWidth - SCREEN_MARGIN`, while
+    `top` is `anchorY + ANCHOR_GAP` with nothing consulting the screen's height. The scroll lives inside the card, so a
+    card hanging off the bottom takes its own scroll with it, and the entries cap at `MAX_ENTRIES_HEIGHT` (366px) rather
+    than at what is left below the marker. Not driven on-device: the seeded fixtures put at most three Events under one
+    handle, so reaching it wants a handle low in the scroll and an expanded description to grow the card, where a wide
+    window on a real store puts many Events under one handle ([ADR-8](../adr/8-event-marker-tap-target.md)). The fix is
+    the vertical half of the clamp the sideways half already does, flipping the card above its anchor where there is no
+    room below it — `EventMarkers` hands over the target's bottom edge in window coordinates at the press, so the
+    anchor's own top is one subtraction away.
+12. A marker popover entry for an Event carrying no description announces one anyway. The entry's `accessibilityLabel`
+    is built as `<name>, show description` for every Event, so a row that draws no chevron and is `disabled` still tells
+    a screen reader there is a description to open. Only the announcement is wrong; the drawn surface already says what
+    it should. The handle above it announces `Event <name>, <moment>` for a lone Event
+    ([EventMarkers](../../src/presentation/charts/EventMarkers.tsx)), which is the shape an entry with nothing to expand
+    wants. The label on an expandable entry has to stay as it is — the overlay's Maestro flow taps `today, show
+    description` by it.
