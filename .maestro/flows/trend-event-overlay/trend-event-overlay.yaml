@@ -1,0 +1,35 @@
+appId: io.github.stepaniukoleksii.factor.dev
+---
+# The Event markers drawn over an Observation's trend cards: the handle a marker
+# carries, the Events it opens, and the description behind an entry's expander.
+# The rules themselves are drawn inside the Skia canvas and out of reach.
+
+- runFlow:
+    file: ../../subflows/launch.yaml
+    env:
+      DEV_COMMAND: seed
+      READY_TEXT: "mixed metrics"
+
+- tapOn: "mixed metrics"
+- assertVisible: "TRENDS"
+
+# Three seeded Events fall inside the default 1M window. The two most recent sit
+# closer than a tap target is wide, so one handle stands for both and announces
+# its count; `repeated`, three weeks back, keeps a handle of its own. Every
+# charting card carries the same pair, and this takes the topmost card's.
+- assertVisible: "2 events"
+- assertVisible: "Event repeated,.*"
+- tapOn: "2 events"
+
+# It opens folded - a name over a moment per Event, and no description until one
+# is asked for.
+- assertVisible: "this week"
+- assertNotVisible: "The one seeded Event carrying a long description.*"
+
+- tapOn: "today, show description"
+- assertVisible: "The one seeded Event carrying a long description.*"
+
+# The popover is a Modal, so back closes it rather than leaving the screen.
+- back
+- assertNotVisible: "The one seeded Event carrying a long description.*"
+- assertVisible: "TRENDS"
